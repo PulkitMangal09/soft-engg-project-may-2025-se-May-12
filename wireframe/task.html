@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management Wireframes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .wireframe-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+        .phone-frame {
+            width: 320px;
+            height: 600px;
+            border: 3px solid #333;
+            border-radius: 25px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .back-btn, .settings-btn, .add-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            cursor: pointer;
+        }
+        .add-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: white;
+        }
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-right: 12px;
+        }
+        .task-checkbox.checked {
+            background: #007AFF;
+            border-color: #007AFF;
+        }
+        .task-content {
+            flex: 1;
+        }
+        .task-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .task-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+        .task-priority {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        .priority-high { background: #FF3B30; }
+        .priority-medium { background: #FF9500; }
+        .priority-low { background: #34C759; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            height: 80px;
+            resize: vertical;
+        }
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-secondary {
+            width: 100%;
+            padding: 12px;
+            background: white;
+            color: #007AFF;
+            border: 1px solid #007AFF;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #f8f8f8;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .nav-item {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        .nav-item.active {
+            color: #007AFF;
+        }
+        .progress-card {
+            background: #f0f8ff;
+            border: 1px solid #007AFF;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .progress-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #007AFF;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007AFF;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .reminder-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: white;
+        }
+        .reminder-time {
+            font-weight: bold;
+            color: #007AFF;
+        }
+        .reminder-text {
+            flex: 1;
+            margin: 0 10px;
+        }
+        .toggle-switch {
+            width: 40px;
+            height: 20px;
+            background: #ccc;
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+        }
+        .toggle-switch.active {
+            background: #007AFF;
+        }
+        .toggle-switch::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        .toggle-switch.active::after {
+            left: 22px;
+        }
+        .page-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-container {
+            overflow-y: auto;
+            height: calc(100% - 120px);
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #333;">Task Management Wireframes</h1>
+    
+    <div class="wireframe-container">
+        <!-- Page 1: Student Task Dashboard -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>My Tasks</h2>
+                <div class="add-btn">+</div>
+            </div>
+            
+            <input type="text" class="search-bar" placeholder="Search tasks...">
+            
+            <div class="filter-tabs">
+                <div class="tab active">All</div>
+                <div class="tab">Today</div>
+                <div class="tab">Pending</div>
+                <div class="tab">Done</div>
+            </div>
+            
+            <div class="progress-card">
+                <div class="progress-title">Today's Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 60%;"></div>
+                </div>
+                <div style="margin-top: 5px; font-size: 12px;">3 of 5 tasks completed</div>
+            </div>
+            
+            <div class="task-item">
+                <div class="task-checkbox checked"></div>
+                <div class="task-content">
+                    <div class="task-title">Math Homework</div>
+                    <div class="task-subtitle">Due: Today 6:00 PM</div>
+                </div>
+                <div class="task-priority priority-high"></div>
+            </div>
+            
+            <div class="task-item">
+                <div class="task-checkbox"></div>
+                <div class="task-content">
+                    <div class="task-title">Science Project</div>
+                    <div class="task-subtitle">Due: Tomorrow 9:00 AM</div>
+                </div>
+                <div class="task-priority priority-medium"></div>
+            </div>
+            
+            <div class="task-item">
+                <div class="task-checkbox"></div>
+                <div class="task-content">
+                    <div class="task-title">Reading Assignment</div>
+                    <div class="task-subtitle">Due: Friday 3:00 PM</div>
+                </div>
+                <div class="task-priority priority-low"></div>
+            </div>
+            
+            <div class="bottom-nav">
+                <div class="nav-item active">Tasks</div>
+                <div class="nav-item">Finance</div>
+                <div class="nav-item">Emotion</div>
+                <div class="nav-item">Profile</div>
+            </div>
+            
+            <div class="page-title">Student Task Dashboard</div>
+        </div>
+
+        <!-- Page 2: Add/Edit Task -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Add Task</h2>
+                <div class="settings-btn">⋯</div>
+            </div>
+            
+            <div class="form-container">
+                <div class="form-group">
+                    <label class="form-label">Task Title</label>
+                    <input type="text" class="form-input" placeholder="Enter task title">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" placeholder="Add task description..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Due Time</label>
+                    <input type="time" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <select class="form-select">
+                        <option>Low</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select">
+                        <option>Homework</option>
+                        <option>Project</option>
+                        <option>Study</option>
+                        <option>Personal</option>
+                    </select>
+                </div>
+                
+                <button class="btn-primary">Save Task</button>
+                <button class="btn-secondary">Cancel</button>
+            </div>
+            
+            <div class="page-title">Add/Edit Task</div>
+        </div>
+
+        <!-- Page 3: Reminders Management -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Reminders</h2>
+                <div class="add-btn">+</div>
+            </div>
+            
+            <div class="reminders-container">
+                <div class="reminder-item">
+                    <div>
+                        <div class="reminder-time">8:00 AM</div>
+                        <div class="reminder-text">Start Math Homework</div>
+                    </div>
+                    <div class="toggle-switch active"></div>
+                </div>
+                
+                <div class="reminder-item">
+                    <div>
+                        <div class="reminder-time">3:00 PM</div>
+                        <div class="reminder-text">Science Project Review</div>
+                    </div>
+                    <div class="toggle-switch"></div>
+                </div>
+                
+                <div class="reminder-item">
+                    <div>
+                        <div class="reminder-time">7:00 PM</div>
+                        <div class="reminder-text">Prepare for Test</div>
+                    </div>
+                    <div class="toggle-switch active"></div>
+                </div>
+                
+                <div class="reminder-item">
+                    <div>
+                        <div class="reminder-time">9:00 PM</div>
+                        <div class="reminder-text">Complete Reading</div>
+                    </div>
+                    <div class="toggle-switch active"></div>
+                </div>
+            </div>
+            
+            <div class="page-title">Reminders Management</div>
+        </div>
+
+        <!-- Page 4: Add/Edit Reminder -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Add Reminder</h2>
+                <div class="settings-btn">⋯</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Reminder Title</label>
+                <input type="text" class="form-input" placeholder="Enter reminder title">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Time</label>
+                <input type="time" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Repeat</label>
+                <select class="form-select">
+                    <option>Never</option>
+                    <option>Daily</option>
+                    <option>Weekly</option>
+                    <option>Monthly</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Related Task</label>
+                <select class="form-select">
+                    <option>None</option>
+                    <option>Math Homework</option>
+                    <option>Science Project</option>
+                    <option>Reading Assignment</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea class="form-textarea" placeholder="Add additional notes..."></textarea>
+            </div>
+            
+            <button class="btn-primary">Save Reminder</button>
+            <button class="btn-secondary">Cancel</button>
+            
+            <div class="page-title">Add/Edit Reminder</div>
+        </div>
+
+        <!-- Page 5: Parent/Teacher Dashboard -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Child Progress</h2>
+                <div class="settings-btn">⚙</div>
+            </div>
+            
+            <div class="form-group">
+                <select class="form-select">
+                    <option>John Smith</option>
+                    <option>Emma Johnson</option>
+                    <option>All Children</option>
+                </select>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">8</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">67%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            </div>
+            
+            <div class="progress-card">
+                <div class="progress-title">This Week's Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 75%;"></div>
+                </div>
+                <div style="margin-top: 5px; font-size: 12px;">15 of 20 tasks completed</div>
+            </div>
+            
+            <div class="task-item">
+                <div class="task-checkbox checked"></div>
+                <div class="task-content">
+                    <div class="task-title">Math Homework</div>
+                    <div class="task-subtitle">Completed: Today 4:30 PM</div>
+                </div>
+                <div class="task-priority priority-high"></div>
+            </div>
+            
+            <div class="task-item">
+                <div class="task-checkbox"></div>
+                <div class="task-content">
+                    <div class="task-title">Science Project</div>
+                    <div class="task-subtitle">Due: Tomorrow 9:00 AM</div>
+                </div>
+                <div class="task-priority priority-medium"></div>
+            </div>
+            
+            <div class="bottom-nav">
+                <div class="nav-item active">Overview</div>
+                <div class="nav-item">Tasks</div>
+                <div class="nav-item">Reports</div>
+                <div class="nav-item">Profile</div>
+            </div>
+            
+            <div class="page-title">Parent/Teacher Dashboard</div>
+        </div>
+
+        <!-- Page 6: Parent Create Task for Child -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Assign Task</h2>
+                <div class="settings-btn">⋯</div>
+            </div>
+            
+            <div class="form-container">
+                <div class="form-group">
+                    <label class="form-label">Assign To</label>
+                    <select class="form-select">
+                        <option>John Smith</option>
+                        <option>Emma Johnson</option>
+                        <option>All Children</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Task Title</label>
+                    <input type="text" class="form-input" placeholder="Enter task title">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" placeholder="Add task description..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Due Time</label>
+                    <input type="time" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <select class="form-select">
+                        <option>Low</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Send Reminder</label>
+                    <select class="form-select">
+                        <option>No Reminder</option>
+                        <option>1 hour before</option>
+                        <option>1 day before</option>
+                        <option>Custom</option>
+                    </select>
+                </div>
+                
+                <button class="btn-primary">Assign Task</button>
+                <button class="btn-secondary">Save as Draft</button>
+            </div>
+            
+            <div class="page-title">Parent Assign Task</div>
+        </div>
+
+        <!-- Page 7: Parent Manage Child Reminders -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Child Reminders</h2>
+                <div class="add-btn">+</div>
+            </div>
+            
+            <div class="form-group">
+                <select class="form-select">
+                    <option>John Smith</option>
+                    <option>Emma Johnson</option>
+                    <option>All Children</option>
+                </select>
+            </div>
+            
+            <div class="reminder-item">
+                <div>
+                    <div class="reminder-time">7:00 AM</div>
+                    <div class="reminder-text">Wake up & Get Ready</div>
+                    <div style="font-size: 10px; color: #666;">For: John Smith</div>
+                </div>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="reminder-item">
+                <div>
+                    <div class="reminder-time">8:00 AM</div>
+                    <div class="reminder-text">Start Homework</div>
+                    <div style="font-size: 10px; color: #666;">For: John Smith</div>
+                </div>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="reminder-item">
+                <div>
+                    <div class="reminder-time">6:00 PM</div>
+                    <div class="reminder-text">Review Daily Tasks</div>
+                    <div style="font-size: 10px; color: #666;">For: Emma Johnson</div>
+                </div>
+                <div class="toggle-switch"></div>
+            </div>
+            
+            <div class="reminder-item">
+                <div>
+                    <div class="reminder-time">9:00 PM</div>
+                    <div class="reminder-text">Prepare for Tomorrow</div>
+                    <div style="font-size: 10px; color: #666;">For: All Children</div>
+                </div>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="page-title">Parent Manage Reminders</div>
+        </div>
+
+        <!-- Page 8: Task Detail View -->
+        <div class="phone-frame">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+            <div class="header">
+                <div class="back-btn">←</div>
+                <h2>Task Details</h2>
+                <div class="settings-btn">✏</div>
+            </div>
+            
+            <div style="background: #f8f8f8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div class="task-checkbox"></div>
+                    <h3 style="margin: 0; margin-left: 10px;">Science Project</h3>
+                </div>
+                <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Due: Tomorrow, 9:00 AM</div>
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 12px; margin-right: 10px;">Priority:</span>
+                    <div class="task-priority priority-medium"></div>
+                    <span style="font-size: 12px; margin-left: 5px;">Medium</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <div style="padding: 10px; background: #f8f8f8; border-radius: 8px; font-size: 14px;">
+                    Complete the volcano experiment and prepare a 2-page report on the chemical reactions observed. Include diagrams and conclusions.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <div style="padding: 10px; background: #f8f8f8; border-radius: 8px; font-size: 14px;">
+                    Project
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Created By</label>
+                <div style="padding: 10px; background: #f8f8f8; border-radius: 8px; font-size: 14px;">
+                    Mrs. Johnson (Teacher)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Reminders</label>
+                <div style="padding: 10px; background: #f8f8f8; border-radius: 8px; font-size: 14px;">
+                    • 1 hour before due time<br>
+                    • 1 day before due date
+                </div>
+            </div>
+            
+            <button class="btn-primary">Mark as Complete</button>
+            <button class="btn-secondary">Edit Task</button>
+            
+            <div class="page-title">Task Detail View</div>
+        </div>
+    </div>
+</body>
+</html>
