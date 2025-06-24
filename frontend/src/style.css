@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        font-family: 'Inter', ui-sans-serif, system-ui;
+    }
+
+    body {
+        @apply bg-gray-50 text-gray-900;
+    }
+}
+
+@layer components {
+    .phone-frame {
+        @apply w-80 h-[600px] border-2 border-gray-800 rounded-3xl bg-white shadow-xl relative overflow-hidden;
+    }
+
+    .gradient-primary {
+        background: linear-gradient(135deg, #0ea5e9 0%, #9c27b0 100%);
+    }
+
+    .gradient-student {
+        background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+    }
+
+    .gradient-teacher {
+        background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
+    }
+
+    .gradient-parent {
+        background: linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%);
+    }
+}
