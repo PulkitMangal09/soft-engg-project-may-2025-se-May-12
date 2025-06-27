@@ -8,6 +8,8 @@ import SignupView from '@/views/auth/SignupView.vue'
 
 // Student Views
 import StudentDashboard from '@/views/student/DashboardView.vue'
+import StudentFinView from '@/views/student/StudentFinView.vue'
+import AddTransactions from '@/views/student/AddTransactions.vue'
 
 // Parent Views
 import ParentDashboard from '@/views/parent/DashboardView.vue'
@@ -30,7 +32,7 @@ const PlaceholderView = {
 
 const routes = [
     // Auth Routes
-    { path: '/', name: 'Welcome', component: WelcomeView },
+    { path: '/', name: 'Welcome', component: AddTransactions }, //WelcomeView
     { path: '/login/:role?', name: 'Login', component: LoginView, props: true },
     { path: '/signup/:role?', name: 'Signup', component: SignupView, props: true },
 
