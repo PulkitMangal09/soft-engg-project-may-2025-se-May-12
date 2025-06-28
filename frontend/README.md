@@ -2,7 +2,7 @@
 
 GrowthGeine is a comprehensive platform designed to help students manage their academic tasks, finances, health, and emotional well-being while providing monitoring capabilities for parents and teachers.
 
-## 🚀 Features
+##  Features
 
 - **Multi-Role System**: Student, Parent, and Teacher dashboards
 - **Task Management**: Create, assign, and track academic and personal tasks
@@ -12,7 +12,7 @@ GrowthGeine is a comprehensive platform designed to help students manage their a
 - **Family Groups**: Connect students with parents for monitoring and support
 - **Classroom Management**: Teachers can monitor student progress and assign tasks
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend**: Vue.js 3 (Options API)
 - **Build Tool**: Vite
@@ -21,7 +21,7 @@ GrowthGeine is a comprehensive platform designed to help students manage their a
 - **Routing**: Vue Router 4
 - **Icons**: Heroicons
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -36,7 +36,7 @@ npm --version
 git --version
 ```
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Clone the Repository
 
@@ -84,7 +84,7 @@ npm run build
 npm run preview
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -103,14 +103,14 @@ src/
 └── style.css           # Global styles and Tailwind imports
 ```
 
-## 🎨 Available Scripts
+##  Available Scripts
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint (if configured)
 
-## 🧩 Component Usage
+##  Component Usage
 
 See [comp-readme.md](./comp-readme.md) for detailed component documentation.
 
