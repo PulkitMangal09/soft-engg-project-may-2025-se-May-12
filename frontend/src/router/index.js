@@ -10,7 +10,14 @@ import SignupView from '@/views/auth/SignupView.vue'
 import StudentDashboard from '@/views/student/DashboardView.vue'
 
 // Parent Views
+import ParentLayout from '@/components/layout/ParentLayout.vue'
 import ParentDashboard from '@/views/parent/DashboardView.vue'
+import ParentFamilyGroupView from '@/views/parent/FamilyGroupView.vue'
+import ParentAnalyticsView from '@/views/parent/AnalyticsView.vue'
+import ParentChildAnalyticsView from '@/views/parent/ChildAnalyticsView.vue'
+import ParentTasksView from '@/views/parent/TasksView.vue'
+import ParentAssignTaskView from '@/views/parent/AssignTaskView.vue'
+import ParentSettingsView from '@/views/parent/SettingsView.vue'
 
 // Teacher Views
 import TeacherLayout from '@/components/layout/TeacherLayout.vue'
@@ -55,13 +62,17 @@ const routes = [
     // Parent Routes
     {
         path: '/parent',
-        name: 'ParentLayout',
+        component: ParentLayout,
         meta: { requiresAuth: true, role: 'parent' },
         children: [
-            { path: '', name: 'ParentDashboard', component: ParentDashboard },
-            { path: 'analytics', name: 'ParentAnalytics', component: PlaceholderView },
-            { path: 'tasks', name: 'ParentTasks', component: PlaceholderView },
-            { path: 'family', name: 'ParentFamily', component: PlaceholderView },
+            { path: '', redirect: '/parent/dashboard' },
+            { path: 'dashboard', name: 'ParentDashboard', component: ParentDashboard },
+            { path: 'family', name: 'ParentFamilyGroup', component: ParentFamilyGroupView },
+            { path: 'analytics', name: 'ParentAnalytics', component: ParentAnalyticsView },
+            { path: 'analytics/:childId', name: 'ParentChildAnalytics', component: ParentChildAnalyticsView, props: true },
+            { path: 'tasks', name: 'ParentTasks', component: ParentTasksView },
+            { path: 'tasks/assign', name: 'ParentAssignTask', component: ParentAssignTaskView },
+            { path: 'settings', name: 'ParentSettings', component: ParentSettingsView },
         ]
     },
 
