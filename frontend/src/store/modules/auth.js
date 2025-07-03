@@ -72,6 +72,24 @@ export default {
             }
         },
 
+        // New action to bypass authentication for development
+        async loginWithoutValidation({ commit }, { role }) {
+            // Create a mock user object
+            const mockUser = {
+                id: 1,
+                name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
+                email: `${role}@example.com`,
+                role: role
+            }
+            
+            // Set authentication state without backend validation
+            commit('SET_USER', mockUser)
+            commit('SET_TOKEN', 'mock-token-' + Date.now())
+            commit('SET_ROLE', role)
+            
+            return { success: true }
+        },
+
         logout({ commit }) {
             commit('LOGOUT')
         }
