@@ -13,7 +13,11 @@ import StudentDashboard from '@/views/student/DashboardView.vue'
 import ParentDashboard from '@/views/parent/DashboardView.vue'
 
 // Teacher Views
+import TeacherLayout from '@/components/layout/TeacherLayout.vue'
 import TeacherDashboard from '@/views/teacher/DashboardView.vue'
+import MyStudentsView from '@/views/teacher/MyStudentsView.vue'
+import ClassTasksView from '@/views/teacher/ClassTasksView.vue'
+import ReportsView from '@/views/teacher/ReportsView.vue'
 
 // Placeholder component for missing views
 const PlaceholderView = {
@@ -64,13 +68,13 @@ const routes = [
     // Teacher Routes
     {
         path: '/teacher',
-        name: 'TeacherLayout',
+        component: TeacherLayout,
         meta: { requiresAuth: true, role: 'teacher' },
         children: [
-            { path: '', name: 'TeacherDashboard', component: TeacherDashboard },
-            { path: 'students', name: 'TeacherStudents', component: PlaceholderView },
-            { path: 'tasks', name: 'TeacherTasks', component: PlaceholderView },
-            { path: 'reports', name: 'TeacherReports', component: PlaceholderView },
+            { path: '', name: 'Dashboard', component: TeacherDashboard },
+            { path: 'students', name: 'My Students', component: MyStudentsView },
+            { path: 'tasks', name: 'Tasks', component: ClassTasksView },
+            { path: 'reports', name: 'Reports', component: ReportsView },
         ]
     },
 

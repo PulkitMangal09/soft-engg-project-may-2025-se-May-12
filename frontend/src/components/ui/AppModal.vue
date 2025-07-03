@@ -1,7 +1,7 @@
 <template>
     <teleport to="body">
         <transition name="modal">
-            <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto">
+            <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex min-h-screen items-center justify-center p-4">
                     <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="closeModal"></div>
 
@@ -43,7 +43,7 @@ export default {
     name: 'AppModal',
     emits: ['close'],
     props: {
-        show: {
+        isOpen: {
             type: Boolean,
             default: false
         },
@@ -91,7 +91,7 @@ export default {
     },
 
     watch: {
-        show(newVal) {
+        isOpen(newVal) {
             if (newVal) {
                 document.body.style.overflow = 'hidden'
             } else {
