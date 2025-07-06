@@ -1,104 +1,68 @@
 <template>
-  <div class="flex flex-col h-screen bg-gray-50">
-
-    <!-- Header -->
-    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
-      <button @click="$router.go(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-        ←
-      </button>
-      <h1 class="text-lg font-semibold">Emotion Center</h1>
-      <button @click="showProfile = true" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
-      <!-- Privacy Banner -->
-      <div class="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start">
-        <span class="mr-2">🔒</span>
-        <span>Your emotional data is private and secure. Parents cannot access this information.</span>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="grid grid-cols-4 gap-2 mb-4">
-        <QuickActionCard title="Log Emotion" icon="📝" @click="$router.push('/student/emotion/new')" />
-        <QuickActionCard title="Chat Support" icon="💬" @click="$router.push('/student/emotion/chat')" />
-        <QuickActionCard title="Emergency Help" icon="📞" @click="$router.push('/student/emotion/emergency')" />
-        <QuickActionCard title="My Diary" icon="📖" @click="$router.push('/student/diary')" />
-      </div>
-
-      <!-- Mood Trends -->
-      <div class="bg-white rounded-xl p-4 shadow-sm">
-        <h2 class="font-semibold text-gray-700 mb-3">This Week's Mood Trends</h2>
-        <EmotionStats />
-        <div class="flex justify-between text-xs text-gray-500 mt-1">
-          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-        </div>
-      </div>
-
-      <!-- Current Mood -->
-      <div class="text-center bg-white rounded-xl p-6 shadow-sm">
-        <div class="text-5xl mb-3">{{ currentMood.emoji || '😊' }}</div>
-        <div :class="['font-bold text-lg', currentMood.textColor || 'text-green-600']">
-          {{ currentMood.message || 'How are you feeling today?' }}
-        </div>
-        <div class="text-sm text-gray-500 mb-4">
-          {{ hasCheckedInToday ? 'You checked in today' : 'How are you feeling right now?' }}
-        </div>
-        <button @click="handleDailyCheckIn" :disabled="hasCheckedInToday" :class="[
-          'px-6 py-2 rounded-full font-medium text-sm transition-all',
-          hasCheckedInToday
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-        ]">
-          {{ hasCheckedInToday ? 'Checked In' : 'Log Daily Check-in' }}
+  <div class="min-h-screen bg-gray-50">
+    <StudentNavBar />
+    <div class="flex flex-col h-full">
+      <!-- Header -->
+      <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
+        <button @click="$router.go(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+          ←
+        </button>
+        <h1 class="text-lg font-semibold">Emotion Center</h1>
+        <button @click="showProfile = true" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
       </div>
+      <!-- Main Content -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Privacy Banner -->
+        <div class="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start">
+          <span class="mr-2">🔒</span>
+          <span>Your emotional data is private and secure. Parents cannot access this information.</span>
+        </div>
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+          <QuickActionCard title="Log Emotion" icon="📝" @click="$router.push('/student/emotion/new')" />
+          <QuickActionCard title="Chat Support" icon="💬" @click="$router.push('/student/emotion/chat')" />
+          <QuickActionCard title="Emergency Help" icon="📞" @click="$router.push('/student/emotion/emergency')" />
+          <QuickActionCard title="My Diary" icon="📖" @click="$router.push('/student/diary')" />
+        </div>
+        <!-- Mood Trends -->
+        <div class="bg-white rounded-xl p-4 shadow-sm">
+          <h2 class="font-semibold text-gray-700 mb-3">This Week's Mood Trends</h2>
+          <EmotionStats />
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+        </div>
+        <!-- Current Mood -->
+        <div class="text-center bg-white rounded-xl p-6 shadow-sm">
+          <div class="text-5xl mb-3">{{ currentMood.emoji || '😊' }}</div>
+          <div :class="['font-bold text-lg', currentMood.textColor || 'text-green-600']">
+            {{ currentMood.message || 'How are you feeling today?' }}
+          </div>
+          <div class="text-sm text-gray-500 mb-4">
+            {{ hasCheckedInToday ? 'You checked in today' : 'How are you feeling right now?' }}
+          </div>
+          <button @click="handleDailyCheckIn" :disabled="hasCheckedInToday" :class="[
+            'px-6 py-2 rounded-full font-medium text-sm transition-all',
+            hasCheckedInToday
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+          ]">
+            {{ hasCheckedInToday ? 'Checked In' : 'Log Daily Check-in' }}
+          </button>
+        </div>
+      </div>
+      <!-- Profile Sidebar -->
+      <ProfileSidebar v-if="showProfile" @close="showProfile = false" />
     </div>
-
-    <!-- Bottom Navigation -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-40">
-      <router-link 
-        to="/student/tasks" 
-        :class="[
-          'flex flex-col items-center py-1 px-2 rounded-lg transition-colors',
-          $route.path.includes('/tasks') ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-500'
-        ]"
-      >
-        <span class="text-2xl">📋</span>
-        <span class="text-xs mt-0.5">Tasks</span>
-      </router-link>
-      <router-link 
-        to="/student/finance" 
-        :class="[
-          'flex flex-col items-center py-1 px-2 rounded-lg transition-colors',
-          $route.path.includes('/finance') ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-500'
-        ]"
-      >
-        <span class="text-2xl">💰</span>
-        <span class="text-xs mt-0.5">Finance</span>
-      </router-link>
-      <router-link 
-        to="/student/diet" 
-        :class="[
-          'flex flex-col items-center py-1 px-2 rounded-lg transition-colors',
-          $route.path.includes('/diet') ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-500'
-        ]"
-      >
-        <span class="text-2xl">🥗</span>
-        <span class="text-xs mt-0.5">Diet</span>
-      </router-link>
-    </div>
-
-    <!-- Profile Sidebar -->
-    <ProfileSidebar v-if="showProfile" @close="showProfile = false" />
   </div>
 </template>
 
 <script setup>
+import StudentNavBar from '@/components/layout/StudentNavBar.vue'
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import QuickActionCard from '@/components/emotions/QuickActionCard.vue';

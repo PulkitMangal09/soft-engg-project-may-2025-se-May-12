@@ -1,125 +1,102 @@
 <template>
-  <div class="flex flex-col min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="px-2 py-2 md:px-4 md:py-3 border-b border-gray-200 flex items-center justify-between bg-white">
-      <button @click="$router.go(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-        ←
-      </button>
-      <h1 class="text-base md:text-lg font-semibold">Diet & Nutrition</h1>
-      <button @click="showProfile = true"
-        class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-    </div>
-    <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 md:space-y-6 max-w-5xl mx-auto w-full">
-      <!-- Alert Banner -->
-      <div
-        class="bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-xl p-3 md:p-4 animate-pulse mb-2 md:mb-4">
-        <div class="font-semibold text-red-600 mb-1 flex items-center gap-1 text-sm md:text-base">⚠️ Nutrition Alert
-        </div>
-        <div class="text-xs md:text-sm text-red-900">Your sodium intake is 15% above recommended limit. Consider
-          reducing salt in your next meal.</div>
+  <div class="min-h-screen bg-gray-50">
+    <StudentNavBar />
+    <div class="flex flex-col min-h-screen">
+      <!-- Header -->
+      <div class="px-2 py-2 md:px-4 md:py-3 border-b border-gray-200 flex items-center justify-between bg-white">
+        <button @click="$router.go(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+          ←
+        </button>
+        <h1 class="text-base md:text-lg font-semibold">Diet & Nutrition</h1>
+        <button @click="showProfile = true"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
-      <!-- Stats Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-4">
-        <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
-          <div class="text-lg md:text-xl font-bold text-emerald-500">1,842</div>
-          <div class="text-xs text-gray-500">Calories Today</div>
-          <div class="w-full h-2 bg-gray-200 rounded mt-2">
-            <div class="h-2 bg-emerald-500 rounded" style="width: 75%"></div>
+      <!-- Main Content -->
+      <div class="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 md:space-y-6 max-w-5xl mx-auto w-full">
+        <!-- Alert Banner -->
+        <div
+          class="bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-xl p-3 md:p-4 animate-pulse mb-2 md:mb-4">
+          <div class="font-semibold text-red-600 mb-1 flex items-center gap-1 text-sm md:text-base">⚠️ Nutrition Alert
+          </div>
+          <div class="text-xs md:text-sm text-red-900">Your sodium intake is 15% above recommended limit. Consider
+            reducing salt in your next meal.</div>
+        </div>
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-4">
+          <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
+            <div class="text-lg md:text-xl font-bold text-emerald-500">1,842</div>
+            <div class="text-xs text-gray-500">Calories Today</div>
+            <div class="w-full h-2 bg-gray-200 rounded mt-2">
+              <div class="h-2 bg-emerald-500 rounded" style="width: 75%"></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
+            <div class="text-lg md:text-xl font-bold text-emerald-500">{{ waterCount }}/8</div>
+            <div class="text-xs text-gray-500">Water Glasses</div>
+            <div class="w-full h-2 bg-gray-200 rounded mt-2">
+              <div class="h-2 bg-emerald-500 rounded" :style="`width: ${(waterCount / 8) * 100}%`"></div>
+            </div>
           </div>
         </div>
-        <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
-          <div class="text-lg md:text-xl font-bold text-emerald-500">{{ waterCount }}/8</div>
-          <div class="text-xs text-gray-500">Water Glasses</div>
-          <div class="w-full h-2 bg-gray-200 rounded mt-2">
-            <div class="h-2 bg-emerald-500 rounded" :style="`width: ${(waterCount / 8) * 100}%`"></div>
+        <!-- Water Tracker -->
+        <div
+          class="bg-blue-50 rounded-xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between mb-2 md:mb-4 gap-2 md:gap-0">
+          <div class="mb-2 md:mb-0">
+            <div class="font-bold">Daily Water Intake</div>
+            <div class="text-xs text-gray-600">{{ waterCount }} of 8 glasses</div>
+          </div>
+          <div class="flex gap-1">
+            <span v-for="i in 8" :key="i" class="inline-block w-4 h-6 rounded-b bg-white border-2 border-blue-400 mr-1"
+              :class="{ 'bg-blue-400': i <= waterCount }"></span>
           </div>
         </div>
-      </div>
-      <!-- Water Tracker -->
-      <div
-        class="bg-blue-50 rounded-xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between mb-2 md:mb-4 gap-2 md:gap-0">
-        <div class="mb-2 md:mb-0">
-          <div class="font-bold">Daily Water Intake</div>
-          <div class="text-xs text-gray-600">{{ waterCount }} of 8 glasses</div>
+        <!-- Health Status Card -->
+        <div class="bg-green-50 border-l-4 border-green-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
+          <div class="font-semibold text-green-700 mb-1 text-sm md:text-base">Health Status: Good</div>
+          <div class="text-xs md:text-sm text-gray-700">BMI: 22.5 (Normal) • Weight: 65kg • Height: 170cm<br>Last updated:
+            Today</div>
         </div>
-        <div class="flex gap-1">
-          <span v-for="i in 8" :key="i" class="inline-block w-4 h-6 rounded-b bg-white border-2 border-blue-400 mr-1"
-            :class="{ 'bg-blue-400': i <= waterCount }"></span>
+        <!-- Nutrition Alert Card -->
+        <div class="bg-orange-50 border-l-4 border-orange-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
+          <div class="font-semibold text-orange-700 mb-1 text-sm md:text-base">Nutrition Alert</div>
+          <div class="text-xs md:text-sm text-orange-900">Your sugar intake is 15% above recommended daily limit. Consider
+            reducing sweet snacks.</div>
         </div>
-      </div>
-      <!-- Health Status Card -->
-      <div class="bg-green-50 border-l-4 border-green-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
-        <div class="font-semibold text-green-700 mb-1 text-sm md:text-base">Health Status: Good</div>
-        <div class="text-xs md:text-sm text-gray-700">BMI: 22.5 (Normal) • Weight: 65kg • Height: 170cm<br>Last updated:
-          Today</div>
-      </div>
-      <!-- Nutrition Alert Card -->
-      <div class="bg-orange-50 border-l-4 border-orange-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
-        <div class="font-semibold text-orange-700 mb-1 text-sm md:text-base">Nutrition Alert</div>
-        <div class="text-xs md:text-sm text-orange-900">Your sugar intake is 15% above recommended daily limit. Consider
-          reducing sweet snacks.</div>
-      </div>
-      <!-- Quick Actions -->
-      <div class="bg-gray-50 rounded-xl p-4 md:p-6 mb-2 md:mb-4">
-        <div class="font-semibold text-gray-800 mb-3 text-base md:text-lg">Quick Actions</div>
-        <div class="grid grid-cols-3 gap-2 md:gap-3">
-          <DietQuickActionCard icon="🍎" title="Log Food" @click="showLogFood = true" />
-          <DietQuickActionCard icon="💧" title="Add Water" @click="addWater" />
-          <DietQuickActionCard icon="⚖️" title="Log Weight" @click="showLogWeight = true" />
+        <!-- Quick Actions -->
+        <div class="bg-gray-50 rounded-xl p-4 md:p-6 mb-2 md:mb-4">
+          <div class="font-semibold text-gray-800 mb-3 text-base md:text-lg">Quick Actions</div>
+          <div class="grid grid-cols-3 gap-2 md:gap-3">
+            <DietQuickActionCard icon="🍎" title="Log Food" @click="showLogFood = true" />
+            <DietQuickActionCard icon="💧" title="Add Water" @click="addWater" />
+            <DietQuickActionCard icon="⚖️" title="Log Weight" @click="showLogWeight = true" />
+          </div>
+        </div>
+        <!-- Navigation Grid -->
+        <div class="overflow-x-auto">
+          <DietNavigationGrid />
         </div>
       </div>
-      <!-- Navigation Grid -->
-      <div class="overflow-x-auto">
-        <DietNavigationGrid />
-      </div>
-      <!-- Food Log -->
-      <!-- Removed FoodLog from dashboard; now accessible via Food Log button in navigation grid -->
+      <!-- Log Food Modal -->
+      <AppModal :show="showLogFood" title="Log Food" size="md" @close="showLogFood = false">
+        <LogFoodForm :model-value="foodForm" @submit="submitFood; showLogFood = false" />
+      </AppModal>
+      <!-- Log Weight Modal -->
+      <AppModal :show="showLogWeight" title="Log Weight" size="sm" @close="showLogWeight = false">
+        <LogWeightForm @submit="submitWeight; showLogWeight = false" />
+      </AppModal>
+      <!-- Profile Sidebar -->
+      <ProfileSidebar v-if="showProfile" @close="showProfile = false" />
     </div>
-    <!-- Log Food Modal -->
-    <AppModal :show="showLogFood" title="Log Food" size="md" @close="showLogFood = false">
-      <LogFoodForm :model-value="foodForm" @submit="submitFood; showLogFood = false" />
-    </AppModal>
-    <!-- Log Weight Modal -->
-    <AppModal :show="showLogWeight" title="Log Weight" size="sm" @close="showLogWeight = false">
-      <LogWeightForm @submit="submitWeight; showLogWeight = false" />
-    </AppModal>
-    <!-- Bottom Navigation -->
-    <div
-      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2 px-2 md:px-4 z-40 w-full">
-      <router-link to="/student/tasks" :class="[
-        'flex flex-col items-center py-1 px-2 rounded-lg transition-colors',
-        $route.path.includes('/tasks') ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-500'
-      ]">
-        <span class="text-2xl">📋</span>
-        <span class="text-xs mt-0.5">Tasks</span>
-      </router-link>
-      <router-link to="/student/finance" :class="[
-        'flex flex-col items-center py-1 px-2 rounded-lg transition-colors',
-        $route.path.includes('/finance') ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-500'
-      ]">
-        <span class="text-2xl">💰</span>
-        <span class="text-xs mt-0.5">Finance</span>
-      </router-link>
-      <router-link to="/student/emotion" :class="[
-        'flex flex-col items-center py-1 px-2 rounded-lg transition-colors',
-        $route.path.includes('/emotion') ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-500'
-      ]">
-        <span class="text-2xl">😊</span>
-        <span class="text-xs mt-0.5">Emotions</span>
-      </router-link>
-    </div>
-    <!-- Profile Sidebar -->
-    <ProfileSidebar v-if="showProfile" @close="showProfile = false" />
   </div>
 </template>
 
 <script setup>
+import StudentNavBar from '@/components/layout/StudentNavBar.vue'
 import { ref } from 'vue'
 import DietQuickActionCard from '@/components/diet/DietQuickActionCard.vue'
 import DietStats from '@/components/diet/DietStats.vue'

@@ -103,7 +103,7 @@ const routes = [
         name: 'StudentLayout',
         meta: { requiresAuth: false, role: 'student' },
         children: [
-            { path: 'dashboard', name: 'StudentDashboard', component: StudentDashboard },
+            { path: '', name: 'StudentDashboard', component: StudentDashboard },
             {
                 path: 'tasks',
                 name: 'TaskManagement',
