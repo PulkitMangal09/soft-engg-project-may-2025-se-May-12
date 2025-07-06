@@ -6,6 +6,7 @@ import WelcomeView from '@/views/auth/WelcomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import SignupView from '@/views/auth/SignupView.vue'
 
+
 // Student Views
 import StudentDashboard from '@/views/student/DashboardView.vue'
 import StudentFinView from '@/views/student/StudentFinView.vue'
@@ -47,7 +48,14 @@ import HelpCenter from '@/views/student/support/HelpCenter.vue'
 import ContactSupport from '@/views/student/support/ContactSupport.vue'
 
 // Parent Views
+import ParentLayout from '@/components/layout/ParentLayout.vue'
 import ParentDashboard from '@/views/parent/DashboardView.vue'
+import ParentFamilyGroupView from '@/views/parent/FamilyGroupView.vue'
+import ParentAnalyticsView from '@/views/parent/AnalyticsView.vue'
+import ParentChildAnalyticsView from '@/views/parent/ChildAnalyticsView.vue'
+import ParentTasksView from '@/views/parent/TasksView.vue'
+import ParentAssignTaskView from '@/views/parent/AssignTaskView.vue'
+import ParentSettingsView from '@/views/parent/SettingsView.vue'
 
 // Teacher Views
 import TeacherLayout from '@/components/layout/TeacherLayout.vue'
@@ -75,6 +83,7 @@ const routes = [
   { path: '/login/:role?', name: 'Login', component: LoginView, props: true },
   { path: '/signup/:role?', name: 'Signup', component: SignupView, props: true },
 
+<<<<<<< HEAD
   // Student Routes
   {
     path: '/student',
@@ -150,6 +159,102 @@ const routes = [
       { path: 'family', name: 'ParentFamily', component: PlaceholderView },
     ]
   },
+=======
+    // // Student Routes
+    // {
+    //     path: '/student',
+    //     name: 'StudentLayout',
+    //     meta: { requiresAuth: true, role: 'student' },
+    //     children: [
+    //         { path: '', name: 'StudentDashboard', component: StudentDashboard },
+    //         { path: 'tasks', name: 'StudentTasks', component: PlaceholderView },
+    //         { path: 'finance', name: 'StudentFinance', component: PlaceholderView },
+    //         { path: 'emotion', name: 'StudentEmotion', component: PlaceholderView },
+    //         { path: 'health', name: 'StudentHealth', component: PlaceholderView },
+    //     ]
+    // },
+
+    // Student Routes
+    {
+        path: '/student',
+        name: 'StudentLayout',
+        meta: { requiresAuth: false, role: 'student' },
+        children: [
+            { path: 'dashboard', name: 'StudentDashboard', component: StudentDashboard },
+            {
+                path: 'tasks',
+                name: 'TaskManagement',
+                component: TaskManagementView,
+                meta: { title: 'Task Management' }
+            },
+            {
+                path: 'finance',
+                name: 'Finance',
+                component: FinanceView,
+                meta: { title: 'Finance Management' }
+            },
+            {
+                path: 'diet',
+                name: 'Diet',
+                component: DietView,
+                meta: { title: 'Diet & Nutrition' }
+            },
+            { path: 'emotion', name: 'StudentEmotion', component: EmotionView },
+            { path: 'emotion/new', name: 'NewEmotionEntry', component: NewEmotionEntryView },
+            { path: 'emotion/all', name: 'AllEmotionEntries', component: AllEmotionEntriesView },
+            { path: 'emotion/exercise', name: 'BreathingExercise', component: BreathingExerciseView },
+            { path: 'emotion/chat', name: 'ChatSupport', component: ChatSupportView },
+            { path: 'emotion/edit/:id', name: 'EditEmotionEntry', component: EditEmotionEntryView, props: true },
+            { path: 'emotion/emergency', name: 'EmergencyHelp', component: EmergencyHelpView },
+
+            // Diary routes
+            { path: 'diary', name: 'DiaryView', component: DiaryView },
+            { path: 'diary/new', name: 'NewDiaryEntry', component: NewDiaryEntryView },
+            { path: 'diary/edit/:id', name: 'EditDiaryEntry', component: EditDiaryEntryView, props: true },
+
+            // Insights routes
+            { path: 'insights', redirect: '/student/insights/mood' },
+            { path: 'insights/mood', name: 'MoodInsights', component: MoodInsights },
+            { path: 'insights/patterns', name: 'ActivityPatterns', component: ActivityPatterns },
+            { path: 'insights/reports', name: 'WeeklyReports', component: WeeklyReports },
+
+            // Settings routes
+            { path: 'settings/account', name: 'AccountSettings', component: AccountSettings },
+            { path: 'settings/privacy', name: 'PrivacySettings', component: PrivacySettings },
+            { path: 'settings/notifications', name: 'NotificationSettings', component: NotificationSettings },
+
+            // Support routes
+            { path: 'support/help', name: 'HelpCenter', component: HelpCenter },
+            { path: 'support/contact', name: 'ContactSupport', component: ContactSupport },
+            { path: 'water', name: 'WaterTracker', component: WaterTrackerView },
+            { path: 'medical-conditions', name: 'MedicalConditions', component: MedicalConditionsView },
+            { path: 'medical-reports', name: 'MedicalReports', component: MedicalReportsView },
+            { path: 'health-analytics', name: 'HealthAnalytics', component: HealthAnalyticsView },
+            { path: 'nutrition-suggestions', name: 'NutritionSuggestions', component: NutritionSuggestionsView },
+            { path: 'health-metrics', name: 'HealthMetricsUpdate', component: HealthMetricsUpdateView },
+            { path: 'diet-chatbot', name: 'DietChatBot', component: DietChatBotView },
+            { path: 'food-log', name: 'FoodLog', component: FoodLogView },
+        ]
+    },
+
+
+    // Parent Routes
+    {
+        path: '/parent',
+        component: ParentLayout,
+        meta: { requiresAuth: true, role: 'parent' },
+        children: [
+            { path: '', redirect: '/parent/dashboard' },
+            { path: 'dashboard', name: 'ParentDashboard', component: ParentDashboard },
+            { path: 'family', name: 'ParentFamilyGroup', component: ParentFamilyGroupView },
+            { path: 'analytics', name: 'ParentAnalytics', component: ParentAnalyticsView },
+            { path: 'analytics/:childId', name: 'ParentChildAnalytics', component: ParentChildAnalyticsView, props: true },
+            { path: 'tasks', name: 'ParentTasks', component: ParentTasksView },
+            { path: 'tasks/assign', name: 'ParentAssignTask', component: ParentAssignTaskView },
+            { path: 'settings', name: 'ParentSettings', component: ParentSettingsView },
+        ]
+    },
+>>>>>>> origin/main
 
     // Teacher Routes
     {
