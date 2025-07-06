@@ -6,7 +6,12 @@
 </template>
 
 <script>
+import AppToast from '@/components/ui/AppToast.vue';
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    AppToast
+  }
 }
 </script>
