@@ -31,3 +31,18 @@ app.include_router(dashboard_router)
 app.include_router(students_router)
 app.include_router(tasks_router)
 app.include_router(reports_router)
+
+# Add a simple health check endpoint
+
+
+@app.get("/")
+def read_root():
+    return "healthy"
+
+
+# Make the app runnable with uvicorn
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# uvicorn main: app - -reload - -host 0.0.0.0 - -port 8000
