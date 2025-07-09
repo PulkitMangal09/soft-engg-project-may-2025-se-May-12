@@ -19,6 +19,7 @@ from app.routers.parent_children import router as parent_children_router
 from app.routers.parent_requests import router as parent_requests_router
 from app.routers.parent_tasks import router as parent_tasks_router
 from app.routers.parent_family import router as parent_family_router
+from app.routers.student_profile import router as student_profile_router
 
 app = FastAPI(
     title="GrowthGeine API",
@@ -42,3 +43,15 @@ app.include_router(dashboard_router)
 app.include_router(students_router)
 app.include_router(tasks_router)
 app.include_router(reports_router)
+app.include_router(student_dashboard_router)
+app.include_router(student_tasks_router)
+app.include_router(student_finance_router)
+app.include_router(student_emotions_router)
+app.include_router(student_diet_router)
+app.include_router(student_health_router)
+app.include_router(parent_dashboard_router)
+app.include_router(parent_children_router)
+app.include_router(parent_requests_router)
+app.include_router(parent_tasks_router)
+app.include_router(parent_family_router)
+app.include_router(student_profile_router)
