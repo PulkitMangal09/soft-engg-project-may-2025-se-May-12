@@ -55,3 +55,14 @@ app.include_router(parent_requests_router)
 app.include_router(parent_tasks_router)
 app.include_router(parent_family_router)
 app.include_router(student_profile_router)
+
+
+@app.get("/")
+def read_root():
+    return "healthy"
+
+
+# Make the app runnable with uvicorn
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
