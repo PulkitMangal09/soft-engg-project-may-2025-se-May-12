@@ -11,6 +11,7 @@ dependencies = [
     "gotrue>=2.12.3",
     "pydantic>=2.11.7",
     "python-multipart>=0.0.20",
+    "pyyaml>=6.0.2",
     "supabase>=2.16.0",
     "uvicorn>=0.35.0",
 ]
