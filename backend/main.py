@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.responses import Response
+import yaml
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.auth import router as auth_router
@@ -25,6 +27,33 @@ app = FastAPI(
     title="GrowthGeine API",
     version="0.1.0",
 )
+# ————————————————
+# Expose OpenAPI as YAML
+# ————————————————
+@app.get("/openapi.yaml", include_in_schema=False)
+def view_openapi_yaml():
+    """
+    View OpenAPI spec in YAML format (in browser).
+    """
+    schema = app.openapi()
+    yaml_schema = yaml.dump(schema, sort_keys=False)
+    return Response(
+        content=yaml_schema,
+        media_type="text/plain"
+    )
+
+@app.get("/openapi/download", include_in_schema=False)
+def download_openapi_yaml():
+    """
+    Download OpenAPI spec in YAML format.
+    """
+    schema = app.openapi()
+    yaml_schema = yaml.dump(schema, sort_keys=False)
+    return Response(
+        content=yaml_schema,
+        media_type="application/x-yaml",
+        headers={"Content-Disposition": "attachment; filename=openapi.yaml"}
+    )
 
 # CORS configuration
 app.add_middleware(
@@ -55,3 +84,14 @@ app.include_router(parent_requests_router)
 app.include_router(parent_tasks_router)
 app.include_router(parent_family_router)
 app.include_router(student_profile_router)
+
+
+@app.get("/")
+def read_root():
+    return "healthy"
+
+
+# Make the app runnable with uvicorn
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="localhost", port=8000, reload=True)
