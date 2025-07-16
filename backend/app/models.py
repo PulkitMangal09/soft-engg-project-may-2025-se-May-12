@@ -105,6 +105,7 @@ class ChatSession(BaseModel):
     session_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     session_title: Optional[str] = None
+    session_type: Optional[str] = None
     started_at: Optional[str] = None
     ended_at: Optional[str] = None
     is_active: Optional[bool] = True

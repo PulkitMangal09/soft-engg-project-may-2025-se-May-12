@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordBearer
 from typing import List
 from ..config import supabase
 from ..models import (
-    EmotionalEntry, MoodLog, ChatSession, ChatMessage, EmergencyContact
+    EmotionalEntry, MoodLog, ChatSession, ChatMessage, EmergencyContact, SenderTypeEnum
 )
+from ..routers import chat_bot as chat_bot_module
+import json
 
 router = APIRouter(prefix="/student/emotions", tags=["student-emotions"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -156,13 +158,13 @@ def delete_chat_session(session_id: str, token: str = Depends(oauth2)):
 
 @router.post("/messages", response_model=ChatMessage)
 def create_chat_message(message: ChatMessage, token: str = Depends(oauth2)):
-    # No user_id on message, but session must belong to user
     user_id = get_user_id(token)
-    # Check session ownership
-    session = supabase.table("chat_sessions").select("user_id").eq("session_id", message.session_id).single().execute().data
+    # Ensure all UUIDs are serialized as strings
+    payload = json.loads(message.json(exclude_unset=True))
+    # Check session ownership if needed (as in your original logic)
+    session = supabase.table("chat_sessions").select("user_id").eq("session_id", payload["session_id"]).single().execute().data
     if not session or session.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Forbidden: Not your session")
-    payload = message.dict(exclude_unset=True)
     resp = supabase.table("chat_messages").insert(payload).execute()
     data = getattr(resp, 'data', None)
     if not data:
@@ -176,7 +178,7 @@ def list_chat_messages(session_id: str, token: str = Depends(oauth2)):
     session = supabase.table("chat_sessions").select("user_id").eq("session_id", session_id).single().execute().data
     if not session or session.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Forbidden: Not your session")
-    resp = supabase.table("chat_messages").select("*").eq("session_id", session_id).order("timestamp", asc=True).execute()
+    resp = supabase.table("chat_messages").select("*").eq("session_id", session_id).order("timestamp").execute()
     return getattr(resp, 'data', [])
 
 @router.get("/message/{message_id}", response_model=ChatMessage)
@@ -203,7 +205,9 @@ def update_chat_message(message_id: str, message: ChatMessage, token: str = Depe
     session = supabase.table("chat_sessions").select("user_id").eq("session_id", session_id).single().execute().data
     if not session or session.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Forbidden: Not your session")
-    resp = supabase.table("chat_messages").update(message.dict(exclude_unset=True)).eq("message_id", message_id).execute()
+    # Ensure all UUIDs are serialized as strings
+    payload = json.loads(message.json(exclude_unset=True))
+    resp = supabase.table("chat_messages").update(payload).eq("message_id", message_id).execute()
     data = getattr(resp, 'data', None)
     if not data:
         raise HTTPException(status_code=400, detail="Update failed")
@@ -262,3 +266,27 @@ def update_emergency_contact(contact_id: str, contact: EmergencyContact, token: 
 def delete_emergency_contact(contact_id: str, token: str = Depends(oauth2)):
     supabase.table("emergency_contacts").delete().eq("contact_id", contact_id).execute()
     return {"deleted": True}
+
+@router.post("/sessions/{session_id}/auto-reply")
+def auto_reply(session_id: str, user_message: str = Body(..., embed=True), token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
+    # 1. Save user message (reuse create_chat_message logic)
+    user_msg = ChatMessage(
+        session_id=session_id,
+        sender_type=SenderTypeEnum.user,
+        message_content=user_message,
+    )
+    create_chat_message(user_msg, token)
+    # 2. Fetch chat history (reuse list_chat_messages logic)
+    chat_history = list_chat_messages(session_id, token)
+    # 3. Call chatbot with chat history
+    bot_reply = chat_bot_module.chat_bot(chat_history)
+    # 4. Save bot reply as a message
+    bot_msg = ChatMessage(
+        session_id=session_id,
+        sender_type=SenderTypeEnum.ai_bot,
+        message_content=bot_reply["reply"],
+    )
+    create_chat_message(bot_msg, token)
+    # 5. Return bot reply
+    return {"bot_reply": bot_reply}
