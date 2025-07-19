@@ -1,8 +1,8 @@
 from enum import Enum
-from pydantic import BaseModel, EmailStr, Field, model_validator
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, model_validator,Field
+from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, time,date
+from datetime import date,datetime
 
 # ------------------ Auth Models ------------------
 class RoleEnum(str, Enum):
@@ -146,33 +146,8 @@ class EmergencyContact(BaseModel):
     description: Optional[str] = None
     contact_type: ContactTypeEnum
     is_available_24_7: Optional[bool] = True
-    created_at: Optional[datetime] = None
+    created_at: Optional[str] = None
 
-
-# ---------------- Task Models ----------------
-class TaskBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    category: TaskCategoryEnum
-    priority: PriorityEnum = PriorityEnum.medium
-    due_date: Optional[datetime] = None
-    due_time: Optional[time] = None
-    status: TaskStatusEnum = TaskStatusEnum.pending
-    reward_points: Optional[int] = None
-    attachment_url: Optional[str] = None
-
-class TaskCreate(TaskBase):
-    pass
-
-class Task(TaskBase):
-    task_id: UUID
-    assigned_to: UUID
-    assigned_by: UUID
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        orm_mode = True
 
 #Student Finance Models
 
