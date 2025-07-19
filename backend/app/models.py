@@ -2,7 +2,7 @@ from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from typing import Optional, List
 from uuid import UUID
-from datetime import datetime, time
+from datetime import datetime, time,date
 
 # ------------------ Auth Models ------------------
 class RoleEnum(str, Enum):
@@ -173,3 +173,64 @@ class Task(TaskBase):
 
     class Config:
         orm_mode = True
+
+#Student Finance Models
+
+class TransactionCreate(BaseModel):
+    amount: float
+    type: str  # "credit" or "debit"
+    category: str
+    note: Optional[str] = None
+    transaction_date: date = Field(default_factory=date.today)
+
+class TransactionOut(BaseModel):
+    transaction_id: str
+    amount: float
+    type: str
+    category: str
+    note: Optional[str] = None
+    transaction_date: date
+
+class SavingsGoalCreate(BaseModel):
+    title: str
+    target_amount: float
+    saved_amount: Optional[float] = 0.0
+
+class SavingsGoalOut(SavingsGoalCreate):
+    goal_id: str    
+
+
+### Teacher Tasks
+
+# --- Pydantic Schemas ---
+class TaskBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    assigned_to: UUID
+    assigned_by: UUID
+    category: str
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    due_time: Optional[str] = None
+    status: Optional[str] = "pending"
+    reward_points: Optional[int] = 0
+    attachment_url: Optional[str] = None
+
+class TaskCreate(TaskBase):
+    pass
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    due_time: Optional[str] = None
+    status: Optional[str] = None
+    reward_points: Optional[int] = None
+    attachment_url: Optional[str] = None
+
+
+class JoinRequestAction(BaseModel):
+    student_id: str
+    action: str  # "accept" or "reject"
