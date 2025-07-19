@@ -5,6 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
 from ..config import supabase
+from ..models import ChildHealthSnapshot, ChildLinkRequest, ParentDetails, HealthMetric, MealLog, ChildDietLog, Meal_Log, UpdateChildLink
 from fastapi.responses import JSONResponse
 import jwt
 from datetime import datetime
@@ -35,19 +36,6 @@ def get_user_id_from_token(token: str = Depends(oauth2_scheme)) -> UUID:
 # -------------------------
 # Part 1: View Child Metrics
 # -------------------------
-class ChildHealthSnapshot(BaseModel):
-    full_name: str
-    email: str
-    weight: float
-    height: float
-    bmi: float
-    systolic: int
-    diastolic: int
-    blood_sugar: int
-    heart_rate: int
-    notes: str
-    created_at: str
-
 @router.get("/children/metrics", response_model=List[ChildHealthSnapshot])
 def view_all_children_metrics(parent_email: str = Depends(get_email_from_token)):
     user_res = supabase.table("users").select("user_id").eq("email", parent_email).single().execute()
@@ -67,18 +55,16 @@ def view_all_children_metrics(parent_email: str = Depends(get_email_from_token))
 
     snapshots = []
     for child_id in child_ids:
-        user_res = supabase.table("students").select("name, email").eq("student_id", child_id).single().execute()
+        user_res = supabase.table("students").select("name").eq("student_id", child_id).single().execute()
         if not user_res.data:
             continue
         name = user_res.data['name']
-        email = user_res.data['email']
-        metric_res = supabase.table("health_metrics").select("*").eq("email", email).order("created_at", desc=True).limit(1).execute()
+        metric_res = supabase.table("health_metrics").select("*").eq("student_id", child_id).order("created_at", desc=True).limit(1).execute()
         if not metric_res.data:
             continue
         m = metric_res.data[0]
         snapshots.append(ChildHealthSnapshot(
             full_name=name,
-            email=email,
             weight=m['weight'],
             height=m['height'],
             bmi=m['bmi'],
@@ -94,10 +80,6 @@ def view_all_children_metrics(parent_email: str = Depends(get_email_from_token))
 # -------------------------
 # Part 2: Child Linking
 # -------------------------
-class ChildLinkRequest(BaseModel):
-    child_id: UUID
-    relationship: str
-
 @router.get("/children")
 def get_children(user_id: UUID = Depends(get_user_id_from_token)):
     parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).single().execute()
@@ -140,6 +122,25 @@ def remove_child(child_id: UUID, user_id: UUID = Depends(get_user_id_from_token)
     supabase.table("parent_children").delete().eq("parent_id", parent_id).eq("child_id", child_id).execute()
     return {"message": "Child unlinked successfully"}
 
+@router.patch("/children/relationship", response_model=dict)
+def update_child_relationship(
+    update: UpdateChildLink,
+    user_id: UUID = Depends(get_user_id_from_token)
+):
+    parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).single().execute()
+    if not parent.data:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    parent_id = parent.data["parent_id"]
+    res = supabase.table("parent_children").update({
+        "relationship": update.relationship
+    }).eq("parent_id", str(parent_id)).eq("child_id", str(update.child_id)).execute()
+
+    if not res.data:
+        raise HTTPException(status_code=404, detail="No link found to update")
+
+    return {"message": "Relationship updated"}
+
 @router.get("/children/search")
 def search_child(email: Optional[str] = None, student_id: Optional[UUID] = None, name: Optional[str] = None, school_name: Optional[str] = None, grade_level: Optional[str] = None):
     query = supabase.table("students").select("student_id, email, name")
@@ -162,12 +163,6 @@ def search_child(email: Optional[str] = None, student_id: Optional[UUID] = None,
 # -------------------------
 # Part 3: Other Parents and Child Data
 # -------------------------
-class ParentDetails(BaseModel):
-    parent_id: UUID
-    name: str
-    is_head: bool
-    group: Optional[str]
-    description: Optional[str]
 
 @router.get("/other-parents", response_model=List[ParentDetails])
 def view_other_parents(user_id: UUID = Depends(get_user_id_from_token)):
@@ -178,25 +173,6 @@ def view_other_parents(user_id: UUID = Depends(get_user_id_from_token)):
     others = supabase.table("parents").select("*").eq("group", parent.data["group"]).neq("user_id", user_id).execute()
     return others.data
 
-class HealthMetric(BaseModel):
-    id: str
-    email: str
-    weight: float
-    height: float
-    systolic: float
-    diastolic: float
-    bmi: float
-    created_at: datetime
-    blood_sugar: float
-    notes: str
-    heart_rate: int
-
-class MealLog(BaseModel):
-    id: str
-    student_id: str
-    timestamp: datetime
-    meal_type: str
-    calories: float
 
 @router.get("/child/health", response_model=List[HealthMetric])
 def get_child_health_data(
@@ -218,20 +194,9 @@ def get_child_health_data(
     if not link.data:   
         raise HTTPException(status_code=403, detail="No access to this child's data")
 
-    child = supabase.table("students").select("email").eq("student_id", child_id).execute()
-    child_email = child.data[0]['email']
     # Fetch health metrics
-    metrics = supabase.table("health_metrics").select("*").eq("email", child_email).order("created_at", desc=True).execute()
+    metrics = supabase.table("health_metrics").select("*").eq("student_id", child_id).order("created_at", desc=True).execute()
     return metrics.data
-
-
-class ChildDietLog(BaseModel):
-    child_name: str
-    child_id: str
-    date: str
-    water_glasses: float
-    sodium: float
-    sugar: float
 
 @router.get("/children/diet", response_model=List[ChildDietLog])
 def view_children_diet(parent_email: str = Depends(get_email_from_token)):
@@ -263,7 +228,7 @@ def view_children_diet(parent_email: str = Depends(get_email_from_token)):
         diet_res = (
             supabase.table("student_diet")
             .select("time, water_glasses, sodium, sugar")
-            .eq("email", child_email)
+            .eq("student_id", child_id)
             .order("time", desc=True)
             .execute()
         )
@@ -279,18 +244,7 @@ def view_children_diet(parent_email: str = Depends(get_email_from_token)):
 
     return diet_logs
 
-class MealLog(BaseModel):
-    id: str
-    email: str
-    time: datetime
-    mealtype: str
-    description: str
-    calories: float
-    proteins: float
-    carbs: float
-    fat: float
-
-@router.get("/child/meals", response_model=List[MealLog])
+@router.get("/child/meals", response_model=List[Meal_Log])
 def get_child_meal_logs(
     child_id: str,
     parent_email: str = Depends(get_email_from_token)
@@ -309,9 +263,7 @@ def get_child_meal_logs(
     link = supabase.table("parent_children").select("*").eq("parent_id", parent_id).eq("child_id", child_id).execute()
     if not link.data:
         raise HTTPException(status_code=403, detail="No access to this child's data")
-    
-    child = supabase.table("students").select("email").eq("student_id", child_id).execute()
-    child_email = child.data[0]['email']    
+        
     # Fetch meal logs
-    meals = supabase.table("meals").select("*").eq("email", child_email).order("time", desc=True).execute()
+    meals = supabase.table("meals").select("*").eq("student_id", child_id).order("time", desc=True).execute()
     return meals.data
