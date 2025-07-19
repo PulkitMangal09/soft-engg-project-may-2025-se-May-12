@@ -5,6 +5,7 @@ app/config.py
 app/models.py
 app/routers/__init__.py
 app/routers/auth.py
+app/routers/chat_bot.py
 app/routers/parent_children.py
 app/routers/parent_dashboard.py
 app/routers/parent_family.py
