@@ -243,3 +243,10 @@ class Meal_Log(BaseModel):
 class UpdateChildLink(BaseModel):
     child_id: UUID
     relationship: str
+
+class Parent(BaseModel):
+    group: Optional[str]
+    is_head: Optional[bool] = False
+    description: Optional[str]
+    is_active: Optional[bool] = True
+    name: str

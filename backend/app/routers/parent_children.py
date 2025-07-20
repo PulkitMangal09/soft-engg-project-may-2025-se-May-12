@@ -5,10 +5,11 @@ from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
 from ..config import supabase
-from ..models import ChildHealthSnapshot, ChildLinkRequest, ParentDetails, HealthMetric, MealLog, ChildDietLog, Meal_Log, UpdateChildLink
+from ..models import ChildHealthSnapshot, ChildLinkRequest, ParentDetails, HealthMetric, MealLog, ChildDietLog, Meal_Log, UpdateChildLink, Parent
 from fastapi.responses import JSONResponse
 import jwt
 from datetime import datetime
+from uuid import uuid4
 
 router = APIRouter(prefix="/parent", tags=["parent"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -32,6 +33,11 @@ def get_user_id_from_token(token: str = Depends(oauth2_scheme)) -> UUID:
         return user_id
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+# -------------------------
+# CRUD on parent account
+# -------------------------
 
 # -------------------------
 # Part 1: View Child Metrics
@@ -76,6 +82,70 @@ def view_all_children_metrics(parent_email: str = Depends(get_email_from_token))
             created_at=m['created_at']
         ))
     return snapshots
+@router.get("/me")
+def get_parent_profile(user_id:  UUID = Depends(get_user_id_from_token)):
+    res = supabase.table("parents").select("*").eq("user_id", user_id).single().execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Parent profile not found")
+
+    return res.data
+@router.post("/me")
+def create_parent(data: Parent, email: str = Depends(get_email_from_token)):
+    user_res = supabase.table("users").select("user_id").eq("email", email).execute()
+    if not user_res.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_id = user_res.data[0]['user_id']
+    parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).execute()
+    if parent.data:
+        raise HTTPException(status_code=404, detail="Parent exists")
+
+    res = supabase.table("parents").insert({
+        "parent_id": str(uuid4()),                # Generate a new UUID
+        "group": data.group,
+        "is_head": data.is_head,
+        "description": data.description,
+        "is_active": data.is_active,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
+        "name": data.name,
+        "user_id": user_id
+    }).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to create parent")
+    return {"message": "Parent created successfully"}
+@router.patch("/me")
+def update_my_parent(payload: Parent, email: str = Depends(get_email_from_token)):
+    user_res = supabase.table("users").select("user_id").eq("email", email).execute()
+    if not user_res.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_id = user_res.data[0]['user_id']
+
+    res = supabase.table("parents").select("parent_id").eq("user_id", user_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Parent profile not found")
+    parent_id = res.data[0]['parent_id']
+
+    update_data = payload.dict(exclude_unset=True)
+    update_data['updated_at'] = datetime.now().isoformat()
+
+    update_res = supabase.table("parents").update(update_data).eq("parent_id", parent_id).execute()
+    if not update_res.data:
+        raise HTTPException(status_code=500, detail="Failed to update parent profile")
+    return update_res.data[0]
+@router.delete("/me", status_code=204)
+def delete_my_parent(email: str = Depends(get_email_from_token)):
+    user_res = supabase.table("users").select("user_id").eq("email", email).execute()
+    if not user_res.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_id = user_res.data[0]['user_id']
+
+    res = supabase.table("parents").select("parent_id").eq("user_id", user_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Parent profile not found")
+    parent_id = res.data[0]['parent_id']
+
+    supabase.table("parents").delete().eq("parent_id", parent_id).execute()
+    return
 
 # -------------------------
 # Part 2: Child Linking
