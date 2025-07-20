@@ -1,9 +1,10 @@
 from enum import Enum
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, model_validator, Field
 from typing import List, Optional, Literal
 from uuid import UUID
-from datetime import datetime
+from datetime import date,datetime
 
+# ------------------ Auth Models ------------------
 class RoleEnum(str, Enum):
     student = "student"
     teacher = "teacher"
@@ -15,12 +16,12 @@ class Role(BaseModel):
     description: str
 
 class SignupRequest(BaseModel):
-    full_name: str
-    email: EmailStr
-    password: str
-    confirm_password: str
-    role: RoleEnum
-    terms_agreed: bool
+    full_name: str          = Field(..., example="Alice Example")
+    email:      EmailStr    = Field(..., example="alice@example.com")
+    password:   str         = Field(..., example="Secret123!")
+    confirm_password: str   = Field(..., example="Secret123!")
+    role:       RoleEnum    = Field(..., example=RoleEnum.student)
+    terms_agreed: bool      = Field(..., example=True)
 
     @model_validator(mode="after")
     def validate(cls, m):
@@ -31,10 +32,11 @@ class SignupRequest(BaseModel):
         return m
 
 class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
+    access_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...")
+    token_type:   str = Field(..., example="bearer")
 
-# Emotion Management Enums
+
+# --------------- Emotion Enums ---------------
 class MoodEnum(str, Enum):
     very_sad = "very_sad"
     sad = "sad"
@@ -73,7 +75,30 @@ class ContactTypeEnum(str, Enum):
     family_crisis = "family_crisis"
     local_emergency = "local_emergency"
 
-# Emotional Entry Model
+
+# ---------------- Task Enums ----------------
+class TaskCategoryEnum(str, Enum):
+    homework = "homework"
+    project = "project"
+    study = "study"
+    personal = "personal"
+    chore = "chore"
+    health = "health"
+    financial = "financial"
+
+class PriorityEnum(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+class TaskStatusEnum(str, Enum):
+    pending = "pending"
+    in_progress = "in_progress"
+    completed = "completed"
+    overdue = "overdue"
+
+
+# -------------- Data Models ---------------
 class EmotionalEntry(BaseModel):
     entry_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
@@ -83,11 +108,10 @@ class EmotionalEntry(BaseModel):
     intensity: int
     triggers: Optional[List[str]] = []
     tags: Optional[List[str]] = []
-    privacy_level: Optional[PrivacyLevelEnum] = PrivacyLevelEnum.private
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    privacy_level: PrivacyLevelEnum = PrivacyLevelEnum.private
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
-# Mood Log Model
 class MoodLog(BaseModel):
     log_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
@@ -96,30 +120,25 @@ class MoodLog(BaseModel):
     sleep_quality: Optional[SleepQualityEnum] = None
     stress_level: Optional[StressLevelEnum] = None
     notes: Optional[str] = None
-    log_date: Optional[str] = None
-    created_at: Optional[str] = None
+    log_date: Optional[datetime] = None
+    created_at: Optional[datetime] = None
 
-
-
-# Chat Session Model
 class ChatSession(BaseModel):
     session_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     session_title: Optional[str] = None
     session_type: Optional[str] = None
-    started_at: Optional[str] = None
-    ended_at: Optional[str] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
     is_active: Optional[bool] = True
 
-# Chat Message Model
 class ChatMessage(BaseModel):
     message_id: Optional[UUID] = None
     session_id: UUID
     sender_type: SenderTypeEnum
     message_content: str
-    timestamp: Optional[str] = None
+    timestamp: Optional[datetime] = None
 
-# Emergency Contact Model
 class EmergencyContact(BaseModel):
     contact_id: Optional[UUID] = None
     name: str
@@ -129,12 +148,13 @@ class EmergencyContact(BaseModel):
     is_available_24_7: Optional[bool] = True
     created_at: Optional[str] = None
 
+
 class DietEntry(BaseModel):
     id: Optional[UUID] = None
     water_glasses: int
     sodium: float
     sugar: float
-
+      
 class MealEntry(BaseModel):
     id: Optional[UUID] = None
     mealtype: Literal['breakfast', 'lunch', 'dinner', 'snacks']
@@ -214,13 +234,6 @@ class HealthMetric(BaseModel):
     notes: str
     heart_rate: int
 
-class MealLog(BaseModel):
-    id: str
-    student_id: str
-    timestamp: datetime
-    meal_type: str
-    calories: float
-
 class ChildDietLog(BaseModel):
     child_name: str
     child_id: str
@@ -243,3 +256,65 @@ class Meal_Log(BaseModel):
 class UpdateChildLink(BaseModel):
     child_id: UUID
     relationship: str
+
+
+#Student Finance Models
+
+class TransactionCreate(BaseModel):
+    amount: float
+    type: str  # "credit" or "debit"
+    category: str
+    note: Optional[str] = None
+    transaction_date: date = Field(default_factory=date.today)
+
+class TransactionOut(BaseModel):
+    transaction_id: str
+    amount: float
+    type: str
+    category: str
+    note: Optional[str] = None
+    transaction_date: date
+
+class SavingsGoalCreate(BaseModel):
+    title: str
+    target_amount: float
+    saved_amount: Optional[float] = 0.0
+
+class SavingsGoalOut(SavingsGoalCreate):
+    goal_id: str    
+
+
+### Teacher Tasks
+
+# --- Pydantic Schemas ---
+class TaskBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    assigned_to: UUID
+    assigned_by: UUID
+    category: str
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    due_time: Optional[str] = None
+    status: Optional[str] = "pending"
+    reward_points: Optional[int] = 0
+    attachment_url: Optional[str] = None
+
+class TaskCreate(TaskBase):
+    pass
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    due_time: Optional[str] = None
+    status: Optional[str] = None
+    reward_points: Optional[int] = None
+    attachment_url: Optional[str] = None
+
+
+class JoinRequestAction(BaseModel):
+    student_id: str
+    action: str  # "accept" or "reject"
