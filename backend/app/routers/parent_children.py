@@ -5,8 +5,10 @@ from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
 from ..config import supabase
+from ..models import ChildHealthSnapshot, ChildLinkRequest, ParentDetails, HealthMetric, MealLog, ChildDietLog, Meal_Log, UpdateChildLink
 from fastapi.responses import JSONResponse
 import jwt
+from datetime import datetime
 
 router = APIRouter(prefix="/parent", tags=["parent"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -34,19 +36,6 @@ def get_user_id_from_token(token: str = Depends(oauth2_scheme)) -> UUID:
 # -------------------------
 # Part 1: View Child Metrics
 # -------------------------
-class ChildHealthSnapshot(BaseModel):
-    full_name: str
-    email: str
-    weight: float
-    height: float
-    bmi: float
-    systolic: int
-    diastolic: int
-    blood_sugar: int
-    heart_rate: int
-    notes: str
-    created_at: str
-
 @router.get("/children/metrics", response_model=List[ChildHealthSnapshot])
 def view_all_children_metrics(parent_email: str = Depends(get_email_from_token)):
     user_res = supabase.table("users").select("user_id").eq("email", parent_email).single().execute()
@@ -66,18 +55,16 @@ def view_all_children_metrics(parent_email: str = Depends(get_email_from_token))
 
     snapshots = []
     for child_id in child_ids:
-        user_res = supabase.table("students").select("name, email").eq("student_id", child_id).single().execute()
+        user_res = supabase.table("students").select("name").eq("student_id", child_id).single().execute()
         if not user_res.data:
             continue
         name = user_res.data['name']
-        email = user_res.data['email']
-        metric_res = supabase.table("health_metrics").select("*").eq("email", email).order("created_at", desc=True).limit(1).execute()
+        metric_res = supabase.table("health_metrics").select("*").eq("student_id", child_id).order("created_at", desc=True).limit(1).execute()
         if not metric_res.data:
             continue
         m = metric_res.data[0]
         snapshots.append(ChildHealthSnapshot(
             full_name=name,
-            email=email,
             weight=m['weight'],
             height=m['height'],
             bmi=m['bmi'],
@@ -93,10 +80,6 @@ def view_all_children_metrics(parent_email: str = Depends(get_email_from_token))
 # -------------------------
 # Part 2: Child Linking
 # -------------------------
-class ChildLinkRequest(BaseModel):
-    child_id: UUID
-    relationship: str
-
 @router.get("/children")
 def get_children(user_id: UUID = Depends(get_user_id_from_token)):
     parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).single().execute()
@@ -139,6 +122,25 @@ def remove_child(child_id: UUID, user_id: UUID = Depends(get_user_id_from_token)
     supabase.table("parent_children").delete().eq("parent_id", parent_id).eq("child_id", child_id).execute()
     return {"message": "Child unlinked successfully"}
 
+@router.patch("/children/relationship", response_model=dict)
+def update_child_relationship(
+    update: UpdateChildLink,
+    user_id: UUID = Depends(get_user_id_from_token)
+):
+    parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).single().execute()
+    if not parent.data:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    parent_id = parent.data["parent_id"]
+    res = supabase.table("parent_children").update({
+        "relationship": update.relationship
+    }).eq("parent_id", str(parent_id)).eq("child_id", str(update.child_id)).execute()
+
+    if not res.data:
+        raise HTTPException(status_code=404, detail="No link found to update")
+
+    return {"message": "Relationship updated"}
+
 @router.get("/children/search")
 def search_child(email: Optional[str] = None, student_id: Optional[UUID] = None, name: Optional[str] = None, school_name: Optional[str] = None, grade_level: Optional[str] = None):
     query = supabase.table("students").select("student_id, email, name")
@@ -161,12 +163,6 @@ def search_child(email: Optional[str] = None, student_id: Optional[UUID] = None,
 # -------------------------
 # Part 3: Other Parents and Child Data
 # -------------------------
-class ParentDetails(BaseModel):
-    parent_id: UUID
-    name: str
-    is_head: bool
-    group: Optional[str]
-    description: Optional[str]
 
 @router.get("/other-parents", response_model=List[ParentDetails])
 def view_other_parents(user_id: UUID = Depends(get_user_id_from_token)):
@@ -177,74 +173,97 @@ def view_other_parents(user_id: UUID = Depends(get_user_id_from_token)):
     others = supabase.table("parents").select("*").eq("group", parent.data["group"]).neq("user_id", user_id).execute()
     return others.data
 
-# @router.get("/child/health")
-# def get_child_health(child_email: str):
-#     res = supabase.table("health_metrics").select("*").eq("email", child_email).order("created_at", desc=True).execute()
-#     return res.data
 
-# @router.get("/child/diet")
-# def get_child_diet(child_email: str):
-#     res = supabase.table("student_diet").select("*").eq("email", child_email).order("time", desc=True).execute()
-#     return res.data
+@router.get("/child/health", response_model=List[HealthMetric])
+def get_child_health_data(
+    child_id: str,
+    parent_email: str = Depends(get_email_from_token)
+):
+    # Validate parent-child relationship
+    parent_res = supabase.table("users").select("user_id").eq("email", parent_email).execute()
+    if not parent_res.data:
+        raise HTTPException(status_code=404, detail="Parent not found")
 
-# @router.get("/child/meals")
-# def get_child_meals(child_email: str):
-#     res = supabase.table("meals").select("*").eq("email", child_email).order("time", desc=True).execute()
-#     return res.data
+    user_id = parent_res.data[0]['user_id']
+    parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).execute()
+    if not parent.data:
+        raise HTTPException(status_code=403, detail="Not authorized as a parent")
 
-# # -------------------------
-# # Part 4: Parent Dashboard
-# # -------------------------
-# @router.get("/dashboard")
-# def parent_dashboard(user_id: UUID = Depends(get_user_id_from_token)):
-#     parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).single().execute()
-#     if not parent.data:
-#         raise HTTPException(status_code=404, detail="Parent not found")
-#     parent_id = parent.data['parent_id']
+    parent_id = parent.data[0]['parent_id']
+    link = supabase.table("parent_children").select("*").eq("parent_id", parent_id).eq("child_id", child_id).execute()
+    if not link.data:   
+        raise HTTPException(status_code=403, detail="No access to this child's data")
 
-#     link_res = supabase.table("parent_children").select("child_id").eq("parent_id", parent_id).execute()
-#     if not link_res.data:
-#         return JSONResponse(content={"children": [], "alerts": []})
+    # Fetch health metrics
+    metrics = supabase.table("health_metrics").select("*").eq("student_id", child_id).order("created_at", desc=True).execute()
+    return metrics.data
 
-#     child_ids = [c['child_id'] for c in link_res.data]
-#     summary = []
-#     alerts = []
+@router.get("/children/diet", response_model=List[ChildDietLog])
+def view_children_diet(parent_email: str = Depends(get_email_from_token)):
+    # Step 1: Resolve user_id from parent_email
+    user_res = supabase.table("users").select("user_id").eq("email", parent_email).execute()
+    if not user_res.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_id = user_res.data[0]["user_id"]
 
-#     for child_id in child_ids:
-#         user_res = supabase.table("users").select("email, full_name").eq("user_id", child_id).single().execute()
-#         if not user_res.data:
-#             continue
-#         email = user_res.data["email"]
-#         name = user_res.data["full_name"]
+    # Step 2: Get parent_id from parents
+    parent_res = supabase.table("parents").select("parent_id").eq("user_id", user_id).execute()
+    if not parent_res.data:
+        raise HTTPException(status_code=404, detail="Parent not found")
+    parent_id = parent_res.data[0]["parent_id"]
 
-#         metric_res = supabase.table("health_metrics").select("*").eq("email", email).order("created_at", desc=True).limit(1).execute()
-#         if not metric_res.data:
-#             continue
-#         metric = metric_res.data[0]
+    # Step 3: Get child_ids
+    children_res = supabase.table("parent_children").select("child_id").eq("parent_id", parent_id).execute()
+    if not children_res.data:
+        return []
 
-#         child_data = {
-#             "name": name,
-#             "email": email,
-#             "weight": metric["weight"],
-#             "bmi": metric["bmi"],
-#             "bp": f"{metric['systolic']}/{metric['diastolic']}",
-#             "blood_sugar": metric["blood_sugar"],
-#             "heart_rate": metric["heart_rate"],
-#             "notes": metric.get("notes", "")
-#         }
+    child_ids = [child["child_id"] for child in children_res.data]
 
-#         child_alerts = []
-#         if metric["blood_sugar"] > 130:
-#             child_alerts.append(f"{name}: High blood sugar ({metric['blood_sugar']})")
-#         if metric["systolic"] > 130 or metric["diastolic"] > 85:
-#             child_alerts.append(f"{name}: Elevated blood pressure ({metric['systolic']}/{metric['diastolic']})")
-#         if metric["heart_rate"] > 100 or metric["heart_rate"] < 50:
-#             child_alerts.append(f"{name}: Irregular heart rate ({metric['heart_rate']})")
+    # Step 4: Fetch diet data for all children
+    diet_logs = []
+    for child_id in child_ids:
+        child = supabase.table("students").select("email, name").eq("student_id", child_id).execute()
+        child_email = child.data[0]['email']    
+        child_name = child.data[0]['name']    
+        diet_res = (
+            supabase.table("student_diet")
+            .select("time, water_glasses, sodium, sugar")
+            .eq("student_id", child_id)
+            .order("time", desc=True)
+            .execute()
+        )
+        for entry in diet_res.data:
+            diet_logs.append({
+                "child_name": child_name,
+                "child_id": child_id,
+                "date": entry["time"],
+                "water_glasses": entry["water_glasses"],
+                "sodium": entry["sodium"],
+                "sugar": entry["sugar"]
+            })
 
-#         summary.append(child_data)
-#         alerts.extend(child_alerts)
+    return diet_logs
 
-#     return {
-#         "children": summary,
-#         "alerts": alerts
-#     }
+@router.get("/child/meals", response_model=List[Meal_Log])
+def get_child_meal_logs(
+    child_id: str,
+    parent_email: str = Depends(get_email_from_token)
+):
+    # Validate parent-child relationship (same as above)
+    parent_res = supabase.table("users").select("user_id").eq("email", parent_email).execute()
+    if not parent_res.data:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    user_id = parent_res.data[0]['user_id']
+    parent = supabase.table("parents").select("parent_id").eq("user_id", user_id).execute()
+    if not parent.data:
+        raise HTTPException(status_code=403, detail="Not authorized as a parent")
+
+    parent_id = parent.data[0]['parent_id']
+    link = supabase.table("parent_children").select("*").eq("parent_id", parent_id).eq("child_id", child_id).execute()
+    if not link.data:
+        raise HTTPException(status_code=403, detail="No access to this child's data")
+        
+    # Fetch meal logs
+    meals = supabase.table("meals").select("*").eq("student_id", child_id).order("time", desc=True).execute()
+    return meals.data
