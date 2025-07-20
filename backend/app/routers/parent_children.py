@@ -5,7 +5,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
 from ..config import supabase
-from ..models import ChildHealthSnapshot, ChildLinkRequest, ParentDetails, HealthMetric, MealLog, ChildDietLog, Meal_Log, UpdateChildLink, Parent
+
+from ..models import ChildHealthSnapshot, ChildLinkRequest, ParentDetails, HealthMetric, ChildDietLog, Meal_Log, UpdateChildLink, Parent
 from fastapi.responses import JSONResponse
 import jwt
 from datetime import datetime

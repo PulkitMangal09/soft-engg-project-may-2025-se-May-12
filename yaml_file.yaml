@@ -1,0 +1,4239 @@
+openapi: 3.1.0
+info:
+  title: GrowthGeine API
+  version: 0.1.0
+paths:
+  /auth/signup:
+    post:
+      tags:
+      - auth
+      summary: Signup
+      operationId: signup_auth_signup_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Signup Auth Signup Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/token:
+    post:
+      tags:
+      - auth
+      summary: Login
+      operationId: login_auth_token_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_login_auth_token_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/profile:
+    get:
+      tags:
+      - users
+      summary: Profile
+      operationId: profile_users_profile_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Profile Users Profile Get
+      security:
+      - OAuth2PasswordBearer: []
+  /roles/:
+    get:
+      tags:
+      - roles
+      summary: Get Roles
+      operationId: get_roles_roles__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Role'
+                type: array
+                title: Response Get Roles Roles  Get
+  /teacher/dashboard/:
+    get:
+      tags:
+      - teacher-dashboard
+      summary: Get Dashboard Summary
+      operationId: get_dashboard_summary_teacher_dashboard__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/dashboard/attention:
+    get:
+      tags:
+      - teacher-dashboard
+      summary: Get Students Requiring Attention
+      operationId: get_students_requiring_attention_teacher_dashboard_attention_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/dashboard/health-alerts:
+    get:
+      tags:
+      - teacher-dashboard
+      summary: Get Urgent Health Alerts
+      operationId: get_urgent_health_alerts_teacher_dashboard_health_alerts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/dashboard/join-requests:
+    get:
+      tags:
+      - teacher-dashboard
+      summary: Get Join Requests
+      operationId: get_join_requests_teacher_dashboard_join_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/dashboard/join-requests/respond:
+    post:
+      tags:
+      - teacher-dashboard
+      summary: Respond To Join Request
+      operationId: respond_to_join_request_teacher_dashboard_join_requests_respond_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinRequestAction'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/dashboard/students:
+    get:
+      tags:
+      - teacher-dashboard
+      summary: Get Student Cards
+      operationId: get_student_cards_teacher_dashboard_students_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/dashboard/student/{student_id}/report:
+    get:
+      tags:
+      - teacher-dashboard
+      summary: Get Student Report
+      operationId: get_student_report_teacher_dashboard_student__student_id__report_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Student Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /teacher/classrooms:
+    get:
+      tags:
+      - teacher-students
+      summary: List Classrooms
+      description: List all classrooms owned by this teacher.
+      operationId: list_classrooms_teacher_classrooms_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Classrooms Teacher Classrooms Get
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/classrooms/{classroom_id}/students:
+    get:
+      tags:
+      - teacher-students
+      summary: List Classroom Students
+      description: List all students in a given classroom.
+      operationId: list_classroom_students_teacher_classrooms__classroom_id__students_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: classroom_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Classroom Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Classroom Students Teacher Classrooms  Classroom
+                  Id  Students Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /teacher/classrooms/{classroom_id}/students/{student_id}:
+    post:
+      tags:
+      - teacher-students
+      summary: Add Student To Class
+      description: Enroll a student into a classroom.
+      operationId: add_student_to_class_teacher_classrooms__classroom_id__students__student_id__post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: classroom_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Classroom Id
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Student Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Add Student To Class Teacher Classrooms  Classroom
+                  Id  Students  Student Id  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - teacher-students
+      summary: Remove Student From Class
+      description: Remove a student from a classroom.
+      operationId: remove_student_from_class_teacher_classrooms__classroom_id__students__student_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: classroom_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Classroom Id
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Student Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Remove Student From Class Teacher Classrooms  Classroom
+                  Id  Students  Student Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /teacher/students/metrics:
+    get:
+      tags:
+      - teacher-students
+      summary: Students Metrics
+      description: "Return for each student across all this teacher's classrooms:\n\
+        \  - total tasks assigned & completed\n  - overdue count\n  - health alert\
+        \ count\n  - average grade (if you have a grades table)"
+      operationId: students_metrics_teacher_students_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Students Metrics Teacher Students Metrics Get
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/tasks/summary:
+    get:
+      tags:
+      - teacher-tasks
+      summary: Get Tasks Summary
+      operationId: get_tasks_summary_teacher_tasks_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/tasks/recent:
+    get:
+      tags:
+      - teacher-tasks
+      summary: Recent Tasks
+      operationId: recent_tasks_teacher_tasks_recent_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/tasks/overdue:
+    get:
+      tags:
+      - teacher-tasks
+      summary: Overdue Tasks
+      operationId: overdue_tasks_teacher_tasks_overdue_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/tasks/:
+    get:
+      tags:
+      - teacher-tasks
+      summary: Get All Tasks
+      operationId: get_all_tasks_teacher_tasks__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Get All Tasks Teacher Tasks  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - teacher-tasks
+      summary: Create Task
+      operationId: create_task_teacher_tasks__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /teacher/tasks/{task_id}:
+    get:
+      tags:
+      - teacher-tasks
+      summary: Get Task
+      operationId: get_task_teacher_tasks__task_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Task Teacher Tasks  Task Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - teacher-tasks
+      summary: Update Task
+      operationId: update_task_teacher_tasks__task_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - teacher-tasks
+      summary: Delete Task
+      operationId: delete_task_teacher_tasks__task_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /teacher/reports/{student_id}:
+    get:
+      tags:
+      - teacher-reports
+      summary: Student Report
+      operationId: student_report_teacher_reports__student_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: The UUID of the student
+          title: Student Id
+        description: The UUID of the student
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Student Report Teacher Reports  Student Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/dashboard/:
+    get:
+      tags:
+      - student-dashboard
+      summary: Get Student Dashboard
+      description: Return overview cards for student dashboard (tasks, finance, emotions,
+        diet, health).
+      operationId: get_student_dashboard_student_dashboard__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /student/tasks/:
+    get:
+      tags:
+      - student-tasks
+      summary: List Tasks
+      description: List all tasks assigned to the authenticated student.
+      operationId: list_tasks_student_tasks__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TaskBase'
+                type: array
+                title: Response List Tasks Student Tasks  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-tasks
+      summary: Add Task
+      description: Add a new task for the authenticated student.
+      operationId: add_task_student_tasks__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskBase'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/tasks/{task_id}:
+    get:
+      tags:
+      - student-tasks
+      summary: Get Task
+      description: Retrieve a specific task by ID for the authenticated student.
+      operationId: get_task_student_tasks__task_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskBase'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-tasks
+      summary: Update Task
+      description: Update an existing task if it's not completed.
+      operationId: update_task_student_tasks__task_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskBase'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-tasks
+      summary: Delete Task
+      description: Delete a task by ID for the authenticated student.
+      operationId: delete_task_student_tasks__task_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Task Student Tasks  Task Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/finance/transactions:
+    get:
+      tags:
+      - student-finance
+      summary: List Transactions
+      operationId: list_transactions_student_finance_transactions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TransactionOut'
+                type: array
+                title: Response List Transactions Student Finance Transactions Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-finance
+      summary: Add Transaction
+      operationId: add_transaction_student_finance_transactions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Add Transaction Student Finance Transactions Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/finance/dashboard:
+    get:
+      tags:
+      - student-finance
+      summary: Get Finance Dashboard
+      operationId: get_finance_dashboard_student_finance_dashboard_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /student/finance/savings-goals:
+    get:
+      tags:
+      - student-finance
+      summary: List Savings Goals
+      operationId: list_savings_goals_student_finance_savings_goals_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SavingsGoalOut'
+                type: array
+                title: Response List Savings Goals Student Finance Savings Goals Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-finance
+      summary: Create Savings Goal
+      operationId: create_savings_goal_student_finance_savings_goals_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavingsGoalCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavingsGoalOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/finance/savings-goals/{goal_id}:
+    get:
+      tags:
+      - student-finance
+      summary: Get Savings Goal
+      operationId: get_savings_goal_student_finance_savings_goals__goal_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavingsGoalOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-finance
+      summary: Update Savings Goal
+      operationId: update_savings_goal_student_finance_savings_goals__goal_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavingsGoalCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavingsGoalOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-finance
+      summary: Delete Savings Goal
+      operationId: delete_savings_goal_student_finance_savings_goals__goal_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Savings Goal Student Finance Savings Goals  Goal
+                  Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/entries:
+    get:
+      tags:
+      - student-emotions
+      summary: List Emotional Entries
+      operationId: list_emotional_entries_student_emotions_entries_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/EmotionalEntry'
+                type: array
+                title: Response List Emotional Entries Student Emotions Entries Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-emotions
+      summary: Create Emotional Entry
+      operationId: create_emotional_entry_student_emotions_entries_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmotionalEntry'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionalEntry'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/emotions/entries/{entry_id}:
+    get:
+      tags:
+      - student-emotions
+      summary: Get Emotional Entry
+      operationId: get_emotional_entry_student_emotions_entries__entry_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Entry Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionalEntry'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-emotions
+      summary: Update Emotional Entry
+      operationId: update_emotional_entry_student_emotions_entries__entry_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Entry Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmotionalEntry'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionalEntry'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-emotions
+      summary: Delete Emotional Entry
+      operationId: delete_emotional_entry_student_emotions_entries__entry_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Entry Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Emotional Entry Student Emotions Entries  Entry
+                  Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/mood-logs:
+    get:
+      tags:
+      - student-emotions
+      summary: List Mood Logs
+      operationId: list_mood_logs_student_emotions_mood_logs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/MoodLog'
+                type: array
+                title: Response List Mood Logs Student Emotions Mood Logs Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-emotions
+      summary: Create Mood Log
+      operationId: create_mood_log_student_emotions_mood_logs_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoodLog'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodLog'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/emotions/mood-logs/{log_id}:
+    get:
+      tags:
+      - student-emotions
+      summary: Get Mood Log
+      operationId: get_mood_log_student_emotions_mood_logs__log_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: log_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Log Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodLog'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-emotions
+      summary: Update Mood Log
+      operationId: update_mood_log_student_emotions_mood_logs__log_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: log_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Log Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoodLog'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodLog'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-emotions
+      summary: Delete Mood Log
+      operationId: delete_mood_log_student_emotions_mood_logs__log_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: log_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Log Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Mood Log Student Emotions Mood Logs  Log Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/sessions:
+    get:
+      tags:
+      - student-emotions
+      summary: List Chat Sessions
+      operationId: list_chat_sessions_student_emotions_sessions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ChatSession'
+                type: array
+                title: Response List Chat Sessions Student Emotions Sessions Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-emotions
+      summary: Create Chat Session
+      operationId: create_chat_session_student_emotions_sessions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSession'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/emotions/sessions/{session_id}:
+    get:
+      tags:
+      - student-emotions
+      summary: Get Chat Session
+      operationId: get_chat_session_student_emotions_sessions__session_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-emotions
+      summary: Update Chat Session
+      operationId: update_chat_session_student_emotions_sessions__session_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSession'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-emotions
+      summary: Delete Chat Session
+      operationId: delete_chat_session_student_emotions_sessions__session_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Chat Session Student Emotions Sessions  Session
+                  Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/messages:
+    post:
+      tags:
+      - student-emotions
+      summary: Create Chat Message
+      operationId: create_chat_message_student_emotions_messages_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/emotions/messages/{session_id}:
+    get:
+      tags:
+      - student-emotions
+      summary: List Chat Messages
+      operationId: list_chat_messages_student_emotions_messages__session_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+                title: Response List Chat Messages Student Emotions Messages  Session
+                  Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/message/{message_id}:
+    get:
+      tags:
+      - student-emotions
+      summary: Get Chat Message
+      operationId: get_chat_message_student_emotions_message__message_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Message Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-emotions
+      summary: Update Chat Message
+      operationId: update_chat_message_student_emotions_message__message_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Message Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-emotions
+      summary: Delete Chat Message
+      operationId: delete_chat_message_student_emotions_message__message_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Message Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Chat Message Student Emotions Message  Message
+                  Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/contacts:
+    get:
+      tags:
+      - student-emotions
+      summary: List Emergency Contacts
+      operationId: list_emergency_contacts_student_emotions_contacts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/EmergencyContact'
+                type: array
+                title: Response List Emergency Contacts Student Emotions Contacts
+                  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-emotions
+      summary: Create Emergency Contact
+      operationId: create_emergency_contact_student_emotions_contacts_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyContact'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyContact'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /student/emotions/contacts/{contact_id}:
+    get:
+      tags:
+      - student-emotions
+      summary: Get Emergency Contact
+      operationId: get_emergency_contact_student_emotions_contacts__contact_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: contact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Contact Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyContact'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - student-emotions
+      summary: Update Emergency Contact
+      operationId: update_emergency_contact_student_emotions_contacts__contact_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: contact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Contact Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyContact'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyContact'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - student-emotions
+      summary: Delete Emergency Contact
+      operationId: delete_emergency_contact_student_emotions_contacts__contact_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: contact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Contact Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Emergency Contact Student Emotions Contacts  Contact
+                  Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/emotions/sessions/{session_id}/auto-reply:
+    post:
+      tags:
+      - student-emotions
+      summary: Auto Reply
+      operationId: auto_reply_student_emotions_sessions__session_id__auto_reply_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_auto_reply_student_emotions_sessions__session_id__auto_reply_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health/student_diet:
+    get:
+      tags:
+      - health
+      summary: Get Diet Logs
+      operationId: get_diet_logs_health_student_diet_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DietEntry'
+                type: array
+                title: Response Get Diet Logs Health Student Diet Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - health
+      summary: Log Student Diet
+      operationId: log_student_diet_health_student_diet_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietEntry'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Log Student Diet Health Student Diet Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /health/student_diet/{entry_id}:
+    patch:
+      tags:
+      - health
+      summary: Update Diet Entry
+      operationId: update_diet_entry_health_student_diet__entry_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietEntry'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Update Diet Entry Health Student Diet  Entry Id  Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - health
+      summary: Delete Diet Entry
+      operationId: delete_diet_entry_health_student_diet__entry_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Diet Entry Health Student Diet  Entry Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health/meals:
+    get:
+      tags:
+      - health
+      summary: Get Meal Logs
+      operationId: get_meal_logs_health_meals_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/MealEntry'
+                type: array
+                title: Response Get Meal Logs Health Meals Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - health
+      summary: Log Meal
+      operationId: log_meal_health_meals_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealEntry'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Log Meal Health Meals Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /health/meals/{entry_id}:
+    patch:
+      tags:
+      - health
+      summary: Update Meal Entry
+      operationId: update_meal_entry_health_meals__entry_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealEntry'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Update Meal Entry Health Meals  Entry Id  Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - health
+      summary: Delete Meal Entry
+      operationId: delete_meal_entry_health_meals__entry_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Meal Entry Health Meals  Entry Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health/metrics:
+    get:
+      tags:
+      - health
+      summary: Get Latest Metrics
+      operationId: get_latest_metrics_health_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthMetricsResponse'
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - health
+      summary: Add Health Metrics
+      operationId: add_health_metrics_health_metrics_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthMetricsRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Add Health Metrics Health Metrics Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /health/metrics/{entry_id}:
+    patch:
+      tags:
+      - health
+      summary: Update Health Metrics
+      operationId: update_health_metrics_health_metrics__entry_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthMetricsRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Update Health Metrics Health Metrics  Entry Id  Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - health
+      summary: Delete Health Metrics
+      operationId: delete_health_metrics_health_metrics__entry_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Health Metrics Health Metrics  Entry Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health/analytics:
+    get:
+      tags:
+      - health
+      summary: Get Analytics
+      operationId: get_analytics_health_analytics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendResponse'
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/dashboard/:
+    get:
+      tags:
+      - parent-dashboard
+      summary: Get Parent Dashboard
+      description: 'Aggregated parent dashboard endpoint. Returns summary, children,
+        alerts, attention, achievements.
+
+        If child_id is provided, filters all metrics for that child only.'
+      operationId: get_parent_dashboard_parent_dashboard__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: child_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/dashboard/tasks:
+    get:
+      tags:
+      - parent-dashboard
+      summary: Get Parent Tasks
+      description: Returns all tasks for the parent's children, with optional filtering
+        by status, child_id, and sorting.
+      operationId: get_parent_tasks_parent_dashboard_tasks_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: child_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Child Id
+      - name: sortBy
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: created_at
+          title: Sortby
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/dashboard/health/alerts:
+    get:
+      tags:
+      - parent-dashboard
+      summary: Get Parent Health Alerts
+      description: Returns all active health alerts for the parent's children, with
+        optional filtering by severity and child_id.
+      operationId: get_parent_health_alerts_parent_dashboard_health_alerts_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: severity
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Severity
+      - name: child_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/dashboard/finance/goals:
+    get:
+      tags:
+      - parent-dashboard
+      summary: Get Parent Finance Goals
+      description: Returns all savings goals for the parent's children, with optional
+        filtering by status and child_id.
+      operationId: get_parent_finance_goals_parent_dashboard_finance_goals_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: child_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/dashboard/family/join-requests:
+    get:
+      tags:
+      - parent-dashboard
+      summary: Get Family Join Requests
+      description: Returns a list of pending join requests to the family group.
+      operationId: get_family_join_requests_parent_dashboard_family_join_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/dashboard/family/join-requests/respond:
+    post:
+      tags:
+      - parent-dashboard
+      summary: Respond Family Join Request
+      description: 'Accept or reject a join request. Body: { "request_id": "<uuid>",
+        "action": "accept" | "reject" }'
+      operationId: respond_family_join_request_parent_dashboard_family_join_requests_respond_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Body
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/children/metrics:
+    get:
+      tags:
+      - parent
+      summary: View All Children Metrics
+      operationId: view_all_children_metrics_parent_children_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ChildHealthSnapshot'
+                type: array
+                title: Response View All Children Metrics Parent Children Metrics
+                  Get
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/children:
+    get:
+      tags:
+      - parent
+      summary: Get Children
+      operationId: get_children_parent_children_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/children/add:
+    post:
+      tags:
+      - parent
+      summary: Add Child
+      operationId: add_child_parent_children_add_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChildLinkRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/children/remove:
+    delete:
+      tags:
+      - parent
+      summary: Remove Child
+      operationId: remove_child_parent_children_remove_delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: child_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/children/relationship:
+    patch:
+      tags:
+      - parent
+      summary: Update Child Relationship
+      operationId: update_child_relationship_parent_children_relationship_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChildLink'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Update Child Relationship Parent Children Relationship
+                  Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/children/search:
+    get:
+      tags:
+      - parent
+      summary: Search Child
+      operationId: search_child_parent_children_search_get
+      parameters:
+      - name: email
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+      - name: student_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Student Id
+      - name: name
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+      - name: school_name
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: School Name
+      - name: grade_level
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Grade Level
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/other-parents:
+    get:
+      tags:
+      - parent
+      summary: View Other Parents
+      operationId: view_other_parents_parent_other_parents_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ParentDetails'
+                type: array
+                title: Response View Other Parents Parent Other Parents Get
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/child/health:
+    get:
+      tags:
+      - parent
+      summary: Get Child Health Data
+      operationId: get_child_health_data_parent_child_health_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: child_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HealthMetric'
+                title: Response Get Child Health Data Parent Child Health Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/children/diet:
+    get:
+      tags:
+      - parent
+      summary: View Children Diet
+      operationId: view_children_diet_parent_children_diet_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ChildDietLog'
+                type: array
+                title: Response View Children Diet Parent Children Diet Get
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/child/meals:
+    get:
+      tags:
+      - parent
+      summary: Get Child Meal Logs
+      operationId: get_child_meal_logs_parent_child_meals_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: child_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal_Log'
+                title: Response Get Child Meal Logs Parent Child Meals Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/requests/:
+    get:
+      tags:
+      - parent-requests
+      summary: List Requests
+      description: List all pending 'family' join requests for families this user
+        heads.
+      operationId: list_requests_parent_requests__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Requests Parent Requests  Get
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/requests/{request_id}/approve:
+    post:
+      tags:
+      - parent-requests
+      summary: Approve Request
+      description: Approve a pending family-join request.
+      operationId: approve_request_parent_requests__request_id__approve_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The join_request ID to approve
+          title: Request Id
+        description: The join_request ID to approve
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Approve Request Parent Requests  Request Id  Approve
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/requests/{request_id}/reject:
+    post:
+      tags:
+      - parent-requests
+      summary: Reject Request
+      description: Reject a pending family-join request.
+      operationId: reject_request_parent_requests__request_id__reject_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The join_request ID to reject
+          title: Request Id
+        description: The join_request ID to reject
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Reject Request Parent Requests  Request Id  Reject
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/tasks/summary:
+    get:
+      tags:
+      - parent-tasks
+      summary: Get Tasks Summary
+      operationId: get_tasks_summary_parent_tasks_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/tasks/recent:
+    get:
+      tags:
+      - parent-tasks
+      summary: Recent Tasks
+      operationId: recent_tasks_parent_tasks_recent_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/tasks/overdue:
+    get:
+      tags:
+      - parent-tasks
+      summary: Overdue Tasks
+      operationId: overdue_tasks_parent_tasks_overdue_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/tasks/:
+    get:
+      tags:
+      - parent-tasks
+      summary: Get All Tasks
+      operationId: get_all_tasks_parent_tasks__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Get All Tasks Parent Tasks  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - parent-tasks
+      summary: Create Task
+      operationId: create_task_parent_tasks__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/tasks/{task_id}:
+    get:
+      tags:
+      - parent-tasks
+      summary: Get Task
+      operationId: get_task_parent_tasks__task_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Task Parent Tasks  Task Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - parent-tasks
+      summary: Update Task
+      operationId: update_task_parent_tasks__task_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - parent-tasks
+      summary: Delete Task
+      operationId: delete_task_parent_tasks__task_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/family/overview:
+    get:
+      tags:
+      - parent-family
+      summary: Family Overview
+      description: Return summary cards for tasks, finance, health across family.
+      operationId: family_overview_parent_family_overview_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Family Overview Parent Family Overview Get
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/family/groups:
+    get:
+      tags:
+      - parent-family
+      summary: List Family Groups
+      description: List all family groups you head.
+      operationId: list_family_groups_parent_family_groups_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Family Groups Parent Family Groups Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - parent-family
+      summary: Create Family Group
+      description: Create a new family group (you become the head).
+      operationId: create_family_group_parent_family_groups_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_create_family_group_parent_family_groups_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Create Family Group Parent Family Groups Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /parent/family/groups/{group_id}:
+    get:
+      tags:
+      - parent-family
+      summary: Get Family Group
+      description: Get details (and members) of a single family group.
+      operationId: get_family_group_parent_family_groups__group_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Family Group Parent Family Groups  Group Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/family/groups/{group_id}/add/{child_id}:
+    post:
+      tags:
+      - parent-family
+      summary: Add Family Member
+      description: Add a child (or guardian) to your family group.
+      operationId: add_family_member_parent_family_groups__group_id__add__child_id__post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      - name: child_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Child Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_add_family_member_parent_family_groups__group_id__add__child_id__post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Add Family Member Parent Family Groups  Group Id  Add  Child
+                  Id  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parent/family/groups/{group_id}/remove/{child_id}:
+    delete:
+      tags:
+      - parent-family
+      summary: Remove Family Member
+      description: Remove a member from your family group.
+      operationId: remove_family_member_parent_family_groups__group_id__remove__child_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      - name: child_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Remove Family Member Parent Family Groups  Group Id  Remove  Child
+                  Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /student/profile/:
+    get:
+      tags:
+      - student-profile
+      summary: Get Profile
+      description: Get the authenticated student's profile.
+      operationId: get_profile_student_profile__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Profile Student Profile  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - student-profile
+      summary: Create Profile
+      description: Create initial student profile stub (if not existing).
+      operationId: create_profile_student_profile__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentProfileUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Create Profile Student Profile  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+    delete:
+      tags:
+      - student-profile
+      summary: Delete Profile
+      description: Delete the authenticated student's profile.
+      operationId: delete_profile_student_profile__delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Delete Profile Student Profile  Delete
+      security:
+      - OAuth2PasswordBearer: []
+    patch:
+      tags:
+      - student-profile
+      summary: Update Profile
+      description: Update the authenticated student's profile.
+      operationId: update_profile_student_profile__patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentProfileUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Update Profile Student Profile  Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /:
+    get:
+      summary: Read Root
+      operationId: read_root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    Body_add_family_member_parent_family_groups__group_id__add__child_id__post:
+      properties:
+        role:
+          type: string
+          title: Role
+          default: child
+      type: object
+      title: Body_add_family_member_parent_family_groups__group_id__add__child_id__post
+    Body_auto_reply_student_emotions_sessions__session_id__auto_reply_post:
+      properties:
+        user_message:
+          type: string
+          title: User Message
+      type: object
+      required:
+      - user_message
+      title: Body_auto_reply_student_emotions_sessions__session_id__auto_reply_post
+    Body_create_family_group_parent_family_groups_post:
+      properties:
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+      type: object
+      required:
+      - name
+      title: Body_create_family_group_parent_family_groups_post
+    Body_login_auth_token_post:
+      properties:
+        grant_type:
+          anyOf:
+          - type: string
+            pattern: ^password$
+          - type: 'null'
+          title: Grant Type
+        username:
+          type: string
+          title: Username
+        password:
+          type: string
+          format: password
+          title: Password
+        scope:
+          type: string
+          title: Scope
+          default: ''
+        client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          format: password
+          title: Client Secret
+      type: object
+      required:
+      - username
+      - password
+      title: Body_login_auth_token_post
+    ChatMessage:
+      properties:
+        message_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Message Id
+        session_id:
+          type: string
+          format: uuid
+          title: Session Id
+        sender_type:
+          $ref: '#/components/schemas/SenderTypeEnum'
+        message_content:
+          type: string
+          title: Message Content
+        timestamp:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Timestamp
+      type: object
+      required:
+      - session_id
+      - sender_type
+      - message_content
+      title: ChatMessage
+    ChatSession:
+      properties:
+        session_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Session Id
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+        session_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Session Title
+        session_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Session Type
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        ended_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Ended At
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+          default: true
+      type: object
+      title: ChatSession
+    ChildDietLog:
+      properties:
+        child_name:
+          type: string
+          title: Child Name
+        child_id:
+          type: string
+          title: Child Id
+        date:
+          type: string
+          title: Date
+        water_glasses:
+          type: number
+          title: Water Glasses
+        sodium:
+          type: number
+          title: Sodium
+        sugar:
+          type: number
+          title: Sugar
+      type: object
+      required:
+      - child_name
+      - child_id
+      - date
+      - water_glasses
+      - sodium
+      - sugar
+      title: ChildDietLog
+    ChildHealthSnapshot:
+      properties:
+        full_name:
+          type: string
+          title: Full Name
+        weight:
+          type: number
+          title: Weight
+        height:
+          type: number
+          title: Height
+        bmi:
+          type: number
+          title: Bmi
+        systolic:
+          type: integer
+          title: Systolic
+        diastolic:
+          type: integer
+          title: Diastolic
+        blood_sugar:
+          type: integer
+          title: Blood Sugar
+        heart_rate:
+          type: integer
+          title: Heart Rate
+        notes:
+          type: string
+          title: Notes
+        created_at:
+          type: string
+          title: Created At
+      type: object
+      required:
+      - full_name
+      - weight
+      - height
+      - bmi
+      - systolic
+      - diastolic
+      - blood_sugar
+      - heart_rate
+      - notes
+      - created_at
+      title: ChildHealthSnapshot
+    ChildLinkRequest:
+      properties:
+        child_id:
+          type: string
+          format: uuid
+          title: Child Id
+        relationship:
+          type: string
+          title: Relationship
+      type: object
+      required:
+      - child_id
+      - relationship
+      title: ChildLinkRequest
+    ContactTypeEnum:
+      type: string
+      enum:
+      - crisis
+      - teen_support
+      - text_line
+      - bullying
+      - family_crisis
+      - local_emergency
+      title: ContactTypeEnum
+    DietEntry:
+      properties:
+        id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Id
+        water_glasses:
+          type: integer
+          title: Water Glasses
+        sodium:
+          type: number
+          title: Sodium
+        sugar:
+          type: number
+          title: Sugar
+      type: object
+      required:
+      - water_glasses
+      - sodium
+      - sugar
+      title: DietEntry
+    EmergencyContact:
+      properties:
+        contact_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contact Id
+        name:
+          type: string
+          title: Name
+        phone_number:
+          type: string
+          title: Phone Number
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        contact_type:
+          $ref: '#/components/schemas/ContactTypeEnum'
+        is_available_24_7:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Available 24 7
+          default: true
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created At
+      type: object
+      required:
+      - name
+      - phone_number
+      - contact_type
+      title: EmergencyContact
+    EmotionalEntry:
+      properties:
+        entry_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Entry Id
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        content:
+          type: string
+          title: Content
+        mood:
+          $ref: '#/components/schemas/MoodEnum'
+        intensity:
+          type: integer
+          title: Intensity
+        triggers:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Triggers
+          default: []
+        tags:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Tags
+          default: []
+        privacy_level:
+          $ref: '#/components/schemas/PrivacyLevelEnum'
+          default: private
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - content
+      - mood
+      - intensity
+      title: EmotionalEntry
+    EnergyLevelEnum:
+      type: string
+      enum:
+      - low
+      - medium
+      - high
+      title: EnergyLevelEnum
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthMetric:
+      properties:
+        id:
+          type: string
+          title: Id
+        student_id:
+          type: string
+          title: Student Id
+        weight:
+          type: number
+          title: Weight
+        height:
+          type: number
+          title: Height
+        systolic:
+          type: number
+          title: Systolic
+        diastolic:
+          type: number
+          title: Diastolic
+        bmi:
+          type: number
+          title: Bmi
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        blood_sugar:
+          type: number
+          title: Blood Sugar
+        notes:
+          type: string
+          title: Notes
+        heart_rate:
+          type: integer
+          title: Heart Rate
+      type: object
+      required:
+      - id
+      - student_id
+      - weight
+      - height
+      - systolic
+      - diastolic
+      - bmi
+      - created_at
+      - blood_sugar
+      - notes
+      - heart_rate
+      title: HealthMetric
+    HealthMetricsRequest:
+      properties:
+        weight:
+          type: number
+          title: Weight
+        height:
+          type: number
+          title: Height
+        systolic:
+          type: integer
+          title: Systolic
+        diastolic:
+          type: integer
+          title: Diastolic
+        blood_sugar:
+          type: integer
+          title: Blood Sugar
+        heart_rate:
+          type: integer
+          title: Heart Rate
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+          default: ''
+      type: object
+      required:
+      - weight
+      - height
+      - systolic
+      - diastolic
+      - blood_sugar
+      - heart_rate
+      title: HealthMetricsRequest
+    HealthMetricsResponse:
+      properties:
+        weight:
+          type: number
+          title: Weight
+        height:
+          type: number
+          title: Height
+        bmi:
+          type: number
+          title: Bmi
+        systolic:
+          type: integer
+          title: Systolic
+        diastolic:
+          type: integer
+          title: Diastolic
+        blood_sugar:
+          type: integer
+          title: Blood Sugar
+        heart_rate:
+          type: integer
+          title: Heart Rate
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        time:
+          type: string
+          format: date-time
+          title: Time
+      type: object
+      required:
+      - weight
+      - height
+      - bmi
+      - systolic
+      - diastolic
+      - blood_sugar
+      - heart_rate
+      - notes
+      - time
+      title: HealthMetricsResponse
+    JoinRequestAction:
+      properties:
+        student_id:
+          type: string
+          title: Student Id
+        action:
+          type: string
+          title: Action
+      type: object
+      required:
+      - student_id
+      - action
+      title: JoinRequestAction
+    MealEntry:
+      properties:
+        id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Id
+        mealtype:
+          type: string
+          enum:
+          - breakfast
+          - lunch
+          - dinner
+          - snacks
+          title: Mealtype
+        description:
+          type: string
+          title: Description
+        calories:
+          type: number
+          title: Calories
+        proteins:
+          type: number
+          title: Proteins
+        carbs:
+          type: number
+          title: Carbs
+        fat:
+          type: number
+          title: Fat
+      type: object
+      required:
+      - mealtype
+      - description
+      - calories
+      - proteins
+      - carbs
+      - fat
+      title: MealEntry
+    Meal_Log:
+      properties:
+        id:
+          type: string
+          title: Id
+        student_id:
+          type: string
+          title: Student Id
+        time:
+          type: string
+          format: date-time
+          title: Time
+        mealtype:
+          type: string
+          title: Mealtype
+        description:
+          type: string
+          title: Description
+        calories:
+          type: number
+          title: Calories
+        proteins:
+          type: number
+          title: Proteins
+        carbs:
+          type: number
+          title: Carbs
+        fat:
+          type: number
+          title: Fat
+      type: object
+      required:
+      - id
+      - student_id
+      - time
+      - mealtype
+      - description
+      - calories
+      - proteins
+      - carbs
+      - fat
+      title: Meal_Log
+    MoodEnum:
+      type: string
+      enum:
+      - very_sad
+      - sad
+      - neutral
+      - happy
+      - very_happy
+      title: MoodEnum
+    MoodLog:
+      properties:
+        log_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Log Id
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+        mood:
+          $ref: '#/components/schemas/MoodEnum'
+        energy_level:
+          anyOf:
+          - $ref: '#/components/schemas/EnergyLevelEnum'
+          - type: 'null'
+        sleep_quality:
+          anyOf:
+          - $ref: '#/components/schemas/SleepQualityEnum'
+          - type: 'null'
+        stress_level:
+          anyOf:
+          - $ref: '#/components/schemas/StressLevelEnum'
+          - type: 'null'
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        log_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Log Date
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+      type: object
+      required:
+      - mood
+      title: MoodLog
+    ParentDetails:
+      properties:
+        parent_id:
+          type: string
+          format: uuid
+          title: Parent Id
+        name:
+          type: string
+          title: Name
+        is_head:
+          type: boolean
+          title: Is Head
+        group:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Group
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+      type: object
+      required:
+      - parent_id
+      - name
+      - is_head
+      - group
+      - description
+      title: ParentDetails
+    PrivacyLevelEnum:
+      type: string
+      enum:
+      - private
+      - anonymous_sharing
+      title: PrivacyLevelEnum
+    Role:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          $ref: '#/components/schemas/RoleEnum'
+        description:
+          type: string
+          title: Description
+      type: object
+      required:
+      - id
+      - name
+      - description
+      title: Role
+    RoleEnum:
+      type: string
+      enum:
+      - student
+      - teacher
+      - parent
+      title: RoleEnum
+    SavingsGoalCreate:
+      properties:
+        title:
+          type: string
+          title: Title
+        target_amount:
+          type: number
+          title: Target Amount
+        saved_amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Saved Amount
+          default: 0.0
+      type: object
+      required:
+      - title
+      - target_amount
+      title: SavingsGoalCreate
+    SavingsGoalOut:
+      properties:
+        title:
+          type: string
+          title: Title
+        target_amount:
+          type: number
+          title: Target Amount
+        saved_amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Saved Amount
+          default: 0.0
+        goal_id:
+          type: string
+          title: Goal Id
+      type: object
+      required:
+      - title
+      - target_amount
+      - goal_id
+      title: SavingsGoalOut
+    SenderTypeEnum:
+      type: string
+      enum:
+      - user
+      - ai_bot
+      title: SenderTypeEnum
+    SignupRequest:
+      properties:
+        full_name:
+          type: string
+          title: Full Name
+          example: Alice Example
+        email:
+          type: string
+          format: email
+          title: Email
+          example: alice@example.com
+        password:
+          type: string
+          title: Password
+          example: Secret123!
+        confirm_password:
+          type: string
+          title: Confirm Password
+          example: Secret123!
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+          example: student
+        terms_agreed:
+          type: boolean
+          title: Terms Agreed
+          example: true
+      type: object
+      required:
+      - full_name
+      - email
+      - password
+      - confirm_password
+      - role
+      - terms_agreed
+      title: SignupRequest
+    SleepQualityEnum:
+      type: string
+      enum:
+      - poor
+      - fair
+      - great
+      title: SleepQualityEnum
+    StressLevelEnum:
+      type: string
+      enum:
+      - relaxed
+      - moderate
+      - high
+      title: StressLevelEnum
+    StudentProfileUpdate:
+      properties:
+        student_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Student Number
+        grade_level:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Grade Level
+        school_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: School Name
+        emergency_contact_phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Emergency Contact Phone
+        can_exist_independently:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Can Exist Independently
+      type: object
+      required:
+      - student_number
+      - grade_level
+      - school_name
+      - emergency_contact_phone
+      - can_exist_independently
+      title: StudentProfileUpdate
+    TaskBase:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        assigned_to:
+          type: string
+          format: uuid
+          title: Assigned To
+        assigned_by:
+          type: string
+          format: uuid
+          title: Assigned By
+        category:
+          type: string
+          title: Category
+        priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+          default: medium
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        due_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Time
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+          default: pending
+        reward_points:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reward Points
+          default: 0
+        attachment_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment Url
+      type: object
+      required:
+      - title
+      - assigned_to
+      - assigned_by
+      - category
+      title: TaskBase
+    TaskCreate:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        assigned_to:
+          type: string
+          format: uuid
+          title: Assigned To
+        assigned_by:
+          type: string
+          format: uuid
+          title: Assigned By
+        category:
+          type: string
+          title: Category
+        priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+          default: medium
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        due_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Time
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+          default: pending
+        reward_points:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reward Points
+          default: 0
+        attachment_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment Url
+      type: object
+      required:
+      - title
+      - assigned_to
+      - assigned_by
+      - category
+      title: TaskCreate
+    TaskUpdate:
+      properties:
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        due_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Time
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        reward_points:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reward Points
+        attachment_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment Url
+      type: object
+      title: TaskUpdate
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...
+        token_type:
+          type: string
+          title: Token Type
+          example: bearer
+      type: object
+      required:
+      - access_token
+      - token_type
+      title: TokenResponse
+    TransactionCreate:
+      properties:
+        amount:
+          type: number
+          title: Amount
+        type:
+          type: string
+          title: Type
+        category:
+          type: string
+          title: Category
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+        transaction_date:
+          type: string
+          format: date
+          title: Transaction Date
+      type: object
+      required:
+      - amount
+      - type
+      - category
+      title: TransactionCreate
+    TransactionOut:
+      properties:
+        transaction_id:
+          type: string
+          title: Transaction Id
+        amount:
+          type: number
+          title: Amount
+        type:
+          type: string
+          title: Type
+        category:
+          type: string
+          title: Category
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+        transaction_date:
+          type: string
+          format: date
+          title: Transaction Date
+      type: object
+      required:
+      - transaction_id
+      - amount
+      - type
+      - category
+      - transaction_date
+      title: TransactionOut
+    TrendPoint:
+      properties:
+        time:
+          type: string
+          format: date-time
+          title: Time
+        value:
+          type: number
+          title: Value
+      type: object
+      required:
+      - time
+      - value
+      title: TrendPoint
+    TrendResponse:
+      properties:
+        weight:
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+          type: array
+          title: Weight
+        blood_sugar:
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+          type: array
+          title: Blood Sugar
+        systolic:
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+          type: array
+          title: Systolic
+        diastolic:
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+          type: array
+          title: Diastolic
+        heart_rate:
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+          type: array
+          title: Heart Rate
+        calories:
+          type: number
+          title: Calories
+        sugar:
+          type: number
+          title: Sugar
+        sodium:
+          type: number
+          title: Sodium
+      type: object
+      required:
+      - weight
+      - blood_sugar
+      - systolic
+      - diastolic
+      - heart_rate
+      - calories
+      - sugar
+      - sodium
+      title: TrendResponse
+    UpdateChildLink:
+      properties:
+        child_id:
+          type: string
+          format: uuid
+          title: Child Id
+        relationship:
+          type: string
+          title: Relationship
+      type: object
+      required:
+      - child_id
+      - relationship
+      title: UpdateChildLink
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: /auth/token

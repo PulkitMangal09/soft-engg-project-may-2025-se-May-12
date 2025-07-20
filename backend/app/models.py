@@ -326,3 +326,26 @@ class Parent(BaseModel):
     description: Optional[str]
     is_active: Optional[bool] = True
     name: str
+#-----------Parent_family-----------------------
+
+class FamilyGroupBase(BaseModel):
+    family_name: str = Field(..., example="Smith Family")
+    description: Optional[str] = Field(None, example="Our household group")
+    
+class FamilyGroupCreate(FamilyGroupBase):
+    pass
+
+class FamilyGroup(FamilyGroupBase):
+    family_id: UUID
+    family_key: str
+
+class FamilyMember(BaseModel):
+    member_id: UUID
+    user_id:    UUID
+    role:       str  # e.g. 'child', 'parent'
+    joined_at:  str
+
+class JoinRequestCreate(BaseModel):
+    target_id: UUID   = Field(..., example="a-family-uuid")
+    relationship_type: str = Field(..., example="child")
+    message: Optional[str] = Field(None, example="I'd like to join!")
