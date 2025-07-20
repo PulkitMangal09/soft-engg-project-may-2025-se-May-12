@@ -11,7 +11,7 @@ app.include_router(users_router)
 client = TestClient(app)
 
 def test_signup_and_login_and_profile(monkeypatch):
-    # Dummy user data - use unique email with timestamp to avoid conflicts
+    # Dummy user data for testing
     import time
     timestamp = str(int(time.time()))
     email = f"test{timestamp}@example.com"
