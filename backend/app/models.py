@@ -319,6 +319,13 @@ class JoinRequestAction(BaseModel):
     student_id: str
     action: str  # "accept" or "reject"
 
+
+class Parent(BaseModel):
+    group: Optional[str]
+    is_head: Optional[bool] = False
+    description: Optional[str]
+    is_active: Optional[bool] = True
+    name: str
 #-----------Parent_family-----------------------
 
 class FamilyGroupBase(BaseModel):
