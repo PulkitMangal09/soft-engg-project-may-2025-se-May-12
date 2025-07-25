@@ -2,26 +2,30 @@ from enum import Enum
 from pydantic import BaseModel, EmailStr, model_validator, Field
 from typing import List, Optional, Literal
 from uuid import UUID
-from datetime import date,datetime
+from datetime import date, datetime
 
 # ------------------ Auth Models ------------------
+
+
 class RoleEnum(str, Enum):
     student = "student"
     teacher = "teacher"
-    parent  = "parent"
+    parent = "parent"
+
 
 class Role(BaseModel):
     id: int
     name: RoleEnum
     description: str
 
+
 class SignupRequest(BaseModel):
-    full_name: str          = Field(..., example="Alice Example")
-    email:      EmailStr    = Field(..., example="alice@example.com")
-    password:   str         = Field(..., example="Secret123!")
-    confirm_password: str   = Field(..., example="Secret123!")
-    role:       RoleEnum    = Field(..., example=RoleEnum.student)
-    terms_agreed: bool      = Field(..., example=True)
+    full_name: str = Field(..., example="Alice Example")
+    email:      EmailStr = Field(..., example="alice@example.com")
+    password:   str = Field(..., example="Secret123!")
+    confirm_password: str = Field(..., example="Secret123!")
+    role:       RoleEnum = Field(..., example=RoleEnum.student)
+    terms_agreed: bool = Field(..., example=True)
 
     @model_validator(mode="after")
     def validate(cls, m):
@@ -31,9 +35,12 @@ class SignupRequest(BaseModel):
             raise ValueError("You must agree to the terms of service")
         return m
 
+
 class TokenResponse(BaseModel):
-    access_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...")
+    access_token: str = Field(...,
+                              example="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...")
     token_type:   str = Field(..., example="bearer")
+    role:    str = Field(..., example="student")
 
 
 # --------------- Emotion Enums ---------------
@@ -44,28 +51,34 @@ class MoodEnum(str, Enum):
     happy = "happy"
     very_happy = "very_happy"
 
+
 class EnergyLevelEnum(str, Enum):
     low = "low"
     medium = "medium"
     high = "high"
+
 
 class SleepQualityEnum(str, Enum):
     poor = "poor"
     fair = "fair"
     great = "great"
 
+
 class StressLevelEnum(str, Enum):
     relaxed = "relaxed"
     moderate = "moderate"
     high = "high"
 
+
 class PrivacyLevelEnum(str, Enum):
     private = "private"
     anonymous_sharing = "anonymous_sharing"
 
+
 class SenderTypeEnum(str, Enum):
     user = "user"
     ai_bot = "ai_bot"
+
 
 class ContactTypeEnum(str, Enum):
     crisis = "crisis"
@@ -86,10 +99,12 @@ class TaskCategoryEnum(str, Enum):
     health = "health"
     financial = "financial"
 
+
 class PriorityEnum(str, Enum):
     low = "low"
     medium = "medium"
     high = "high"
+
 
 class TaskStatusEnum(str, Enum):
     pending = "pending"
@@ -112,6 +127,7 @@ class EmotionalEntry(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+
 class MoodLog(BaseModel):
     log_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
@@ -123,6 +139,7 @@ class MoodLog(BaseModel):
     log_date: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
+
 class ChatSession(BaseModel):
     session_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
@@ -132,12 +149,14 @@ class ChatSession(BaseModel):
     ended_at: Optional[datetime] = None
     is_active: Optional[bool] = True
 
+
 class ChatMessage(BaseModel):
     message_id: Optional[UUID] = None
     session_id: UUID
     sender_type: SenderTypeEnum
     message_content: str
     timestamp: Optional[datetime] = None
+
 
 class EmergencyContact(BaseModel):
     contact_id: Optional[UUID] = None
@@ -154,7 +173,8 @@ class DietEntry(BaseModel):
     water_glasses: int
     sodium: float
     sugar: float
-      
+
+
 class MealEntry(BaseModel):
     id: Optional[UUID] = None
     mealtype: Literal['breakfast', 'lunch', 'dinner', 'snacks']
@@ -164,6 +184,7 @@ class MealEntry(BaseModel):
     carbs: float
     fat: float
 
+
 class HealthMetricsRequest(BaseModel):
     weight: float
     height: float
@@ -172,6 +193,7 @@ class HealthMetricsRequest(BaseModel):
     blood_sugar: int
     heart_rate: int
     notes: Optional[str] = ""
+
 
 class HealthMetricsResponse(BaseModel):
     weight: float
@@ -184,9 +206,11 @@ class HealthMetricsResponse(BaseModel):
     notes: Optional[str]
     time: datetime
 
+
 class TrendPoint(BaseModel):
     time: datetime
     value: float
+
 
 class TrendResponse(BaseModel):
     weight: List[TrendPoint]
@@ -197,6 +221,7 @@ class TrendResponse(BaseModel):
     calories: float
     sugar: float
     sodium: float
+
 
 class ChildHealthSnapshot(BaseModel):
     full_name: str
@@ -210,9 +235,11 @@ class ChildHealthSnapshot(BaseModel):
     notes: str
     created_at: str
 
+
 class ChildLinkRequest(BaseModel):
     child_id: UUID
     relationship: str
+
 
 class ParentDetails(BaseModel):
     parent_id: UUID
@@ -220,6 +247,7 @@ class ParentDetails(BaseModel):
     is_head: bool
     group: Optional[str]
     description: Optional[str]
+
 
 class HealthMetric(BaseModel):
     id: str
@@ -234,6 +262,7 @@ class HealthMetric(BaseModel):
     notes: str
     heart_rate: int
 
+
 class ChildDietLog(BaseModel):
     child_name: str
     child_id: str
@@ -241,6 +270,7 @@ class ChildDietLog(BaseModel):
     water_glasses: float
     sodium: float
     sugar: float
+
 
 class Meal_Log(BaseModel):
     id: str
@@ -253,12 +283,13 @@ class Meal_Log(BaseModel):
     carbs: float
     fat: float
 
+
 class UpdateChildLink(BaseModel):
     child_id: UUID
     relationship: str
 
 
-#Student Finance Models
+# Student Finance Models
 
 class TransactionCreate(BaseModel):
     amount: float
@@ -266,6 +297,7 @@ class TransactionCreate(BaseModel):
     category: str
     note: Optional[str] = None
     transaction_date: date = Field(default_factory=date.today)
+
 
 class TransactionOut(BaseModel):
     transaction_id: str
@@ -275,16 +307,18 @@ class TransactionOut(BaseModel):
     note: Optional[str] = None
     transaction_date: date
 
+
 class SavingsGoalCreate(BaseModel):
     title: str
     target_amount: float
     saved_amount: Optional[float] = 0.0
 
+
 class SavingsGoalOut(SavingsGoalCreate):
-    goal_id: str    
+    goal_id: str
 
 
-### Teacher Tasks
+# Teacher Tasks
 
 # --- Pydantic Schemas ---
 class TaskBase(BaseModel):
@@ -300,8 +334,10 @@ class TaskBase(BaseModel):
     reward_points: Optional[int] = 0
     attachment_url: Optional[str] = None
 
+
 class TaskCreate(TaskBase):
     pass
+
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -326,18 +362,22 @@ class Parent(BaseModel):
     description: Optional[str]
     is_active: Optional[bool] = True
     name: str
-#-----------Parent_family-----------------------
+# -----------Parent_family-----------------------
+
 
 class FamilyGroupBase(BaseModel):
     family_name: str = Field(..., example="Smith Family")
     description: Optional[str] = Field(None, example="Our household group")
-    
+
+
 class FamilyGroupCreate(FamilyGroupBase):
     pass
+
 
 class FamilyGroup(FamilyGroupBase):
     family_id: UUID
     family_key: str
+
 
 class FamilyMember(BaseModel):
     member_id: UUID
@@ -345,7 +385,8 @@ class FamilyMember(BaseModel):
     role:       str  # e.g. 'child', 'parent'
     joined_at:  str
 
+
 class JoinRequestCreate(BaseModel):
-    target_id: UUID   = Field(..., example="a-family-uuid")
+    target_id: UUID = Field(..., example="a-family-uuid")
     relationship_type: str = Field(..., example="child")
     message: Optional[str] = Field(None, example="I'd like to join!")

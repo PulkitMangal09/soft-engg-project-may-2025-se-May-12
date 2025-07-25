@@ -6,6 +6,7 @@ from ..models import SignupRequest, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/signup", response_model=dict)
 def signup(request: SignupRequest):
     try:
@@ -24,7 +25,8 @@ def signup(request: SignupRequest):
         "full_name":  request.full_name,
         "user_type":  request.role.name,
     }).execute()
-    return {"message":"Account created","user_id":user_id}
+    return {"message": "Account created", "user_id": user_id}
+
 
 @router.post("/token", response_model=TokenResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -35,7 +37,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         })
     except AuthApiError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    token = getattr(res.session, 'access_token', None) or res.session.get('access_token')
+    user_type = supabase.table("users").select("user_type").eq("user_id", res.user.id).execute().data[0]['user_type']
+    token = getattr(res.session, 'access_token',
+                    None) or res.session.get('access_token')
     if not token:
         raise HTTPException(status_code=500, detail="No access token returned")
-    return TokenResponse(access_token=token, token_type="bearer")
+    return TokenResponse(access_token=token, token_type="bearer", role=user_type)
