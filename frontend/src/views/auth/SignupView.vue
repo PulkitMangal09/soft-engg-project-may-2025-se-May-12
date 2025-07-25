@@ -13,7 +13,7 @@
             <form @submit.prevent="handleSignup" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input v-model="form.name" type="text" required
+                    <input v-model="form.full_name" type="text" required
                         class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter your full name">
                 </div>
@@ -34,13 +34,13 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-                    <input v-model="form.confirmPassword" type="password" required
+                    <input v-model="form.confirm_password" type="password" required
                         class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Confirm your password">
                 </div>
 
                 <div class="flex items-start">
-                    <input v-model="form.acceptTerms" type="checkbox" required class="mt-1 mr-3">
+                    <input v-model="form.terms_agreed" type="checkbox" required class="mt-1 mr-3">
                     <label class="text-sm text-gray-600">
                         I agree to the <a href="#" class="text-blue-500 hover:underline">Terms of Service</a>
                         and <a href="#" class="text-blue-500 hover:underline">Privacy Policy</a>
@@ -65,6 +65,10 @@
 </template>
 
 <script>
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
+import axios from 'axios';
+
 export default {
     name: 'SignupView',
     props: {
@@ -77,11 +81,12 @@ export default {
     data() {
         return {
             form: {
-                name: '',
+                full_name: '',
                 email: '',
                 password: '',
-                confirmPassword: '',
-                acceptTerms: false
+                confirm_password: '',
+                terms_agreed: false,
+                role: this.role
             },
             loading: false
         }
@@ -115,23 +120,34 @@ export default {
 
     methods: {
         async handleSignup() {
-            if (this.form.password !== this.form.confirmPassword) {
-                alert('Passwords do not match')
+            if (this.form.password !== this.form.confirm_password) {
+                this.$toast.error('Passwords do not match')
+                return
+            }
+
+            if (!this.form.terms_agreed) {
+                this.$toast.error('You must accept the terms and conditions')
                 return
             }
 
             this.loading = true
             try {
-                // Handle signup logic here
-                console.log('Signup attempt:', this.form, this.role)
-                // Simulate API call
-                setTimeout(() => {
-                    this.loading = false
-                    alert('Account created successfully!')
-                    this.$router.push(`/login/${this.role}`)
-                }, 1000)
+                const response = await axios.post('/auth/signup', {
+                    full_name: this.form.full_name,
+                    email: this.form.email,
+                    password: this.form.password,
+                    confirm_password: this.form.confirm_password,
+                    role: this.role,
+                    terms_agreed: this.form.terms_agreed
+                })
+
+                this.$toast.success('Account created successfully! Please log in.')
+                this.$router.push(`/login/${this.role}`)
             } catch (error) {
                 console.error('Signup error:', error)
+                const errorMessage = error.response?.data?.detail || 'Failed to create account. Please try again.'
+                this.$toast.error(errorMessage)
+            } finally {
                 this.loading = false
             }
         }

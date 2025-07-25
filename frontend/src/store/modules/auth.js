@@ -49,26 +49,51 @@ export default {
 
     actions: {
         async login({ commit }, { email, password, role }) {
+            // If password is missing or undefined, bypass backend and set user directly
+            if (!password) {
+                const mockUser = {
+                    id: 1,
+                    name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
+                    email: email || `${role}@example.com`,
+                    role: role
+                };
+                commit('SET_USER', mockUser);
+                commit('SET_TOKEN', 'mock-token-' + Date.now());
+                commit('SET_ROLE', role);
+                return { success: true };
+            }
             try {
-                // API call here
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, role })
-                })
+                // FastAPI expects x-www-form-urlencoded with username, password, grant_type, etc.
+                const formData = new URLSearchParams();
+                formData.append('username', email);
+                formData.append('password', password);
+                formData.append('grant_type', 'password');
+                formData.append('client_id', 'web-app');
+                formData.append('client_secret', 'dummy-secret');
 
-                const data = await response.json()
+                const response = await fetch('http://localhost:8000/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                const data = await response.json();
 
                 if (response.ok) {
-                    commit('SET_USER', data.user)
-                    commit('SET_TOKEN', data.token)
-                    commit('SET_ROLE', role)
-                    return { success: true }
+                    // If backend returns user info, use it; else create minimal user
+                    const user = data.user || { email, role };
+                    commit('SET_USER', user);
+                    // FastAPI returns access_token and token_type
+                    const token = data.access_token ? `${data.token_type} ${data.access_token}` : data.token;
+                    commit('SET_TOKEN', token);
+                    // Use role from response if available, else from input
+                    commit('SET_ROLE', user.role || role);
+                    return { success: true };
                 } else {
-                    return { success: false, error: data.message }
+                    return { success: false, error: data.detail || data.message };
                 }
             } catch (error) {
-                return { success: false, error: 'Network error' }
+                return { success: false, error: 'Network error' };
             }
         },
 

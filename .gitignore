@@ -1,0 +1,26 @@
+# Ignore Python virtual environments
+**/venv/
+**/.venv/
+**/env/
+**/.env/
+
+# Ignore Python cache files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Ignore other unnecessary files and folders
+**/.DS_Store
+**/.idea/
+**/.vscode/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.coverage
+**/coverage.xml
+**/.cache/
+**/.eggs/
+**/*.egg-info/
+**/build/
+**/dist/
+**/.ipynb_checkpoints/
