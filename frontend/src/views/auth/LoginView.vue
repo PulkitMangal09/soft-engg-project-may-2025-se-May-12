@@ -104,7 +104,7 @@ export default {
 
             this.loading = true
             this.error = ''
-            
+
             try {
                 const formData = new URLSearchParams()
                 formData.append('username', this.form.username)
@@ -120,19 +120,18 @@ export default {
                 })
 
                 // Store the access token and user data
-                const { access_token, token_type } = response.data
+                const { access_token, token_type, role } = response.data
                 const userData = {
                     email: this.form.username,
-                    role: this.role,
+                    role: role,
                     token: `${token_type} ${access_token}`
                 }
-                
+
                 await this.$store.dispatch('auth/login', userData)
                 this.$toast.success('Login successful!')
 
-                alert(this.role)
-                this.$router.push(`/${this.role}`)
-                
+                this.$router.push(`/${role}`)
+
             } catch (error) {
                 console.error('Login error:', error)
                 const errorMessage = error.response?.data?.detail || 'Invalid email or password. Please try again.'

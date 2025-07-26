@@ -35,10 +35,10 @@
                 Get Started
             </button>
 
-            <p class="text-center text-sm text-gray-600">
+            <!-- <p class="text-center text-sm text-gray-600">
                 Already have an account?
                 <router-link to="/login" class="text-blue-500 hover:underline">Sign In</router-link>
-            </p>
+            </p> -->
         </div>
     </div>
 </template>
@@ -77,7 +77,7 @@ export default {
 
     methods: {
         getStarted() {
-            this.$router.push(`/signup/${this.selectedRole}`)
+            this.$router.push(`/login/${this.selectedRole}`)
         }
     }
 }
