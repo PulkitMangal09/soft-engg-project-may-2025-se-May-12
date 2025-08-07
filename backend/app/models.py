@@ -1,3 +1,4 @@
+
 from enum import Enum
 from pydantic import BaseModel, EmailStr, model_validator, Field
 from typing import List, Optional, Literal
@@ -323,21 +324,33 @@ class SavingsGoalOut(SavingsGoalCreate):
 
 # --- Pydantic Schemas ---
 class TaskBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    assigned_to: UUID
-    assigned_by: UUID
-    category: str
-    priority: Optional[str] = "medium"
-    due_date: Optional[datetime] = None
-    due_time: Optional[str] = None
-    status: Optional[str] = "pending"
+    task_id:       UUID = Field(..., alias="task_id")
+    title:         str
+    description:   Optional[str] = None
+    assigned_to:   UUID
+    assigned_by:   UUID
+    category:      str
+    priority:      Optional[str]   = "medium"
+    due_date:      Optional[datetime] = None
+    due_time:      Optional[str]   = None
+    status:        Optional[str]   = "pending"
+    reward_points: Optional[int]   = 0
+    attachment_url:Optional[str]   = None
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+class TaskCreate(BaseModel):
+    title:         str
+    description:   Optional[str] = None
+    category:      str
+    priority:      Optional[str] = "medium"
+    due_date:      Optional[datetime] = None
+    due_time:      Optional[str] = None
+    status:        Optional[str] = "pending"
     reward_points: Optional[int] = 0
-    attachment_url: Optional[str] = None
-
-
-class TaskCreate(TaskBase):
-    pass
+    attachment_url:Optional[str] = None
 
 
 class TaskUpdate(BaseModel):

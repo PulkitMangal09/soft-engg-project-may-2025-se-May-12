@@ -1,74 +1,226 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <StudentNavBar />
-    <div class="p-4">
+
+    <div class="p-4 max-w-3xl mx-auto">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800 mb-1">Task Management</h1>
         <p class="text-gray-600">Organize your tasks and stay on top of your work</p>
       </div>
 
-      <!-- Add New Task -->
-      <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-        <div class="flex items-center">
-          <input 
-            type="text" 
-            v-model="newTask"
-            @keyup.enter="addTask"
-            placeholder="Add a new task..."
-            class="flex-1 border-0 focus:ring-0 focus:outline-none text-gray-700"
-          >
-          <button 
-            @click="addTask"
-            class="ml-2 p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg>
-          </button>
+      <!-- Create New Task Form -->
+      <div class="bg-white rounded-xl shadow-sm p-6 mb-8 space-y-4">
+        <h2 class="text-lg font-semibold">Create New Task</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Title -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+              v-model="newTask.title"
+              type="text"
+              placeholder="Task title"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Description -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              v-model="newTask.description"
+              rows="2"
+              placeholder="Optional description"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            ></textarea>
+          </div>
+
+          <!-- Category -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              v-model="newTask.category"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option disabled value="">Select category…</option>
+              <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </div>
+
+          <!-- Priority -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <select
+              v-model="newTask.priority"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option disabled value="">Select priority…</option>
+              <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </div>
+
+          <!-- Due Date -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+            <input
+              v-model="newTask.due_date"
+              type="date"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Due Time -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Due Time</label>
+            <input
+              v-model="newTask.due_time"
+              type="time"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Reward Points -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Reward Points</label>
+            <input
+              v-model.number="newTask.reward_points"
+              type="number"
+              min="0"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Attachment URL -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Attachment URL</label>
+            <input
+              v-model="newTask.attachment_url"
+              type="url"
+              placeholder="https://..."
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Status & Add -->
+          <div class="md:col-span-2 flex items-center mt-2">
+            <label class="inline-flex items-center">
+              <input
+                type="checkbox"
+                v-model="newTask.status"
+                true-value="completed"
+                false-value="pending"
+                class="form-checkbox h-5 w-5 text-blue-600"
+              />
+              <span class="ml-2 text-sm text-gray-700">Mark as completed</span>
+            </label>
+            <button
+              @click="addTask"
+              class="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              + Add Task
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Task List -->
-      <div class="space-y-3">
-        <div 
-          v-for="(task, index) in tasks" 
-          :key="index"
-          class="bg-white rounded-xl shadow-sm p-4 flex items-center"
-        >
-          <button 
-            @click="toggleTask(index)"
-            class="mr-3 flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center"
-            :class="task.completed ? 'bg-green-100 border-green-500' : 'border-gray-300'"
+      <div class="space-y-4">
+        <template v-if="tasks.length">
+          <div
+            v-for="task in tasks"
+            :key="task.__uuid"      
+            class="bg-white rounded-xl shadow-sm p-4 flex items-start"
           >
-            <svg v-if="task.completed" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
-          </button>
-          <span 
-            class="flex-1"
-            :class="{ 'line-through text-gray-400': task.completed }"
-          >
-            {{ task.text }}
-          </span>
-          <button 
-            @click="deleteTask(index)"
-            class="text-gray-400 hover:text-red-500"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-          </button>
-        </div>
+            <div
+              :class="task.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'"
+              class="h-3 w-3 rounded-full mt-1 mr-3"
+            ></div>
 
-        <!-- Empty State -->
-        <div v-if="tasks.length === 0" class="text-center py-8">
-          <div class="text-gray-400 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+            <div class="flex-1">
+              <h3 class="font-semibold text-lg">{{ task.title }}</h3>
+              <p v-if="task.description" class="text-gray-600 text-sm">{{ task.description }}</p>
+              <div class="mt-2 text-xs text-gray-500 space-x-4">
+                <span>📂 {{ task.category }}</span>
+                <span>🚩 {{ task.priority }}</span>
+                <span>
+                  📅 {{ task.due_date ? formatDate(task.due_date) : '—' }}
+                  <span v-if="task.due_time">at {{ task.due_time }}</span>
+                </span>
+                <span>🎁 {{ task.reward_points }} pts</span>
+                <span v-if="task.attachment_url">
+                  🔗
+                  <a :href="task.attachment_url" target="_blank" class="underline">
+                    Attachment
+                  </a>
+                </span>
+              </div>
+            </div>
+
+            <div class="flex-shrink-0 flex flex-col items-center ml-4 space-y-2">
+              <button
+                @click="toggleTask(task)"
+                title="Toggle Status"
+                class="p-1 rounded-full hover:bg-gray-100"
+              >
+                <svg
+                  v-if="task.status === 'completed'"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-green-600"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 
+                       0 01-1.414 0l-4-4a1 1 0 
+                       011.414-1.414L8 12.586l7.293-7.293a1 1 
+                       0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <circle cx="12" cy="12" r="9" stroke-width="2" />
+                </svg>
+              </button>
+
+              <button
+                @click="deleteTask(task)"
+                title="Delete"
+                class="p-1 rounded-full hover:bg-gray-100"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-red-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 
+                       4H4a1 1 0 000 2v10a2 2 0 
+                       002 2h8a2 2 0 002-2V6a1 
+                       1 0 100-2h-3.382l-.724-1.447A1 
+                       1 0 0011 2H9zM7 8a1 1 0 
+                       012 0v6a1 1 0 11-2 0V8zm5-1a1 
+                       1 0 00-1 1v6a1 1 0 102 
+                       0V8a1 1 0 00-1-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
-          <p class="text-gray-500">No tasks yet. Add one above!</p>
+        </template>
+
+        <div v-else class="text-center py-12 text-gray-400">
+          No tasks yet. Add one above!
         </div>
       </div>
     </div>
@@ -76,36 +228,109 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useStore } from 'vuex'
+import axios from 'axios'
 import StudentNavBar from '@/components/layout/StudentNavBar.vue'
-import { ref } from 'vue';
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
 
-const newTask = ref('');
-const tasks = ref(JSON.parse(localStorage.getItem('tasks')) || []);
+// Vuex + axios + auth
+const store = useStore()
+const API = axios.create({ baseURL: 'http://localhost:8000' })
+API.interceptors.request.use(cfg => {
+  const token = store.state.auth.token
+  if (token) cfg.headers.Authorization = token
+  return cfg
+})
 
-const addTask = () => {
-  if (newTask.value.trim() === '') return;
-  
-  tasks.value.push({
-    text: newTask.value,
-    completed: false,
-    createdAt: new Date().toISOString()
-  });
-  
-  saveTasks();
-  newTask.value = '';
-};
+// Reactive state
+const tasks = ref([])
+const newTask = ref({
+  title: '',
+  description: '',
+  category: '',
+  priority: '',
+  due_date: '',
+  due_time: '',
+  status: 'pending',
+  reward_points: 0,
+  attachment_url: ''
+})
 
-const toggleTask = (index) => {
-  tasks.value[index].completed = !tasks.value[index].completed;
-  saveTasks();
-};
+// Dropdown values
+const categories = ['homework','project','study','personal','chore','health','financial']
+const priorities = ['low','medium','high']
 
-const deleteTask = (index) => {
-  tasks.value.splice(index, 1);
-  saveTasks();
-};
+// Normalize each row so it always gets a unique __uuid, plus .id & .task_id
+function normalizeRow(row) {
+  const uuid = row.task_id ?? row.id ?? row.ID
+  return { __uuid: uuid, task_id: uuid, id: uuid, ...row }
+}
 
-const saveTasks = () => {
-  localStorage.setItem('tasks', JSON.stringify(tasks.value));
-};
+// Load tasks
+onMounted(async () => {
+  try {
+    const { data } = await API.get('/student/tasks/')
+    console.log('📬 Raw tasks:', data)
+    tasks.value = data.map(normalizeRow)
+  } catch {
+    toast.error('Could not load tasks')
+  }
+})
+
+// Helpers
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString(undefined,{
+    month:'short',day:'numeric',year:'numeric'
+  })
+}
+
+// Create
+async function addTask() {
+  if (!newTask.value.title||!newTask.value.category||!newTask.value.priority) {
+    return toast.error('Title, category & priority required')
+  }
+  const payload = { ...newTask.value }
+  for (const k of ['description','due_date','due_time','attachment_url']) {
+    if (!payload[k]) delete payload[k]
+  }
+
+  try {
+    const { data } = await API.post('/student/tasks/', payload)
+    tasks.value.push(normalizeRow(data))
+    Object.assign(newTask.value, {
+      title:'',description:'',category:'',
+      priority:'',due_date:'',due_time:'',
+      status:'pending',reward_points:0,attachment_url:''
+    })
+    toast.success('Task added!')
+  } catch (err) {
+    toast.error(err.response?.data?.detail||'Add failed')
+  }
+}
+
+// Toggle
+async function toggleTask(task) {
+  try {
+    const { data } = await API.patch(`/student/tasks/${task.task_id}/`, {
+      status: task.status==='completed'?'pending':'completed'
+    })
+    Object.assign(task, normalizeRow(data))
+    toast.success('Status updated!')
+  } catch {
+    toast.error('Update failed')
+  }
+}
+
+// Delete
+async function deleteTask(task) {
+  try {
+    await API.delete(`/student/tasks/${task.task_id}/`)
+    tasks.value = tasks.value.filter(t => t.__uuid !== task.__uuid)
+    toast.success('Task deleted!')
+  } catch {
+    toast.error('Delete failed')
+  }
+}
 </script>
