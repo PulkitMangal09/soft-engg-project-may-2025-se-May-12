@@ -16,32 +16,22 @@
           <!-- Title -->
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input
-              v-model="newTask.title"
-              type="text"
-              placeholder="Task title"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
+            <input v-model="newTask.title" type="text" placeholder="Task title"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" />
           </div>
 
           <!-- Description -->
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              v-model="newTask.description"
-              rows="2"
-              placeholder="Optional description"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            ></textarea>
+            <textarea v-model="newTask.description" rows="2" placeholder="Optional description"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
           </div>
 
           <!-- Category -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              v-model="newTask.category"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
+            <select v-model="newTask.category"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
               <option disabled value="">Select category…</option>
               <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
             </select>
@@ -50,10 +40,8 @@
           <!-- Priority -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-            <select
-              v-model="newTask.priority"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
+            <select v-model="newTask.priority"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
               <option disabled value="">Select priority…</option>
               <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
             </select>
@@ -62,61 +50,40 @@
           <!-- Due Date -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-            <input
-              v-model="newTask.due_date"
-              type="date"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
+            <input v-model="newTask.due_date" type="date"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" />
           </div>
 
           <!-- Due Time -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Due Time</label>
-            <input
-              v-model="newTask.due_time"
-              type="time"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
+            <input v-model="newTask.due_time" type="time"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" />
           </div>
 
           <!-- Reward Points -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Reward Points</label>
-            <input
-              v-model.number="newTask.reward_points"
-              type="number"
-              min="0"
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
+            <input v-model.number="newTask.reward_points" type="number" min="0"
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" />
           </div>
 
           <!-- Attachment URL -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Attachment URL</label>
-            <input
-              v-model="newTask.attachment_url"
-              type="url"
-              placeholder="https://..."
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
+            <input v-model="newTask.attachment_url" type="url" placeholder="https://..."
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" />
           </div>
 
           <!-- Status & Add -->
           <div class="md:col-span-2 flex items-center mt-2">
             <label class="inline-flex items-center">
-              <input
-                type="checkbox"
-                v-model="newTask.status"
-                true-value="completed"
-                false-value="pending"
-                class="form-checkbox h-5 w-5 text-blue-600"
-              />
+              <input type="checkbox" v-model="newTask.status" true-value="completed" false-value="pending"
+                class="form-checkbox h-5 w-5 text-blue-600" />
               <span class="ml-2 text-sm text-gray-700">Mark as completed</span>
             </label>
-            <button
-              @click="addTask"
-              class="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
+            <button @click="addTask"
+              class="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
               + Add Task
             </button>
           </div>
@@ -126,15 +93,9 @@
       <!-- Task List -->
       <div class="space-y-4">
         <template v-if="tasks.length">
-          <div
-            v-for="task in tasks"
-            :key="task.__uuid"      
-            class="bg-white rounded-xl shadow-sm p-4 flex items-start"
-          >
-            <div
-              :class="task.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'"
-              class="h-3 w-3 rounded-full mt-1 mr-3"
-            ></div>
+          <div v-for="task in tasks" :key="task.__uuid" class="bg-white rounded-xl shadow-sm p-4 flex items-start">
+            <div :class="task.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'"
+              class="h-3 w-3 rounded-full mt-1 mr-3"></div>
 
             <div class="flex-1">
               <h3 class="font-semibold text-lg">{{ task.title }}</h3>
@@ -157,62 +118,31 @@
             </div>
 
             <div class="flex-shrink-0 flex flex-col items-center ml-4 space-y-2">
-              <button
-                @click="toggleTask(task)"
-                title="Toggle Status"
-                class="p-1 rounded-full hover:bg-gray-100"
-              >
-                <svg
-                  v-if="task.status === 'completed'"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 text-green-600"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 
+              <button @click="toggleTask(task)" title="Toggle Status" class="p-1 rounded-full hover:bg-gray-100">
+                <svg v-if="task.status === 'completed'" xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 
                        0 01-1.414 0l-4-4a1 1 0 
                        011.414-1.414L8 12.586l7.293-7.293a1 1 
-                       0 011.414 0z"
-                    clip-rule="evenodd"
-                  />
+                       0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                <svg
-                  v-else
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
                   <circle cx="12" cy="12" r="9" stroke-width="2" />
                 </svg>
               </button>
 
-              <button
-                @click="deleteTask(task)"
-                title="Delete"
-                class="p-1 rounded-full hover:bg-gray-100"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 text-red-500"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 
+              <button @click="deleteTask(task)" title="Delete" class="p-1 rounded-full hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20"
+                  fill="currentColor">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 
                        4H4a1 1 0 000 2v10a2 2 0 
                        002 2h8a2 2 0 002-2V6a1 
                        1 0 100-2h-3.382l-.724-1.447A1 
                        1 0 0011 2H9zM7 8a1 1 0 
                        012 0v6a1 1 0 11-2 0V8zm5-1a1 
                        1 0 00-1 1v6a1 1 0 102 
-                       0V8a1 1 0 00-1-1z"
-                    clip-rule="evenodd"
-                  />
+                       0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
               </button>
             </div>
@@ -237,12 +167,8 @@ import 'vue3-toastify/dist/index.css'
 
 // Vuex + axios + auth
 const store = useStore()
-const API = axios.create({ baseURL: 'http://localhost:8000' })
-API.interceptors.request.use(cfg => {
-  const token = store.state.auth.token
-  if (token) cfg.headers.Authorization = token
-  return cfg
-})
+// Use global axios instance with authentication handled by global interceptor
+const API = axios
 
 // Reactive state
 const tasks = ref([])
@@ -259,8 +185,8 @@ const newTask = ref({
 })
 
 // Dropdown values
-const categories = ['homework','project','study','personal','chore','health','financial']
-const priorities = ['low','medium','high']
+const categories = ['homework', 'project', 'study', 'personal', 'chore', 'health', 'financial']
+const priorities = ['low', 'medium', 'high']
 
 // Normalize each row so it always gets a unique __uuid, plus .id & .task_id
 function normalizeRow(row) {
@@ -281,18 +207,18 @@ onMounted(async () => {
 
 // Helpers
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString(undefined,{
-    month:'short',day:'numeric',year:'numeric'
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric'
   })
 }
 
 // Create
 async function addTask() {
-  if (!newTask.value.title||!newTask.value.category||!newTask.value.priority) {
+  if (!newTask.value.title || !newTask.value.category || !newTask.value.priority) {
     return toast.error('Title, category & priority required')
   }
   const payload = { ...newTask.value }
-  for (const k of ['description','due_date','due_time','attachment_url']) {
+  for (const k of ['description', 'due_date', 'due_time', 'attachment_url']) {
     if (!payload[k]) delete payload[k]
   }
 
@@ -300,13 +226,13 @@ async function addTask() {
     const { data } = await API.post('/student/tasks/', payload)
     tasks.value.push(normalizeRow(data))
     Object.assign(newTask.value, {
-      title:'',description:'',category:'',
-      priority:'',due_date:'',due_time:'',
-      status:'pending',reward_points:0,attachment_url:''
+      title: '', description: '', category: '',
+      priority: '', due_date: '', due_time: '',
+      status: 'pending', reward_points: 0, attachment_url: ''
     })
     toast.success('Task added!')
   } catch (err) {
-    toast.error(err.response?.data?.detail||'Add failed')
+    toast.error(err.response?.data?.detail || 'Add failed')
   }
 }
 
@@ -314,7 +240,7 @@ async function addTask() {
 async function toggleTask(task) {
   try {
     const { data } = await API.patch(`/student/tasks/${task.task_id}/`, {
-      status: task.status==='completed'?'pending':'completed'
+      status: task.status === 'completed' ? 'pending' : 'completed'
     })
     Object.assign(task, normalizeRow(data))
     toast.success('Status updated!')
