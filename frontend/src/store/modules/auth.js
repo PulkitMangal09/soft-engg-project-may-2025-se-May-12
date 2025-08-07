@@ -1,16 +1,22 @@
+import { profileService } from '@/services/profileService'
+
 export default {
     namespaced: true,
     state: {
         user: null,
         token: localStorage.getItem('token'),
         isAuthenticated: false,
-        role: localStorage.getItem('userRole') || null
+        role: localStorage.getItem('userRole') || null,
+        hasProfile: false,
+        profileCompleted: false
     },
 
     getters: {
         isAuthenticated: state => state.isAuthenticated,
         userRole: state => state.role,
-        currentUser: state => state.user
+        currentUser: state => state.user,
+        hasProfile: state => state.hasProfile,
+        profileCompleted: state => state.profileCompleted
     },
 
     mutations: {
@@ -37,11 +43,18 @@ export default {
             }
         },
 
+        SET_PROFILE_STATUS(state, { hasProfile, profileCompleted }) {
+            state.hasProfile = hasProfile
+            state.profileCompleted = profileCompleted
+        },
+
         LOGOUT(state) {
             state.user = null
             state.token = null
             state.role = null
             state.isAuthenticated = false
+            state.hasProfile = false
+            state.profileCompleted = false
             localStorage.removeItem('token')
             localStorage.removeItem('userRole')
         }
@@ -49,27 +62,12 @@ export default {
 
     actions: {
         async login({ commit }, { email, password, role }) {
-            // If password is missing or undefined, bypass backend and set user directly
-            if (!password) {
-                const mockUser = {
-                    id: 1,
-                    name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
-                    email: email || `${role}@example.com`,
-                    role: role
-                };
-                commit('SET_USER', mockUser);
-                commit('SET_TOKEN', 'mock-token-' + Date.now());
-                commit('SET_ROLE', role);
-                return { success: true };
-            }
             try {
-                // FastAPI expects x-www-form-urlencoded with username, password, grant_type, etc.
+                // Always use real authentication
                 const formData = new URLSearchParams();
                 formData.append('username', email);
                 formData.append('password', password);
                 formData.append('grant_type', 'password');
-                formData.append('client_id', 'web-app');
-                formData.append('client_secret', 'dummy-secret');
 
                 const response = await fetch('http://localhost:8000/auth/token', {
                     method: 'POST',
@@ -80,39 +78,118 @@ export default {
                 const data = await response.json();
 
                 if (response.ok) {
-                    // If backend returns user info, use it; else create minimal user
-                    const user = data.user || { email, role };
+                    // Create user object from response data
+                    const user = {
+                        id: data.user_id || Date.now(),
+                        name: email.split('@')[0], // Use email prefix as name
+                        email: email,
+                        role: data.role
+                    };
+                    
                     commit('SET_USER', user);
-                    // FastAPI returns access_token and token_type
-                    const token = data.access_token ? `${data.token_type} ${data.access_token}` : data.token;
+                    
+                    // Store the actual access token
+                    const token = data.access_token;
                     commit('SET_TOKEN', token);
-                    // Use role from response if available, else from input
-                    commit('SET_ROLE', user.role || role);
+                    commit('SET_ROLE', data.role);
+                    
+                    // Set profile status from response
+                    commit('SET_PROFILE_STATUS', { 
+                        hasProfile: data.has_profile || false, 
+                        profileCompleted: data.has_profile || false 
+                    });
+                    
                     return { success: true };
                 } else {
-                    return { success: false, error: data.detail || data.message };
+                    return { success: false, error: data.detail || data.message || 'Login failed' };
                 }
             } catch (error) {
-                return { success: false, error: 'Network error' };
+                console.error('Login error:', error);
+                return { success: false, error: 'Network error. Please check your connection.' };
             }
         },
 
-        // New action to bypass authentication for development
-        async loginWithoutValidation({ commit }, { role }) {
-            // Create a mock user object
-            const mockUser = {
-                id: 1,
-                name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
-                email: `${role}@example.com`,
-                role: role
+        async signup({ commit }, { email, password, full_name, role }) {
+            try {
+                const response = await fetch('http://localhost:8000/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        confirm_password: password,
+                        full_name,
+                        role,
+                        terms_agreed: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    return { success: true, message: 'Account created successfully' };
+                } else {
+                    return { success: false, error: data.detail || data.message || 'Signup failed' };
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                return { success: false, error: 'Network error. Please check your connection.' };
             }
-            
-            // Set authentication state without backend validation
-            commit('SET_USER', mockUser)
-            commit('SET_TOKEN', 'mock-token-' + Date.now())
-            commit('SET_ROLE', role)
-            
-            return { success: true }
+        },
+
+        async checkProfileStatus({ commit, state }) {
+            try {
+                const token = state.token
+                if (!token) return
+
+                const profileStatus = await profileService.checkProfileStatus(token)
+                commit('SET_PROFILE_STATUS', {
+                    hasProfile: profileStatus.has_profile,
+                    profileCompleted: profileStatus.is_completed
+                })
+            } catch (error) {
+                console.error('Error checking profile status:', error)
+                commit('SET_PROFILE_STATUS', { hasProfile: false, profileCompleted: false })
+            }
+        },
+
+        async createProfile({ commit, state }, profileData) {
+            try {
+                const token = state.token
+                const role = state.role
+                
+                let response
+                if (role === 'student') {
+                    response = await profileService.createStudentProfile(profileData, token)
+                } else if (role === 'teacher') {
+                    response = await profileService.createTeacherProfile(profileData, token)
+                } else if (role === 'parent') {
+                    response = await profileService.createParentProfile(profileData, token)
+                }
+
+                commit('SET_PROFILE_STATUS', { hasProfile: true, profileCompleted: true })
+                return { success: true, data: response }
+            } catch (error) {
+                return { success: false, error: error.message }
+            }
+        },
+
+        async validateToken({ commit, state }) {
+            try {
+                const token = state.token
+                if (!token) {
+                    commit('LOGOUT')
+                    return false
+                }
+
+                // Try to check profile status as a way to validate the token
+                await this.dispatch('auth/checkProfileStatus')
+                return true
+            } catch (error) {
+                console.error('Token validation failed:', error)
+                commit('LOGOUT')
+                return false
+            }
         },
 
         logout({ commit }) {

@@ -10,12 +10,10 @@
                 <p class="text-gray-600">{{ roleConfig.subtitle }}</p>
             </div>
 
-
-
             <form @submit.prevent="handleLogin" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input v-model="form.username" type="email" required
+                    <input v-model="form.email" type="email" required
                         class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter your email">
                 </div>
@@ -47,7 +45,6 @@
 <script>
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
-import axios from 'axios';
 
 export default {
     name: 'LoginView',
@@ -61,7 +58,7 @@ export default {
     data() {
         return {
             form: {
-                username: '',
+                email: '',
                 password: ''
             },
             error: '',
@@ -97,7 +94,7 @@ export default {
 
     methods: {
         async handleLogin() {
-            if (!this.form.username || !this.form.password) {
+            if (!this.form.email || !this.form.password) {
                 this.$toast.error('Please enter both email and password')
                 return
             }
@@ -106,36 +103,28 @@ export default {
             this.error = ''
 
             try {
-                const formData = new URLSearchParams()
-                formData.append('username', this.form.username)
-                formData.append('password', this.form.password)
-                formData.append('grant_type', 'password')
-                formData.append('client_id', 'web-app')
-                formData.append('client_secret', 'dummy-secret')
-
-                const response = await axios.post('/auth/token', formData, {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
+                const result = await this.$store.dispatch('auth/login', {
+                    email: this.form.email,
+                    password: this.form.password,
+                    role: this.role
                 })
 
-                // Store the access token and user data
-                const { access_token, token_type, role } = response.data
-                const userData = {
-                    email: this.form.username,
-                    role: role,
-                    token: `${token_type} ${access_token}`
+                if (result.success) {
+                    this.$toast.success('Login successful!')
+
+                    // Check if user has profile, if not, redirect to profile completion
+                    const hasProfile = this.$store.getters['auth/hasProfile']
+                    if (!hasProfile) {
+                        this.$router.push(`/profile-completion/${this.role}`)
+                    } else {
+                        this.$router.push(`/${this.role}`)
+                    }
+                } else {
+                    this.$toast.error(result.error || 'Login failed')
                 }
-
-                await this.$store.dispatch('auth/login', userData)
-                this.$toast.success('Login successful!')
-
-                this.$router.push(`/${role}`)
-
             } catch (error) {
                 console.error('Login error:', error)
-                const errorMessage = error.response?.data?.detail || 'Invalid email or password. Please try again.'
-                this.$toast.error(errorMessage)
+                this.$toast.error('An error occurred during login. Please try again.')
             } finally {
                 this.loading = false
             }

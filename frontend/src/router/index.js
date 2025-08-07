@@ -5,6 +5,7 @@ import { useStore } from 'vuex'
 import WelcomeView from '@/views/auth/WelcomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import SignupView from '@/views/auth/SignupView.vue'
+import ProfileCompletionView from '@/views/auth/ProfileCompletionView.vue'
 
 
 // Student Views
@@ -82,6 +83,7 @@ const routes = [
   { path: '/', name: 'Welcome', component: WelcomeView },
   { path: '/login/:role?', name: 'Login', component: LoginView, props: true },
   { path: '/signup/:role?', name: 'Signup', component: SignupView, props: true },
+  { path: '/profile-completion/:role?', name: 'ProfileCompletion', component: ProfileCompletionView, props: true },
 
   // // Student Routes
   // {

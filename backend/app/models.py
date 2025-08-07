@@ -41,6 +41,7 @@ class TokenResponse(BaseModel):
                               example="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...")
     token_type:   str = Field(..., example="bearer")
     role:    str = Field(..., example="student")
+    has_profile: Optional[bool] = Field(False, example=False)
 
 
 # --------------- Emotion Enums ---------------
@@ -390,3 +391,40 @@ class JoinRequestCreate(BaseModel):
     target_id: UUID = Field(..., example="a-family-uuid")
     relationship_type: str = Field(..., example="child")
     message: Optional[str] = Field(None, example="I'd like to join!")
+
+# ----------- Profile Completion Models -----------
+
+
+class StudentProfileCreate(BaseModel):
+    student_number: Optional[str] = Field(None, example="STU123456")
+    grade_level: Optional[str] = Field(None, example="10")
+    school_name: Optional[str] = Field(None, example="Springfield High School")
+    emergency_contact_phone: Optional[str] = Field(None, example="+1234567890")
+    can_exist_independently: Optional[bool] = Field(True, example=True)
+
+
+class TeacherProfileCreate(BaseModel):
+    school_name: str = Field(..., example="Springfield High School")
+    school_district: str = Field(..., example="Springfield School District")
+    subject_grade: Optional[str] = Field(None, example="Mathematics, Grade 10")
+
+
+class ParentProfileCreate(BaseModel):
+    name: str = Field(..., example="John Smith")
+    group: Optional[str] = Field(None, example="Smith Family")
+    is_head: Optional[bool] = Field(False, example=False)
+    description: Optional[str] = Field(None, example="Primary caregiver")
+
+
+class ProfileCompletionResponse(BaseModel):
+    is_completed: bool
+    profile_exists: bool
+    redirect_url: Optional[str] = None
+    message: Optional[str] = None
+
+
+class ProfileStatusResponse(BaseModel):
+    has_profile: bool
+    is_completed: bool
+    user_type: str
+    profile_data: Optional[dict] = None
