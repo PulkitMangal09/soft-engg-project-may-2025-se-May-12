@@ -67,7 +67,6 @@
 <script>
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
-import axios from 'axios';
 
 export default {
     name: 'SignupView',
@@ -132,21 +131,22 @@ export default {
 
             this.loading = true
             try {
-                const response = await axios.post('/auth/signup', {
-                    full_name: this.form.full_name,
+                const result = await this.$store.dispatch('auth/signup', {
                     email: this.form.email,
                     password: this.form.password,
-                    confirm_password: this.form.confirm_password,
-                    role: this.role,
-                    terms_agreed: this.form.terms_agreed
+                    full_name: this.form.full_name,
+                    role: this.role
                 })
 
-                this.$toast.success('Account created successfully! Please log in.')
-                this.$router.push(`/login/${this.role}`)
+                if (result.success) {
+                    this.$toast.success('Account created successfully! Please log in.')
+                    this.$router.push(`/login/${this.role}`)
+                } else {
+                    this.$toast.error(result.error || 'Failed to create account')
+                }
             } catch (error) {
                 console.error('Signup error:', error)
-                const errorMessage = error.response?.data?.detail || 'Failed to create account. Please try again.'
-                this.$toast.error(errorMessage)
+                this.$toast.error('An error occurred during signup. Please try again.')
             } finally {
                 this.loading = false
             }

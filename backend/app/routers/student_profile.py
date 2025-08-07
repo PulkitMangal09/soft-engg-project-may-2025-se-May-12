@@ -3,9 +3,15 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional
 from ..config import supabase
+from ..models import StudentProfileCreate, ProfileStatusResponse
+from ..utils.profile_utils import (
+    get_user_id_from_token, get_user_type, check_profile_exists,
+    get_profile_data, create_profile
+)
 
 router = APIRouter(prefix="/student/profile", tags=["student-profile"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
 
 class StudentProfileUpdate(BaseModel):
     student_number: Optional[str]
@@ -14,47 +20,72 @@ class StudentProfileUpdate(BaseModel):
     emergency_contact_phone: Optional[str]
     can_exist_independently: Optional[bool]
 
-def get_user_id(token: str):
-    auth_res = supabase.auth.get_user(token)
-    if getattr(auth_res, 'error', None):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    return auth_res.user.id
 
 @router.get("/", response_model=dict)
 def get_profile(token: str = Depends(oauth2)):
     """Get the authenticated student's profile."""
-    user_id = get_user_id(token)
-    resp = supabase.table("students").select("*").eq("student_id", user_id).single().execute()
-    data = getattr(resp, 'data', None)
-    if not data:
+    user_id = get_user_id_from_token(token)
+    profile_data = get_profile_data(user_id, 'student')
+    if not profile_data:
         raise HTTPException(status_code=404, detail="Profile not found")
-    return data
+    return profile_data
+
+
+@router.get("/status", response_model=ProfileStatusResponse)
+def get_profile_status(token: str = Depends(oauth2)):
+    """Check if student profile is completed."""
+    user_id = get_user_id_from_token(token)
+    user_type = get_user_type(user_id)
+
+    if user_type != 'student':
+        raise HTTPException(
+            status_code=403, detail="Only students can access student profile")
+
+    has_profile = check_profile_exists(user_id, user_type)
+    profile_data = get_profile_data(
+        user_id, user_type) if has_profile else None
+
+    return ProfileStatusResponse(
+        has_profile=has_profile,
+        is_completed=has_profile,
+        user_type=user_type,
+        profile_data=profile_data
+    )
+
 
 @router.post("/", response_model=dict)
-def create_profile(data: StudentProfileUpdate, token: str = Depends(oauth2)):
-    """Create initial student profile stub (if not existing)."""
-    user_id = get_user_id(token)
-    payload = {"student_id": user_id, **data.dict(exclude_unset=True)}
-    resp = supabase.table("students").insert(payload).execute()
-    data = getattr(resp, 'data', None)
-    if not data:
-        raise HTTPException(status_code=400, detail="Insert failed")
-    # resp.data is a list
-    return data[0]
+def create_profile(data: StudentProfileCreate, token: str = Depends(oauth2)):
+    """Create initial student profile."""
+    user_id = get_user_id_from_token(token)
+    user_type = get_user_type(user_id)
+
+    if user_type != 'student':
+        raise HTTPException(
+            status_code=403, detail="Only students can create student profiles")
+
+    if check_profile_exists(user_id, user_type):
+        raise HTTPException(
+            status_code=400, detail="Student profile already exists")
+
+    profile_data = data.dict(exclude_unset=True)
+    return create_profile(user_id, user_type, profile_data)
+
 
 @router.patch("/", response_model=dict)
 def update_profile(data: StudentProfileUpdate, token: str = Depends(oauth2)):
     """Update the authenticated student's profile."""
-    user_id = get_user_id(token)
-    resp = supabase.table("students").update(data.dict(exclude_unset=True)).eq("student_id", user_id).execute()
+    user_id = get_user_id_from_token(token)
+    resp = supabase.table("students").update(
+        data.dict(exclude_unset=True)).eq("student_id", user_id).execute()
     data = getattr(resp, 'data', None)
     if not data:
         raise HTTPException(status_code=400, detail="Update failed")
     return data[0]
 
+
 @router.delete("/", response_model=dict)
 def delete_profile(token: str = Depends(oauth2)):
     """Delete the authenticated student's profile."""
-    user_id = get_user_id(token)
+    user_id = get_user_id_from_token(token)
     supabase.table("students").delete().eq("student_id", user_id).execute()
     return {"deleted": True}

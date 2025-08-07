@@ -6,6 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.roles import router as roles_router
+from app.routers.profile_completion import router as profile_completion_router
+from app.routers.student_profile import router as student_profile_router
+from app.routers.teacher_profile import router as teacher_profile_router
+from app.routers.parent_profile import router as parent_profile_router
 from app.routers.teacher_dashboard import router as dashboard_router
 from app.routers.teacher_students import router as students_router
 from app.routers.teacher_tasks import router as tasks_router
@@ -21,7 +25,6 @@ from app.routers.parent_children import router as parent_children_router
 from app.routers.parent_requests import router as parent_requests_router
 from app.routers.parent_tasks import router as parent_tasks_router
 from app.routers.parent_family import router as parent_family_router
-from app.routers.student_profile import router as student_profile_router
 
 app = FastAPI(
     title="GrowthGeine API",
@@ -30,6 +33,8 @@ app = FastAPI(
 # ————————————————
 # Expose OpenAPI as YAML
 # ————————————————
+
+
 @app.get("/openapi.yaml", include_in_schema=False)
 def view_openapi_yaml():
     """
@@ -41,6 +46,7 @@ def view_openapi_yaml():
         content=yaml_schema,
         media_type="text/plain"
     )
+
 
 @app.get("/openapi/download", include_in_schema=False)
 def download_openapi_yaml():
@@ -55,6 +61,7 @@ def download_openapi_yaml():
         headers={"Content-Disposition": "attachment; filename=openapi.yaml"}
     )
 
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -68,6 +75,10 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(roles_router)
+app.include_router(profile_completion_router)
+app.include_router(student_profile_router)
+app.include_router(teacher_profile_router)
+app.include_router(parent_profile_router)
 app.include_router(dashboard_router)
 app.include_router(students_router)
 app.include_router(tasks_router)
@@ -83,7 +94,6 @@ app.include_router(parent_children_router)
 app.include_router(parent_requests_router)
 app.include_router(parent_tasks_router)
 app.include_router(parent_family_router)
-app.include_router(student_profile_router)
 
 
 @app.get("/")

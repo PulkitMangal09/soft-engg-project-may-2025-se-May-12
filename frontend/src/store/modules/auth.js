@@ -1,112 +1,199 @@
-// src/store/modules/auth.js
-
-import { supabase } from '@/supabaseClient'
+import { profileService } from '@/services/profileService'
 
 export default {
-  namespaced: true,
-
-  state: () => ({
-    user:            null,                    // { id, email, role }
-    token:           localStorage.getItem('token'),
-    isAuthenticated: !!localStorage.getItem('token'),
-    role:            localStorage.getItem('userRole') || null
-  }),
-
-  getters: {
-    isAuthenticated: s => s.isAuthenticated,
-    userRole:        s => s.role,
-    currentUser:     s => s.user
-  },
-
-  mutations: {
-    SET_USER(state, user) {
-      state.user            = user
-      state.isAuthenticated = true
+    namespaced: true,
+    state: {
+        user: null,
+        token: localStorage.getItem('token'),
+        isAuthenticated: false,
+        role: localStorage.getItem('userRole') || null,
+        hasProfile: false,
+        profileCompleted: false
     },
-    SET_TOKEN(state, token) {
-      state.token = token
-      token
-        ? localStorage.setItem('token', token)
-        : localStorage.removeItem('token')
+
+    getters: {
+        isAuthenticated: state => state.isAuthenticated,
+        userRole: state => state.role,
+        currentUser: state => state.user,
+        hasProfile: state => state.hasProfile,
+        profileCompleted: state => state.profileCompleted
     },
-    SET_ROLE(state, role) {
-      state.role = role
-      role
-        ? localStorage.setItem('userRole', role)
-        : localStorage.removeItem('userRole')
+
+    mutations: {
+        SET_USER(state, user) {
+            state.user = user
+            state.isAuthenticated = !!user
+        },
+
+        SET_TOKEN(state, token) {
+            state.token = token
+            if (token) {
+                localStorage.setItem('token', token)
+            } else {
+                localStorage.removeItem('token')
+            }
+        },
+
+        SET_ROLE(state, role) {
+            state.role = role
+            if (role) {
+                localStorage.setItem('userRole', role)
+            } else {
+                localStorage.removeItem('userRole')
+            }
+        },
+
+        SET_PROFILE_STATUS(state, { hasProfile, profileCompleted }) {
+            state.hasProfile = hasProfile
+            state.profileCompleted = profileCompleted
+        },
+
+        LOGOUT(state) {
+            state.user = null
+            state.token = null
+            state.role = null
+            state.isAuthenticated = false
+            state.hasProfile = false
+            state.profileCompleted = false
+            localStorage.removeItem('token')
+            localStorage.removeItem('userRole')
+        }
     },
-    LOGOUT(state) {
-      state.user            = null
-      state.token           = null
-      state.role            = null
-      state.isAuthenticated = false
-      localStorage.removeItem('token')
-      localStorage.removeItem('userRole')
+
+    actions: {
+        async login({ commit }, { email, password, role }) {
+            try {
+                // Always use real authentication
+                const formData = new URLSearchParams();
+                formData.append('username', email);
+                formData.append('password', password);
+                formData.append('grant_type', 'password');
+
+                const response = await fetch('http://localhost:8000/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Create user object from response data
+                    const user = {
+                        id: data.user_id || Date.now(),
+                        name: email.split('@')[0], // Use email prefix as name
+                        email: email,
+                        role: data.role
+                    };
+                    
+                    commit('SET_USER', user);
+                    
+                    // Store the actual access token
+                    const token = data.access_token;
+                    commit('SET_TOKEN', token);
+                    commit('SET_ROLE', data.role);
+                    
+                    // Set profile status from response
+                    commit('SET_PROFILE_STATUS', { 
+                        hasProfile: data.has_profile || false, 
+                        profileCompleted: data.has_profile || false 
+                    });
+                    
+                    return { success: true };
+                } else {
+                    return { success: false, error: data.detail || data.message || 'Login failed' };
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                return { success: false, error: 'Network error. Please check your connection.' };
+            }
+        },
+
+        async signup({ commit }, { email, password, full_name, role }) {
+            try {
+                const response = await fetch('http://localhost:8000/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        confirm_password: password,
+                        full_name,
+                        role,
+                        terms_agreed: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    return { success: true, message: 'Account created successfully' };
+                } else {
+                    return { success: false, error: data.detail || data.message || 'Signup failed' };
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                return { success: false, error: 'Network error. Please check your connection.' };
+            }
+        },
+
+        async checkProfileStatus({ commit, state }) {
+            try {
+                const token = state.token
+                if (!token) return
+
+                const profileStatus = await profileService.checkProfileStatus(token)
+                commit('SET_PROFILE_STATUS', {
+                    hasProfile: profileStatus.has_profile,
+                    profileCompleted: profileStatus.is_completed
+                })
+            } catch (error) {
+                console.error('Error checking profile status:', error)
+                commit('SET_PROFILE_STATUS', { hasProfile: false, profileCompleted: false })
+            }
+        },
+
+        async createProfile({ commit, state }, profileData) {
+            try {
+                const token = state.token
+                const role = state.role
+                
+                let response
+                if (role === 'student') {
+                    response = await profileService.createStudentProfile(profileData, token)
+                } else if (role === 'teacher') {
+                    response = await profileService.createTeacherProfile(profileData, token)
+                } else if (role === 'parent') {
+                    response = await profileService.createParentProfile(profileData, token)
+                }
+
+                commit('SET_PROFILE_STATUS', { hasProfile: true, profileCompleted: true })
+                return { success: true, data: response }
+            } catch (error) {
+                return { success: false, error: error.message }
+            }
+        },
+
+        async validateToken({ commit, state }) {
+            try {
+                const token = state.token
+                if (!token) {
+                    commit('LOGOUT')
+                    return false
+                }
+
+                // Try to check profile status as a way to validate the token
+                await this.dispatch('auth/checkProfileStatus')
+                return true
+            } catch (error) {
+                console.error('Token validation failed:', error)
+                commit('LOGOUT')
+                return false
+            }
+        },
+
+        logout({ commit }) {
+            commit('LOGOUT')
+        }
     }
-  },
-
-  actions: {
-    async login({ commit }, payload) {
-      // 1) If caller already passed a real bearer token, use it directly:
-      if (payload.token) {
-        commit('SET_USER', {
-          id:    payload.id,    // you must pass payload.id from LoginView
-          email: payload.email,
-          role:  payload.role
-        })
-        commit('SET_TOKEN', payload.token)
-        commit('SET_ROLE', payload.role)
-        return { success: true }
-      }
-
-      // 2) Otherwise do the username/password flow:
-      try {
-        const form = new URLSearchParams()
-        form.append('username',     payload.email)
-        form.append('password',     payload.password)
-        form.append('grant_type',   'password')
-        form.append('client_id',    'web-app')
-        form.append('client_secret','dummy-secret')
-
-        const res  = await fetch('http://localhost:8000/auth/token', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body:    form
-        })
-        const data = await res.json()
-
-        if (!res.ok) {
-          return { success: false, error: data.detail || data.message }
-        }
-
-        // build the bearer
-        const bearer = `${data.token_type} ${data.access_token}`
-
-        // fetch supabase user profile to get their ID
-        const { data: userObj, error } = await supabase.auth.getUser(bearer)
-        if (error || !userObj?.user) {
-          throw new Error('Could not fetch user profile')
-        }
-
-        const user = {
-          id:    userObj.user.id,
-          email: payload.email,
-          role:  payload.role
-        }
-
-        // commit real creds
-        commit('SET_USER', user)
-        commit('SET_TOKEN', bearer)
-        commit('SET_ROLE', payload.role)
-        return { success: true }
-
-      } catch (err) {
-        return { success: false, error: err.message }
-      }
-    },
-
-    logout({ commit }) {
-      commit('LOGOUT')
-    }
-  }
 }
