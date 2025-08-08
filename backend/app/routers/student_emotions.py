@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File, Form
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from typing import List
@@ -335,13 +335,21 @@ def delete_emergency_contact(contact_id: str, token: str = Depends(oauth2)):
 
 
 @router.post("/sessions/{session_id}/auto-reply")
-def auto_reply(session_id: str, user_message: str = Body(..., embed=True), token: str = Depends(oauth2)):
+def auto_reply(
+    session_id: str,
+    user_message: str = Form(""),
+    file: UploadFile | None = File(None),
+    token: str = Depends(oauth2)
+):
     user_id = get_user_id(token)
     # 1. Save user message (reuse create_chat_message logic)
+    # If image provided but empty text, store a placeholder
+    content_to_store = user_message if user_message else (
+        "[Image uploaded]" if file else "")
     user_msg = ChatMessage(
         session_id=session_id,
         sender_type=SenderTypeEnum.user,
-        message_content=user_message,
+        message_content=content_to_store,
     )
     create_chat_message(user_msg, token)
     # 2. Fetch chat history (reuse list_chat_messages logic)
@@ -351,8 +359,13 @@ def auto_reply(session_id: str, user_message: str = Body(..., embed=True), token
         "session_id", session_id).single().execute().data
     session_type = session.get("session_type") if session else None
     # 3. Call chatbot with chat history
+    image_bytes = None
+    image_mime = None
+    if file is not None:
+        image_bytes = file.file.read()
+        image_mime = file.content_type
     bot_reply = chat_bot_module.chat_bot(
-        chat_history, session_type=session_type)
+        chat_history, session_type=session_type, image_bytes=image_bytes, image_mime=image_mime)
     # 4. Save bot reply as a message
     bot_msg = ChatMessage(
         session_id=session_id,

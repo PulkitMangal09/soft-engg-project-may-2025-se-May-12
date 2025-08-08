@@ -24,10 +24,15 @@
         :class="m.sender_type === 'user' ? 'flex justify-end' : 'flex justify-start'">
         <div :class="[
           m.sender_type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800',
-          'rounded-2xl p-3 text-sm',
+          'rounded-2xl p-3 text-sm space-y-2',
           m.sender_type === 'user' ? 'max-w-xs' : 'max-w-[75%]'
         ]">
-          {{ m.message_content }}
+          <template v-if="m.message_content">
+            {{ m.message_content }}
+          </template>
+          <template v-if="m.image_preview">
+            <img :src="m.image_preview" alt="uploaded" class="rounded-lg max-h-56 object-contain" />
+          </template>
         </div>
       </div>
 
@@ -88,6 +93,16 @@
             </button>
           </div>
         </div>
+        <!-- Upload image -->
+        <label class="p-2 text-gray-500 hover:text-gray-700 cursor-pointer" title="Upload image">
+          <input ref="fileInputEl" type="file" accept="image/png,image/jpeg" class="hidden" @change="onFileChange" />
+          <!-- Upload icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+        </label>
+
         <input type="text" v-model="message" placeholder="Type a message..."
           class="flex-1 border border-gray-300 rounded-full py-2 px-4 mx-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           @keyup.enter="sendMessage">
@@ -104,7 +119,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { ensureSession, getMessages, autoReply, closeSession, listSessions, reopenSession } from '@/services/chatService'
+import { ensureSession, getMessages, autoReply, autoReplyWithImage, closeSession, listSessions, reopenSession } from '@/services/chatService'
 
 const message = ref('')
 const session = ref(null)
@@ -114,6 +129,8 @@ const showEmoji = ref(false)
 const emojis = ['🙂', '😊', '😢', '😡', '😴', '👍', '❤️', '👏', '🙌']
 const showHistory = ref(false)
 const sessions = ref([])
+const pendingFile = ref(null)
+const fileInputEl = ref(null)
 const historyButtonEl = ref(null)
 const historyDropdownEl = ref(null)
 
@@ -133,7 +150,7 @@ onBeforeUnmount(async () => {
 })
 
 async function sendMessage() {
-  if (!message.value.trim()) return
+  if (!message.value.trim() && !pendingFile.value) return
   const text = message.value
   message.value = ''
   isTyping.value = true
@@ -141,13 +158,25 @@ async function sendMessage() {
   const sessionId = session.value.session_id || session.value.id || session.value.sessionId
   // optimistic user message
   const tempId = `tmp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`
-  messages.value.push({ message_id: tempId, sender_type: 'user', message_content: text, __optimistic: true })
+  const optimisticText = text || ''
+  let image_preview = null
+  if (pendingFile.value) {
+    image_preview = URL.createObjectURL(pendingFile.value)
+  }
+  messages.value.push({ message_id: tempId, sender_type: 'user', message_content: optimisticText, image_preview, __optimistic: true })
   try {
-    const { bot_reply } = await autoReply(sessionId, text)
+    if (pendingFile.value) {
+      await autoReplyWithImage(sessionId, text, pendingFile.value)
+    } else {
+      await autoReply(sessionId, text)
+    }
     // Reload history after auto-reply stored both messages
     messages.value = await getMessages(sessionId)
   } finally {
     isTyping.value = false
+    if (pendingFile.value && image_preview) URL.revokeObjectURL(image_preview)
+    pendingFile.value = null
+    if (fileInputEl.value) fileInputEl.value.value = ''
   }
 }
 
@@ -209,6 +238,13 @@ function onOutsideClick(e) {
   }
   showHistory.value = false
   document.removeEventListener('click', onOutsideClick, true)
+}
+
+function onFileChange(e) {
+  const file = e.target.files && e.target.files[0]
+  if (!file) return
+  if (!['image/png', 'image/jpeg'].includes(file.type)) return
+  pendingFile.value = file
 }
 </script>
 

@@ -15,8 +15,20 @@ export async function getMessages(sessionId) {
 }
 
 export async function autoReply(sessionId, userMessage) {
-  const { data } = await API.post(`/student/emotions/sessions/${sessionId}/auto-reply`, {
-    user_message: userMessage,
+  const form = new FormData()
+  if (userMessage) form.append('user_message', userMessage)
+  const { data } = await API.post(`/student/emotions/sessions/${sessionId}/auto-reply`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return data
+}
+
+export async function autoReplyWithImage(sessionId, userMessage, file) {
+  const form = new FormData()
+  if (userMessage) form.append('user_message', userMessage)
+  if (file) form.append('file', file)
+  const { data } = await API.post(`/student/emotions/sessions/${sessionId}/auto-reply`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
   })
   return data
 }

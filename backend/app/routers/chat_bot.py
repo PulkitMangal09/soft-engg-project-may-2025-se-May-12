@@ -8,8 +8,10 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 
-def chat_bot(chat_history, session_type: str | None = None):
-    """Generate a bot reply from chat history, tailored by session type ('diet' or 'emotion')."""
+def chat_bot(chat_history, session_type: str | None = None, image_bytes: bytes | None = None, image_mime: str | None = None):
+    """Generate a bot reply from chat history, tailored by session type ('diet' or 'emotion').
+    Optionally include an image (jpg/png) to provide visual context to the model.
+    """
     # Format chat history for the prompt
     formatted_history = "\n".join(
         f"{msg.get('sender_type', 'user')}: {msg.get('message_content', '')}" for msg in chat_history
@@ -31,7 +33,7 @@ def chat_bot(chat_history, session_type: str | None = None):
             "Provide friendly, helpful guidance based on the user's message."
         )
 
-    prompt = f"""
+    prompt_text = f"""
     You are MyWellBeingBot, a friendly AI assistant.
     Session type: {session_type or 'general'}
     Guidance: {session_directives}
@@ -68,9 +70,23 @@ def chat_bot(chat_history, session_type: str | None = None):
 
     try:
         # Generate content with structured output using the correct config format
+        # Build contents: text plus optional inline image
+        contents = []
+        # main user/system prompt text
+        contents.append({"role": "user", "parts": [{"text": prompt_text}]})
+        # attach image if present
+        if image_bytes and image_mime in ("image/jpeg", "image/jpg", "image/png"):
+            # Gemini accepts inline bytes via 'inline_data'
+            contents[-1]["parts"].append({
+                "inline_data": {
+                    "mime_type": image_mime,
+                    "data": image_bytes
+                }
+            })
+
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt,
+            contents=contents,
             config={
                 "response_mime_type": "application/json",
                 "response_schema": response_schema
