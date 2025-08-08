@@ -7,28 +7,47 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-def chat_bot(chat_history):
+
+def chat_bot(chat_history, session_type: str | None = None):
+    """Generate a bot reply from chat history, tailored by session type ('diet' or 'emotion')."""
     # Format chat history for the prompt
     formatted_history = "\n".join(
         f"{msg.get('sender_type', 'user')}: {msg.get('message_content', '')}" for msg in chat_history
     )
-    
+
+    session_directives = ""
+    if session_type == "diet":
+        session_directives = (
+            "Focus on nutrition tips, balanced meals, allergies, sodium/sugar guidance, and hydration. "
+            "When appropriate, suggest healthier alternatives and portion control."
+        )
+    elif session_type == "emotion":
+        session_directives = (
+            "Focus on empathetic, supportive tone. Offer coping strategies, breathing exercises, and resources. "
+            "Avoid diagnosing. Encourage seeking help if severe distress is indicated."
+        )
+    else:
+        session_directives = (
+            "Provide friendly, helpful guidance based on the user's message."
+        )
+
     prompt = f"""
-    You are MyWellBeingBot, a friendly AI assistant that helps users with two kinds of sessions: 
-  • Diet guidance ("diet" sessions)  
-  • Emotion check‑ins ("emotion" sessions)  
+    You are MyWellBeingBot, a friendly AI assistant.
+    Session type: {session_type or 'general'}
+    Guidance: {session_directives}
 
-Here is the conversation so far:
-{formatted_history}
+    Conversation so far:
+    {formatted_history}
 
-When you respond, always:
-  • Reference the user's last message.  
-  • Keep responses concise (2–4 sentences) unless the user asks for more detail.  
-  • Use a conversational, warm tone.  
-  • Never reveal the internal metadata (session_id, user_id, etc.) back to the user. 
-  • Provide a helpful reply and optionally suggest an action.
-  """
-    
+    Respond rules:
+      • Reference the user's last message.
+      • Keep responses concise (2–4 sentences) unless the user asks for more detail.
+      • Use a conversational, warm tone.
+      • Never reveal internal metadata (session_id, user_id, etc.).
+      • Never reply to or discuss any NSFW or inappropriate content as this conversation is with a child—if such content arises, respond with a gentle reminder about safe and appropriate topics. 
+      • Provide a helpful reply and optionally suggest an action.
+    """
+
     # Define the response schema according to the official documentation
     response_schema = {
         "type": "object",
@@ -46,7 +65,7 @@ When you respond, always:
         "required": ["reply"],
         "propertyOrdering": ["reply", "suggested_action"]
     }
-    
+
     try:
         # Generate content with structured output using the correct config format
         response = client.models.generate_content(
@@ -57,23 +76,23 @@ When you respond, always:
                 "response_schema": response_schema
             }
         )
-        print(prompt)
         # Parse and return the JSON response
         parsed_response = json.loads(response.text)
-        
+
         # Ensure required fields are present
         if "reply" not in parsed_response:
             raise ValueError("Missing required field: reply")
-            
+
         # Set default for optional field if not present
         if "suggested_action" not in parsed_response:
             parsed_response["suggested_action"] = "none"
-            
+
         return parsed_response
-        
+
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {e}")
-        print(f"Raw response: {response.text if 'response' in locals() else 'No response'}")
+        print(
+            f"Raw response: {response.text if 'response' in locals() else 'No response'}")
         return {
             "reply": "I'm sorry, I encountered an error processing your request. Please try again.",
             "suggested_action": "none"
