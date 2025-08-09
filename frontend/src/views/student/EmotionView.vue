@@ -8,8 +8,10 @@
           ←
         </button>
         <h1 class="text-lg font-semibold">Emotion Center</h1>
-        <button @click="showProfile = true" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button @click="showProfile = true"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -23,7 +25,7 @@
         </div>
         <!-- Quick Actions -->
         <div class="grid grid-cols-4 gap-2 mb-4">
-          <QuickActionCard title="Log Emotion" icon="📝" @click="$router.push('/student/emotion/new')" />
+          <QuickActionCard title="Log Mood" icon="📝" @click="$router.push('/student/emotion/new')" />
           <QuickActionCard title="Chat Support" icon="💬" @click="$router.push('/student/emotion/chat')" />
           <QuickActionCard title="Emergency Help" icon="📞" @click="$router.push('/student/emotion/emergency')" />
           <QuickActionCard title="My Diary" icon="📖" @click="$router.push('/student/diary')" />
@@ -32,10 +34,11 @@
         <div class="bg-white rounded-xl p-4 shadow-sm">
           <h2 class="font-semibold text-gray-700 mb-3">This Week's Mood Trends</h2>
           <EmotionStats />
-          <div class="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1"> </div>
         </div>
+
+        <!-- Mood Summary Cards -->
+        <MoodSummary :logs="moodLogs" class="mt-4" />
         <!-- Current Mood -->
         <div class="text-center bg-white rounded-xl p-6 shadow-sm">
           <div class="text-5xl mb-3">{{ currentMood.emoji || '😊' }}</div>
@@ -67,6 +70,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import QuickActionCard from '@/components/emotions/QuickActionCard.vue';
 import EmotionStats from '@/components/emotions/EmotionStats.vue';
+import MoodSummary from '@/components/emotions/MoodSummary.vue'
 import ProfileSidebar from '@/components/profile/ProfileSidebar.vue';
 
 // Profile sidebar state
@@ -131,13 +135,13 @@ onMounted(() => {
   };
 });
 
-// Mock data - replace with API call later
-const diaryEntries = ref([
-  { id: 1, mood: 'happy', text: 'Had a great day at school.', tags: ['school', 'friends'], date: '2025-07-02T10:00:00Z' },
-  { id: 2, mood: 'anxious', text: 'Worried about the upcoming exam.', tags: ['exam', 'stress'], date: '2025-07-01T18:30:00Z' },
-  { id: 3, mood: 'excited', text: 'Family trip this weekend!', tags: ['family', 'vacation'], date: '2025-06-30T15:00:00Z' },
-  { id: 4, mood: 'sad', text: 'Missed my friends today.', tags: ['friends'], date: '2025-06-29T20:00:00Z' },
-]);
+import { listMoodLogs } from '@/services/moodService'
+const moodLogs = ref([])
+const recentEntries = computed(() => moodLogs.value.slice(0, 3))
 
-const recentEntries = computed(() => diaryEntries.value.slice(0, 3));
+onMounted(async () => {
+  try {
+    moodLogs.value = await listMoodLogs()
+  } catch { }
+})
 </script>

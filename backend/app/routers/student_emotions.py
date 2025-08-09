@@ -24,10 +24,12 @@ def get_user_id(token: str):
 # -------------------------------
 
 
-@router.post("/entries", response_model=EmotionalEntry)
-def create_emotional_entry(entry: EmotionalEntry, token: str = Depends(oauth2)):
+@router.post("/entries", response_model=dict)
+def create_emotional_entry(entry: dict = Body(...), token: str = Depends(oauth2)):
     user_id = get_user_id(token)
-    payload = entry.dict(exclude_unset=True)
+    # Allow only DB columns
+    allowed = {"title", "content", "tags", "privacy_level"}
+    payload = {k: v for k, v in (entry or {}).items() if k in allowed}
     payload["user_id"] = user_id
     resp = supabase.table("emotional_entries").insert(payload).execute()
     data = getattr(resp, 'data', None)
@@ -36,7 +38,7 @@ def create_emotional_entry(entry: EmotionalEntry, token: str = Depends(oauth2)):
     return data[0]
 
 
-@router.get("/entries", response_model=List[EmotionalEntry])
+@router.get("/entries", response_model=List[dict])
 def list_emotional_entries(token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     resp = supabase.table("emotional_entries").select(
@@ -44,7 +46,7 @@ def list_emotional_entries(token: str = Depends(oauth2)):
     return getattr(resp, 'data', [])
 
 
-@router.get("/entries/{entry_id}", response_model=EmotionalEntry)
+@router.get("/entries/{entry_id}", response_model=dict)
 def get_emotional_entry(entry_id: str, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     resp = supabase.table("emotional_entries").select(
@@ -55,11 +57,16 @@ def get_emotional_entry(entry_id: str, token: str = Depends(oauth2)):
     return data
 
 
-@router.patch("/entries/{entry_id}", response_model=EmotionalEntry)
-def update_emotional_entry(entry_id: str, entry: EmotionalEntry, token: str = Depends(oauth2)):
+@router.patch("/entries/{entry_id}", response_model=dict)
+def update_emotional_entry(entry_id: str, entry: dict = Body(...), token: str = Depends(oauth2)):
     user_id = get_user_id(token)
-    resp = supabase.table("emotional_entries").update(entry.dict(
-        exclude_unset=True)).eq("entry_id", entry_id).eq("user_id", user_id).execute()
+    allowed = {"title", "content", "tags", "privacy_level"}
+    payload = {k: v for k, v in (entry or {}).items() if k in allowed}
+    if not payload:
+        raise HTTPException(
+            status_code=400, detail="No valid fields to update")
+    resp = supabase.table("emotional_entries").update(payload).eq(
+        "entry_id", entry_id).eq("user_id", user_id).execute()
     data = getattr(resp, 'data', None)
     if not data:
         raise HTTPException(status_code=400, detail="Update failed")
@@ -81,7 +88,11 @@ def delete_emotional_entry(entry_id: str, token: str = Depends(oauth2)):
 @router.post("/mood-logs", response_model=MoodLog)
 def create_mood_log(log: MoodLog, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
-    payload = log.dict(exclude_unset=True)
+    # Only allow DB columns and ensure JSON-serializable
+    raw = jsonable_encoder(log, exclude_unset=True, exclude_none=True)
+    allowed = {"mood", "energy_level", "sleep_quality",
+               "stress_level", "notes", "log_date"}
+    payload = {k: v for k, v in (raw or {}).items() if k in allowed}
     payload["user_id"] = user_id
     resp = supabase.table("mood_logs").insert(payload).execute()
     data = getattr(resp, 'data', None)
@@ -112,7 +123,11 @@ def get_mood_log(log_id: str, token: str = Depends(oauth2)):
 @router.patch("/mood-logs/{log_id}", response_model=MoodLog)
 def update_mood_log(log_id: str, log: MoodLog, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
-    resp = supabase.table("mood_logs").update(log.dict(exclude_unset=True)).eq(
+    raw = jsonable_encoder(log, exclude_unset=True, exclude_none=True)
+    allowed = {"mood", "energy_level", "sleep_quality",
+               "stress_level", "notes", "log_date"}
+    payload = {k: v for k, v in (raw or {}).items() if k in allowed}
+    resp = supabase.table("mood_logs").update(payload).eq(
         "log_id", log_id).eq("user_id", user_id).execute()
     data = getattr(resp, 'data', None)
     if not data:
@@ -319,8 +334,13 @@ def get_emergency_contact(contact_id: str, token: str = Depends(oauth2)):
 
 @router.patch("/contacts/{contact_id}", response_model=EmergencyContact)
 def update_emergency_contact(contact_id: str, contact: EmergencyContact, token: str = Depends(oauth2)):
-    resp = supabase.table("emergency_contacts").update(contact.dict(
-        exclude_unset=True)).eq("contact_id", contact_id).execute()
+    # Only allow updating mutable fields; also ensure JSON-serializable types
+    payload = jsonable_encoder(contact, exclude_unset=True, exclude_none=True)
+    allowed = {"name", "phone_number", "description",
+               "contact_type", "is_available_24_7"}
+    payload = {k: v for k, v in (payload or {}).items() if k in allowed}
+    resp = supabase.table("emergency_contacts").update(
+        payload).eq("contact_id", contact_id).execute()
     data = getattr(resp, 'data', None)
     if not data:
         raise HTTPException(status_code=400, detail="Update failed")

@@ -47,11 +47,12 @@ class TokenResponse(BaseModel):
 
 # --------------- Emotion Enums ---------------
 class MoodEnum(str, Enum):
-    very_sad = "very_sad"
-    sad = "sad"
     neutral = "neutral"
+    anxious = "anxious"
+    excited = "excited"
+    sad = "sad"
     happy = "happy"
-    very_happy = "very_happy"
+    angry = "angry"
 
 
 class EnergyLevelEnum(str, Enum):
@@ -330,16 +331,17 @@ class TaskBase(BaseModel):
     assigned_to:   UUID
     assigned_by:   UUID
     category:      str
-    priority:      Optional[str]   = "medium"
+    priority:      Optional[str] = "medium"
     due_date:      Optional[datetime] = None
-    due_time:      Optional[str]   = None
-    status:        Optional[str]   = "pending"
-    reward_points: Optional[int]   = 0
-    attachment_url:Optional[str]   = None
+    due_time:      Optional[str] = None
+    status:        Optional[str] = "pending"
+    reward_points: Optional[int] = 0
+    attachment_url: Optional[str] = None
 
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
+
 
 class TaskCreate(BaseModel):
     title:         str
@@ -350,7 +352,7 @@ class TaskCreate(BaseModel):
     due_time:      Optional[str] = None
     status:        Optional[str] = "pending"
     reward_points: Optional[int] = 0
-    attachment_url:Optional[str] = None
+    attachment_url: Optional[str] = None
 
 
 class TaskUpdate(BaseModel):
