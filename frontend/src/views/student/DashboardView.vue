@@ -10,7 +10,7 @@
                 </div>
             </div>
             <!-- Key Metrics -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                 <div class="bg-white rounded-xl shadow p-6 flex flex-col items-center">
                     <span class="text-3xl mb-2">🗒️</span>
                     <div class="font-bold text-lg text-gray-800">Tasks</div>
@@ -38,6 +38,13 @@
                     <div class="text-sm text-gray-500">Meals & water</div>
                     <router-link to="/student/diet" class="mt-3 text-blue-600 hover:underline text-xs">Diet
                         Dashboard</router-link>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                    <span class="text-3xl mb-2">🔗</span>
+                    <div class="font-bold text-lg text-gray-800">Connections</div>
+                    <div class="text-sm text-gray-500">Teachers & Parents</div>
+                    <router-link to="/student/my-connections" class="mt-3 text-blue-600 hover:underline text-xs">Manage
+                        Connections</router-link>
                 </div>
             </div>
             <!-- Health Analytics Card -->
