@@ -443,3 +443,29 @@ class ProfileStatusResponse(BaseModel):
     is_completed: bool
     user_type: str
     profile_data: Optional[dict] = None
+
+
+# -------------- Invitation Codes & Connections ---------------
+class InvitationCodeCreate(BaseModel):
+    target_type: Literal['family', 'classroom']
+    target_id: UUID
+    code: Optional[str] = None
+    max_uses: Optional[int] = None
+    expires_at: Optional[datetime] = None
+
+
+class InvitationCodeOut(BaseModel):
+    code_id: UUID
+    code: str
+    target_type: str
+    target_id: UUID
+    created_by: UUID
+    expires_at: Optional[str] = None
+    max_uses: Optional[int] = None
+    created_at: Optional[str] = None
+
+
+class CodeRedeemRequest(BaseModel):
+    code: str
+    relationship_type: Optional[str] = None
+    message: Optional[str] = None
