@@ -6,7 +6,8 @@
           <h1 class="text-3xl font-bold text-gray-900">Teacher's Dashboard</h1>
           <p class="text-lg text-gray-600 mt-1">Welcome back, Mrs. Johnson!</p>
         </div>
-        <div class="mt-4 md:mt-0">
+        <div class="mt-4 md:mt-0 flex space-x-3">
+          <AppButton label="Generate Invitation Code" icon="🔗" variant="secondary" @click="isInvitationModalOpen = true" />
           <AppButton label="Assign New Task" icon="➕" variant="primary" />
         </div>
       </div>
@@ -117,32 +118,111 @@
             </template>
           </AppCard>
   
-          <AppCard title="Join Requests" icon="📧" @click="isJoinRequestsModalOpen = true" class="cursor-pointer hover:bg-gray-50 transition">
+          <AppCard title="Connection Requests" icon="📧" @click="isJoinRequestsModalOpen = true" class="cursor-pointer hover:bg-gray-50 transition">
            <div class="flex items-center justify-between">
-              <p class="text-lg font-semibold text-gray-700">{{ joinRequests.length }} new requests</p>
+              <p class="text-lg font-semibold text-gray-700">{{ pendingRequests.length }} pending requests</p>
               <AppButton label="Review Requests" variant="primary" />
            </div>
+           <div class="mt-3 text-sm text-gray-500">
+             <p>{{ activeInvitations.length }} active invitation codes</p>
+           </div>
+        </AppCard>
+
+        <AppCard title="Quick Actions" icon="⚡">
+          <div class="space-y-3">
+            <AppButton label="Invite New Students" icon="👥" variant="secondary" @click="isInvitationModalOpen = true" />
+            <AppButton label="View All Connections" icon="🔗" variant="secondary" />
+            <AppButton label="Manage Invitation Codes" icon="🔑" variant="secondary" />
+          </div>
         </AppCard>
         </div>
       </div>
 
-      <AppModal :is-open="isJoinRequestsModalOpen" @close="isJoinRequestsModalOpen = false" title="Student Join Requests">
-  <ul class="space-y-4">
-    <li v-for="request in joinRequests" :key="request.id" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-        <div class="flex items-center space-x-4">
-          <img :src="request.avatar" class="h-12 w-12 rounded-full object-cover">
-          <p class="font-semibold text-gray-800">{{ request.name }}</p>
+      <!-- Invitation Code Modal -->
+      <AppModal :is-open="isInvitationModalOpen" @close="isInvitationModalOpen = false" title="Generate Invitation Code">
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Invitation Type</label>
+            <select v-model="newInvitation.type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="teacher_student">Student Invitation</option>
+              <option value="parent_student">Parent Invitation</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Expires In</label>
+            <select v-model="newInvitation.expiresIn" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="24">24 hours</option>
+              <option value="48">48 hours</option>
+              <option value="168">1 week</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Max Uses</label>
+            <input v-model="newInvitation.maxUses" type="number" min="1" max="100" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="1">
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <AppButton label="Cancel" variant="secondary" @click="isInvitationModalOpen = false" />
+            <AppButton label="Generate Code" variant="primary" @click="generateInvitationCode" />
+          </div>
         </div>
-        <div class="flex space-x-2">
-          <AppButton label="Accept" variant="success" size="sm" @click="handleRequest(request.id, 'accepted')" />
-          <AppButton label="Reject" variant="error" size="sm" @click="handleRequest(request.id, 'rejected')" />
+      </AppModal>
+
+      <!-- Generated Code Modal -->
+      <AppModal :is-open="isGeneratedCodeModalOpen" @close="isGeneratedCodeModalOpen = false" title="Invitation Code Generated">
+        <div class="space-y-6">
+          <div class="text-center">
+            <div class="bg-gray-100 p-6 rounded-lg">
+              <p class="text-sm text-gray-600 mb-2">Share this code with students:</p>
+              <div class="flex items-center justify-center space-x-2">
+                <code class="text-2xl font-mono font-bold text-indigo-600 bg-white px-4 py-2 rounded border">{{ generatedCode }}</code>
+                <AppButton label="Copy" icon="📋" size="sm" variant="secondary" @click="copyToClipboard" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <h4 class="font-semibold text-blue-800 mb-2">How to share:</h4>
+            <ul class="text-sm text-blue-700 space-y-1">
+              <li>• Share in your classroom or via email</li>
+              <li>• Students enter this code in their app</li>
+              <li>• You'll receive a connection request to approve</li>
+              <li>• Code expires in {{ newInvitation.expiresIn }} hours</li>
+            </ul>
+          </div>
+
+          <div class="flex justify-end">
+            <AppButton label="Done" variant="primary" @click="isGeneratedCodeModalOpen = false" />
+          </div>
         </div>
-    </li>
-  </ul>
-  <div v-if="joinRequests.length === 0" class="text-center py-8">
-      <p class="text-gray-500">No pending requests.</p>
-  </div>
-</AppModal>
+      </AppModal>
+
+      <AppModal :is-open="isJoinRequestsModalOpen" @close="isJoinRequestsModalOpen = false" title="Connection Requests">
+        <div class="space-y-4">
+          <div v-if="pendingRequests.length === 0" class="text-center py-8">
+            <p class="text-gray-500">No pending connection requests.</p>
+          </div>
+          
+          <div v-else>
+            <div v-for="request in pendingRequests" :key="request.id" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div class="flex items-center space-x-4">
+                <img :src="request.avatar" class="h-12 w-12 rounded-full object-cover">
+                <div>
+                  <p class="font-semibold text-gray-800">{{ request.name }}</p>
+                  <p class="text-sm text-gray-500">{{ request.email }}</p>
+                  <p class="text-xs text-gray-400">Requested {{ request.requestedAt }}</p>
+                </div>
+              </div>
+              <div class="flex space-x-2">
+                <AppButton label="Accept" variant="success" size="sm" @click="handleRequest(request.id, 'accepted')" />
+                <AppButton label="Reject" variant="error" size="sm" @click="handleRequest(request.id, 'rejected')" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppModal>
     </div>
   </template>
   
@@ -164,17 +244,72 @@ import AppModal from '@/components/ui/AppModal.vue'
     setup() {
     const store = useStore()
     const isJoinRequestsModalOpen = ref(false)
-    const joinRequests = ref([
-      { id: 1, name: 'Olivia Green', avatar: 'https://randomuser.me/api/portraits/women/33.jpg' },
-      { id: 2, name: 'Ben Carter', avatar: 'https://randomuser.me/api/portraits/men/45.jpg' },
-      { id: 3, name: 'Chloe Davis', avatar: 'https://randomuser.me/api/portraits/women/55.jpg' },
+    const isInvitationModalOpen = ref(false)
+    const isGeneratedCodeModalOpen = ref(false)
+    const generatedCode = ref('')
+    
+    const newInvitation = ref({
+      type: 'teacher_student',
+      expiresIn: 24,
+      maxUses: 1
+    })
+
+    const pendingRequests = ref([
+      { 
+        id: 1, 
+        name: 'Olivia Green', 
+        email: 'olivia.green@student.edu',
+        avatar: 'https://randomuser.me/api/portraits/women/33.jpg',
+        requestedAt: '2 hours ago'
+      },
+      { 
+        id: 2, 
+        name: 'Ben Carter', 
+        email: 'ben.carter@student.edu',
+        avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
+        requestedAt: '1 day ago'
+      },
+      { 
+        id: 3, 
+        name: 'Chloe Davis', 
+        email: 'chloe.davis@student.edu',
+        avatar: 'https://randomuser.me/api/portraits/women/55.jpg',
+        requestedAt: '3 days ago'
+      },
     ])
 
+    const activeInvitations = ref([
+      { code: 'MATH101-ABC123', type: 'teacher_student', expiresAt: '2024-01-15', uses: 0, maxUses: 1 },
+      { code: 'MATH101-XYZ789', type: 'teacher_student', expiresAt: '2024-01-16', uses: 2, maxUses: 5 },
+    ])
+
+    const generateInvitationCode = () => {
+      // Generate a random code (in real app, this would call the API)
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      let result = ''
+      for (let i = 0; i < 8; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      generatedCode.value = `MATH101-${result}`
+      
+      isInvitationModalOpen.value = false
+      isGeneratedCodeModalOpen.value = true
+    }
+
+    const copyToClipboard = () => {
+      navigator.clipboard.writeText(generatedCode.value)
+      store.dispatch('ui/showToast', {
+        title: 'Copied!',
+        message: 'Invitation code copied to clipboard',
+        type: 'success',
+      })
+    }
+
     const handleRequest = (id, status) => {
-      const student = joinRequests.value.find(req => req.id === id)
+      const student = pendingRequests.value.find(req => req.id === id)
       if (!student) return
 
-      joinRequests.value = joinRequests.value.filter(req => req.id !== id)
+      pendingRequests.value = pendingRequests.value.filter(req => req.id !== id)
 
       if (status === 'accepted') {
         store.dispatch('ui/showToast', {
@@ -190,14 +325,21 @@ import AppModal from '@/components/ui/AppModal.vue'
         })
       }
       
-      if (joinRequests.value.length === 0) {
+      if (pendingRequests.value.length === 0) {
         isJoinRequestsModalOpen.value = false
       }
     }
 
     return {
       isJoinRequestsModalOpen,
-      joinRequests,
+      isInvitationModalOpen,
+      isGeneratedCodeModalOpen,
+      generatedCode,
+      newInvitation,
+      pendingRequests,
+      activeInvitations,
+      generateInvitationCode,
+      copyToClipboard,
       handleRequest,
     }
   },

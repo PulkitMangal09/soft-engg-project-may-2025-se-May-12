@@ -9,6 +9,42 @@
         <p class="text-gray-600">Organize your tasks and stay on top of your work</p>
       </div>
 
+      <!-- Connection Status -->
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <span class="text-lg">👨‍🏫</span>
+            <div>
+              <p class="font-semibold text-gray-800">{{ connectedTeachers.length }} Teachers Connected</p>
+              <p class="text-sm text-gray-500">{{ totalTeacherTasks }} tasks from teachers</p>
+            </div>
+          </div>
+          <router-link to="/student/my-connections" class="text-blue-600 hover:underline text-sm">
+            Manage Connections →
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Task Filters -->
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div class="flex items-center space-x-4">
+          <label class="text-sm font-medium text-gray-700">Filter by:</label>
+          <select v-model="selectedFilter" class="border-gray-300 rounded-lg text-sm">
+            <option value="all">All Tasks</option>
+            <option value="personal">Personal Tasks</option>
+            <option value="teacher">Teacher Tasks</option>
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+          </select>
+          <select v-if="selectedFilter === 'teacher'" v-model="selectedTeacher" class="border-gray-300 rounded-lg text-sm">
+            <option value="all">All Teachers</option>
+            <option v-for="teacher in connectedTeachers" :key="teacher.id" :value="teacher.id">
+              {{ teacher.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <!-- Create New Task Form -->
       <div class="bg-white rounded-xl shadow-sm p-6 mb-8 space-y-4">
         <h2 class="text-lg font-semibold">Create New Task</h2>
@@ -92,8 +128,8 @@
 
       <!-- Task List -->
       <div class="space-y-4">
-        <template v-if="tasks.length">
-          <div v-for="task in tasks" :key="task.__uuid" class="bg-white rounded-xl shadow-sm p-4 flex items-start">
+        <template v-if="filteredTasks.length">
+          <div v-for="task in filteredTasks" :key="task.__uuid" class="bg-white rounded-xl shadow-sm p-4 flex items-start">
             <div :class="task.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'"
               class="h-3 w-3 rounded-full mt-1 mr-3"></div>
 
@@ -108,12 +144,21 @@
                   <span v-if="task.due_time">at {{ task.due_time }}</span>
                 </span>
                 <span>🎁 {{ task.reward_points }} pts</span>
+                <span v-if="task.teacher" class="text-blue-600">
+                  👨‍🏫 {{ task.teacher }}
+                </span>
                 <span v-if="task.attachment_url">
                   🔗
                   <a :href="task.attachment_url" target="_blank" class="underline">
                     Attachment
                   </a>
                 </span>
+              </div>
+              <div v-if="task.teacher" class="mt-2 flex items-center space-x-2">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Teacher Task
+                </span>
+                <span class="text-xs text-gray-500">Assigned by {{ task.teacher }}</span>
               </div>
             </div>
 
@@ -158,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useStore } from 'vuex'
 import axios from 'axios'
 import StudentNavBar from '@/components/layout/StudentNavBar.vue'
@@ -172,6 +217,8 @@ const API = axios
 
 // Reactive state
 const tasks = ref([])
+const selectedFilter = ref('all')
+const selectedTeacher = ref('all')
 const newTask = ref({
   title: '',
   description: '',
@@ -184,9 +231,52 @@ const newTask = ref({
   attachment_url: ''
 })
 
+// Mock connected teachers data - in real app, this would come from API
+const connectedTeachers = ref([
+  {
+    id: 1,
+    name: 'Mrs. Johnson',
+    subject: 'Mathematics',
+    avatar: 'https://randomuser.me/api/portraits/women/44.jpg'
+  },
+  {
+    id: 2,
+    name: 'Mr. Smith',
+    subject: 'Science',
+    avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
+  }
+])
+
 // Dropdown values
 const categories = ['homework', 'project', 'study', 'personal', 'chore', 'health', 'financial']
 const priorities = ['low', 'medium', 'high']
+
+// Computed properties
+const filteredTasks = computed(() => {
+  let filtered = tasks.value
+
+  if (selectedFilter.value === 'personal') {
+    filtered = filtered.filter(task => !task.teacher)
+  } else if (selectedFilter.value === 'teacher') {
+    filtered = filtered.filter(task => task.teacher)
+    if (selectedTeacher.value !== 'all') {
+      const teacher = connectedTeachers.value.find(t => t.id === parseInt(selectedTeacher.value))
+      if (teacher) {
+        filtered = filtered.filter(task => task.teacher === teacher.name)
+      }
+    }
+  } else if (selectedFilter.value === 'pending') {
+    filtered = filtered.filter(task => task.status === 'pending')
+  } else if (selectedFilter.value === 'completed') {
+    filtered = filtered.filter(task => task.status === 'completed')
+  }
+
+  return filtered
+})
+
+const totalTeacherTasks = computed(() => {
+  return tasks.value.filter(task => task.teacher).length
+})
 
 // Normalize each row so it always gets a unique __uuid, plus .id & .task_id
 function normalizeRow(row) {
