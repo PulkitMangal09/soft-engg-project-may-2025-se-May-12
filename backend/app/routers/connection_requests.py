@@ -222,3 +222,88 @@ def reject_request(request_id: UUID = Path(...), token: str = Depends(oauth2)) -
     }).eq("request_id", str(request_id)).execute()
 
     return {"request_id": str(request_id), "status": "rejected"}
+
+
+# --- Spec-aligned wrapper endpoints (Phase 1) ---
+
+@router.post("/request")
+def create_request_alias(payload: Dict[str, Any], token: str = Depends(oauth2)) -> Dict[str, Any]:
+    """Alias for sending a connection request using an invitation code.
+
+    Expected payload keys (spec):
+      - invitation_code: str
+      - message: Optional[str]
+      - relationship: str
+    """
+    body_code = payload.get("invitation_code")
+    relationship = payload.get("relationship")
+    message = payload.get("message")
+    if not body_code or not relationship:
+        raise HTTPException(status_code=422, detail="invitation_code and relationship are required")
+
+    model = CodeRedeemRequest(code=body_code, relationship_type=relationship, message=message)
+    created = redeem_code(model, token)
+    return {
+        "request_id": created.get("request_id"),
+        "status": created.get("status", "pending"),
+        "message": "Request sent successfully",
+    }
+
+
+@router.get("/pending-requests")
+def list_my_pending_requests(token: str = Depends(oauth2)) -> List[Dict[str, Any]]:
+    """List the caller's own pending outbound requests."""
+    user_id = get_user_id_from_token(token)
+    rows = (
+        supabase.table("join_requests")
+        .select("*")
+        .eq("requester_id", user_id)
+        .eq("status", "pending")
+        .order("created_at", desc=True)
+        .execute()
+    )
+    data = getattr(rows, "data", []) or []
+    # Optionally enrich with target info later
+    return data
+
+
+@router.patch("/{request_id}/handle")
+def handle_request(request_id: UUID = Path(...), payload: Dict[str, Any] = None, token: str = Depends(oauth2)) -> Dict[str, Any]:
+    """Unified handler to accept/reject a request.
+
+    Payload: { action: "accept" | "reject", message?: str }
+    """
+    action = (payload or {}).get("action")
+    if action not in ("accept", "reject"):
+        raise HTTPException(status_code=422, detail="action must be 'accept' or 'reject'")
+
+    # Perform action
+    if action == "accept":
+        _ = approve_request(request_id, token)
+        status = "accepted"
+        # Best-effort: find a resulting connection between approver and requester
+        # Load request to know requester
+        req_res = (
+            supabase.table("join_requests").select("*").eq("request_id", str(request_id)).single().execute()
+        )
+        req = getattr(req_res, "data", None)
+        connection_id = None
+        if req:
+            approver_id = get_user_id_from_token(token)
+            requester_id = req.get("requester_id")
+            # Search latest connection linking these two users
+            conn_res = (
+                supabase.table("user_connections")
+                .select("*")
+                .or_(f"and(user_id_1.eq.{approver_id},user_id_2.eq.{requester_id}),and(user_id_2.eq.{approver_id},user_id_1.eq.{requester_id})")
+                .order("established_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            rows = getattr(conn_res, "data", []) or []
+            if rows:
+                connection_id = rows[0].get("connection_id")
+        return {"status": status, "connection_id": connection_id}
+    else:
+        _ = reject_request(request_id, token)
+        return {"status": "rejected"}
