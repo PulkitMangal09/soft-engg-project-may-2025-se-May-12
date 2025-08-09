@@ -59,7 +59,6 @@ export default {
         { label: 'Finance', icon: '💰', to: '/student/finance' },
         { label: 'Emotions', icon: '😊', to: '/student/emotion' },
         { label: 'Diet', icon: '🥗', to: '/student/diet' },
-        { label: 'Health', icon: '📊', to: '/student/health' },
       ]
     }
   },

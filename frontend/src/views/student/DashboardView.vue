@@ -47,27 +47,7 @@
                         Connections</router-link>
                 </div>
             </div>
-            <!-- Health Analytics Card -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2">
-                    <div
-                        class="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row items-center md:items-start md:space-x-6 mb-8">
-                        <span class="text-3xl mb-4 md:mb-0">📊</span>
-                        <div>
-                            <div class="font-bold text-lg text-gray-800 mb-1">Health Analytics</div>
-                            <div class="text-sm text-gray-500 mb-2">See your health stats, trends, and AI tips.</div>
-                            <router-link to="/student/health" class="text-blue-600 hover:underline text-xs">View Health
-                                Analytics</router-link>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <div class="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-4 mb-4">
-                        <div class="font-semibold text-blue-700 mb-1">Tip of the Day</div>
-                        <div class="text-xs text-blue-900">Stay hydrated and take regular breaks while studying!</div>
-                    </div>
-                </div>
-            </div>
+
             <div class="text-xs text-gray-400 text-center mt-8">Student Dashboard &mdash; All-in-one overview</div>
         </div>
     </div>

@@ -115,7 +115,7 @@ const routes = [
       {
         path: 'finance',
         name: 'Finance',
-        component: StudentFinView,
+        component: FinanceView,
         meta: { title: 'Finance Management' }
       },
       {
