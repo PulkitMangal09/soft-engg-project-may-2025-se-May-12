@@ -1,196 +1,267 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from datetime import datetime, timezone
-from ..config import supabase
-from ..models import TaskCreate, TaskUpdate
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field
+
 from ..config import supabase
-from datetime import datetime
+from ..models import TaskBase, TaskUpdate  # TaskBase has task_id, assigned_*; TaskUpdate = partial
 
 router = APIRouter(prefix="/teacher/tasks", tags=["teacher-tasks"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-# @router.get("/summary")
-# def get_tasks_summary(token: str = Depends(oauth2)):
-#     # TODO: Query supabase for active tasks, overdue count, completion rate, total this month
-#     return {
-#         "activeTasks": 15,
-#         "overdue": 5,
-#         "completionRate": "85%",
-#         "totalThisMonth": 156
-#     }
+
+def get_user_id(token: str) -> UUID:
+    auth_res = supabase.auth.get_user(token)
+    if getattr(auth_res, 'error', None):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user = auth_res.user
+    if not user or not user.id:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return user.id
+
+
+# Accepts which student to assign to; teacher is assigned_by automatically
+class TeacherTaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: str
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    # Store time as "HH:MM" or "HH:MM:SS"; we will pass through strings safely
+    due_time: Optional[str] = None
+    status: Optional[str] = "pending"
+    reward_points: Optional[int] = 0
+    attachment_url: Optional[str] = None
+
+    # target student
+    assigned_to: UUID = Field(..., description="Student user_id to assign the task to")
+
+
 @router.get("/summary")
 def get_tasks_summary(token: str = Depends(oauth2)):
-    # Step 1: Get current user from Supabase Auth
-    auth_resp = supabase.auth.get_user(token)
-    user = auth_resp.user
-    if not user or not user.id:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
-    user_id = user.id
-    now = datetime.now(timezone.utc).isoformat()
+    teacher_id = get_user_id(token)
+    now_iso = datetime.now(timezone.utc).isoformat()
 
-    # Step 2: Fetch tasks assigned by this teacher
-    tasks_resp = supabase.table("tasks").select("*").eq("assigned_by", user_id).execute()
+    # All tasks assigned_by this teacher
+    tasks_resp = supabase.table("tasks").select("*").eq("assigned_by", teacher_id).execute()
     tasks = tasks_resp.data or []
 
-    total_tasks = len(tasks)
-    active_tasks = [t for t in tasks if t["status"] not in ("completed", "cancelled")]
-    overdue_tasks = [t for t in active_tasks if t["due_date"] and t["due_date"] < now]
+    total = len(tasks)
+    active = [t for t in tasks if t.get("status") not in ("completed", "cancelled")]
+    # If due_date is stored as timestamp/ISO strings, comparing to now_iso via lt in SQL is better,
+    # but this approximation works when values are ISO strings. We still try to parse safely:
+    overdue = []
+    for t in active:
+        dd = t.get("due_date")
+        if not dd:
+            continue
+        try:
+            # Allow both ISO strings and naive strings
+            dt = datetime.fromisoformat(dd.replace("Z", "+00:00")) if isinstance(dd, str) else dd
+        except Exception:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        if dt.isoformat() < now_iso:
+            overdue.append(t)
 
-    # Step 3: Completion rate
-    task_ids = [t["task_id"] for t in tasks]
-    completions_resp = supabase.table("task_completions").select("task_id").in_("task_id", task_ids).execute()
-    completions = completions_resp.data or []
-    completed_task_ids = set(c["task_id"] for c in completions)
-    completion_rate = (len(completed_task_ids) / total_tasks * 100) if total_tasks else 0
+    # Completion rate via task_completions
+    task_ids = [t.get("task_id") for t in tasks if t.get("task_id")]
+    completed_count = 0
+    if task_ids:
+        completions_resp = supabase.table("task_completions") \
+            .select("task_id") \
+            .in_("task_id", task_ids) \
+            .execute()
+        completions = completions_resp.data or []
+        completed_task_ids = {c["task_id"] for c in completions}
+        completed_count = len(completed_task_ids)
 
-    # Step 4: Tasks created this month
-    current_month = datetime.now().month
-    tasks_this_month = [
-        t for t in tasks
-        if t["created_at"] and datetime.fromisoformat(t["created_at"]).month == current_month
-    ]
+    completion_rate = round((completed_count / total * 100), 0) if total else 0
+
+    # Created this month
+    now = datetime.now(timezone.utc)
+    this_month = now.month
+    this_year = now.year
+
+    def is_this_month(created_at):
+        if not created_at:
+            return False
+        try:
+            dt = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.month == this_month and dt.year == this_year
+        except Exception:
+            return False
+
+    created_this_month = sum(1 for t in tasks if is_this_month(t.get("created_at")))
 
     return {
-        "activeTasks": len(active_tasks),
-        "overdue": len(overdue_tasks),
-        "completionRate": f"{round(completion_rate)}%",
-        "totalThisMonth": len(tasks_this_month)
+        "activeTasks": len(active),
+        "overdue": len(overdue),
+        "completionRate": f"{int(completion_rate)}%",
+        "totalThisMonth": created_this_month,
     }
 
-# @router.get("/recent", response_model=List[dict])
-# def recent_tasks(token: str = Depends(oauth2)):
-#     # TODO: list recent task info
-#     return [
-#         {"title": "Budget Analysis Project", "due": "Tomorrow", "completed": "23/28"},
-#         # ... more tasks
-#     ]
+
 @router.get("/recent")
 def recent_tasks(token: str = Depends(oauth2)):
-    # Get teacher's user ID
-    auth_resp = supabase.auth.get_user(token)
-    user = auth_resp.user
-    if not user or not user.id:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    teacher_id = get_user_id(token)
 
-    user_id = user.id
-
-    # Fetch recent tasks assigned by the teacher (sorted by due_date desc)
-    task_resp = supabase.table("tasks") \
-        .select("task_id, title, due_date") \
-        .eq("assigned_by", user_id) \
-        .order("due_date", desc=True) \
-        .limit(10) \
+    task_resp = (
+        supabase.table("tasks")
+        .select("task_id, title, due_date")
+        .eq("assigned_by", teacher_id)
+        .order("due_date", desc=True)
+        .limit(10)
         .execute()
-
+    )
     tasks = task_resp.data or []
-    task_ids = [t["task_id"] for t in tasks]
+    task_ids = [t["task_id"] for t in tasks if t.get("task_id")]
 
-    # Get completions per task_id
-    completions_resp = supabase.table("task_completions") \
-        .select("task_id") \
-        .in_("task_id", task_ids) \
-        .execute()
-
-    completions = completions_resp.data or []
-
-    # Count completions per task
     completion_map = {}
-    for c in completions:
-        tid = c["task_id"]
-        if tid not in completion_map:
-            completion_map[tid] = 0
-        completion_map[tid] += 1
+    if task_ids:
+        completions_resp = supabase.table("task_completions") \
+            .select("task_id") \
+            .in_("task_id", task_ids) \
+            .execute()
+        for c in (completions_resp.data or []):
+            tid = c["task_id"]
+            completion_map[tid] = completion_map.get(tid, 0) + 1
 
-    # Since each task is assigned to only one student now
+    # For now assume each task is assigned to exactly one student
     result = []
-    for task in tasks:
-        task_id = task["task_id"]
-        completed = completion_map.get(task_id, 0)
-        total = 1  # one per task for now
+    for t in tasks:
+        tid = t["task_id"]
+        completed = completion_map.get(tid, 0)
+        total = 1
         result.append({
-            "title": task["title"],
-            "due": task["due_date"],
-            "completed": f"{completed}/{total}"
+            "title": t["title"],
+            "due": t["due_date"],
+            "completed": f"{completed}/{total}",
         })
-
     return result
-### OverDue Task
+
+
 @router.get("/overdue")
 def overdue_tasks(token: str = Depends(oauth2)):
-    # Get the current teacher (user)
-    auth_resp = supabase.auth.get_user(token)
-    user = auth_resp.user
-    if not user or not user.id:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    teacher_id = get_user_id(token)
+    now_iso = datetime.now(timezone.utc).isoformat()
 
-    user_id = user.id
-    now = datetime.now(timezone.utc).isoformat()
-
-    # Fetch overdue tasks
-    task_resp = supabase.table("tasks") \
-        .select("task_id, title, due_date") \
-        .eq("assigned_by", user_id) \
-        .in_("status", ["pending", "in_progress"]) \
-        .lt("due_date", now) \
-        .order("due_date", desc=True) \
-        .limit(10) \
+    task_resp = (
+        supabase.table("tasks")
+        .select("task_id, title, due_date")
+        .eq("assigned_by", teacher_id)
+        .in_("status", ["pending", "in_progress"])
+        .lt("due_date", now_iso)
+        .order("due_date", desc=True)
+        .limit(10)
         .execute()
-
+    )
     tasks = task_resp.data or []
+    return [{"title": t["title"], "due": t["due_date"]} for t in tasks]
 
-    result = []
-    for task in tasks:
-        result.append({
-            "title": task["title"],
-            "due": task["due_date"]
-        })
 
-    return result
+# --- Create a Task (teacher assigns) ---
+@router.post("/", response_model=TaskBase, status_code=201)
+def create_task(task: TeacherTaskCreate, token: str = Depends(oauth2)):
+    teacher_id = get_user_id(token)
+    payload = task.dict()
 
-# --- Create a Task ---
-@router.post("/", status_code=201)
-def create_task(task: TaskCreate, token: str = Depends(oauth2)):
-    response = supabase.table("tasks").insert(task.dict()).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return response.data[0]
+    # Ensure proper types & values
+    if payload.get("due_date"):
+        payload["due_date"] = payload["due_date"].isoformat()
 
-# --- Read All Tasks ---
-@router.get("/", response_model=List[dict])
+    # Remove empty-string time to avoid Postgres time cast error
+    if not payload.get("due_time"):
+        payload.pop("due_time", None)
+
+    payload["assigned_by"] = teacher_id
+
+    resp = supabase.table("tasks").insert(payload).execute()
+    data = getattr(resp, "data", None)
+    if not data:
+        raise HTTPException(status_code=400, detail="Insert failed")
+    return data[0]
+
+
+# --- Read All Tasks (for this teacher) ---
+@router.get("/", response_model=List[TaskBase])
 def get_all_tasks(token: str = Depends(oauth2)):
-    response = supabase.table("tasks").select("*").order("created_at", desc=True).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return response.data
+    teacher_id = get_user_id(token)
+    resp = (
+        supabase.table("tasks")
+        .select("*")
+        .eq("assigned_by", teacher_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return resp.data or []
 
-# --- Read Single Task by ID ---
-@router.get("/{task_id}", response_model=dict)
+
+# --- Read Single Task by ID (must belong to this teacher) ---
+@router.get("/{task_id}", response_model=TaskBase)
 def get_task(task_id: UUID, token: str = Depends(oauth2)):
-    response = supabase.table("tasks").select("*").eq("task_id", str(task_id)).single().execute()
-    if response.error or not response.data:
+    teacher_id = get_user_id(token)
+    resp = (
+        supabase.table("tasks")
+        .select("*")
+        .eq("task_id", str(task_id))
+        .eq("assigned_by", teacher_id)
+        .single()
+        .execute()
+    )
+    if getattr(resp, "error", None) or not resp.data:
         raise HTTPException(status_code=404, detail="Task not found")
-    return response.data
+    return resp.data
 
-# --- Update Task ---
-@router.put("/{task_id}")
+
+# --- Update Task (partial) ---
+@router.patch("/{task_id}", response_model=TaskBase)
 def update_task(task_id: UUID, task: TaskUpdate, token: str = Depends(oauth2)):
-    update_data = {k: v for k, v in task.dict().items() if v is not None}
-    response = supabase.table("tasks").update(update_data).eq("task_id", str(task_id)).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return {"message": "Task updated successfully"}
+    teacher_id = get_user_id(token)
+
+    # Ensure it belongs to teacher
+    current = (
+        supabase.table("tasks")
+        .select("status")
+        .eq("task_id", str(task_id))
+        .eq("assigned_by", teacher_id)
+        .single()
+        .execute()
+        .data
+    )
+    if not current:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    payload = task.dict(exclude_unset=True)
+
+    if "due_date" in payload and payload["due_date"] is not None:
+        payload["due_date"] = payload["due_date"].isoformat()
+
+    if "due_time" in payload and not payload["due_time"]:
+        # Avoid empty string going to Postgres time column
+        payload.pop("due_time", None)
+
+    resp = (
+        supabase.table("tasks")
+        .update(payload)
+        .eq("task_id", str(task_id))
+        .eq("assigned_by", teacher_id)
+        .execute()
+    )
+    data = getattr(resp, "data", None)
+    if not data:
+        raise HTTPException(status_code=400, detail="Update failed")
+    return data[0]
+
 
 # --- Delete Task ---
-@router.delete("/{task_id}")
+@router.delete("/{task_id}", response_model=dict)
 def delete_task(task_id: UUID, token: str = Depends(oauth2)):
-    response = supabase.table("tasks").delete().eq("task_id", str(task_id)).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return {"message": "Task deleted successfully"}
+    teacher_id = get_user_id(token)
+    supabase.table("tasks").delete().eq("task_id", str(task_id)).eq("assigned_by", teacher_id).execute()
+    return {"deleted": True}
