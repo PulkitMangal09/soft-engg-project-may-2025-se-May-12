@@ -31,14 +31,15 @@
           <QuickActionCard title="My Diary" icon="📖" @click="$router.push('/student/diary')" />
         </div>
         <!-- Mood Trends -->
+        <!-- Mood Summary Cards -->
+        <MoodSummary :logs="moodLogs" class="mt-4" />
         <div class="bg-white rounded-xl p-4 shadow-sm">
-          <h2 class="font-semibold text-gray-700 mb-3">This Week's Mood Trends</h2>
+          <!-- <h2 class="font-semibold text-gray-700 mb-3">This Week's Mood Trends</h2> -->
           <EmotionStats />
           <div class="flex justify-between text-xs text-gray-500 mt-1"> </div>
         </div>
 
-        <!-- Mood Summary Cards -->
-        <MoodSummary :logs="moodLogs" class="mt-4" />
+
         <!-- Current Mood -->
         <div class="text-center bg-white rounded-xl p-6 shadow-sm">
           <div class="text-5xl mb-3">{{ currentMood.emoji || '😊' }}</div>

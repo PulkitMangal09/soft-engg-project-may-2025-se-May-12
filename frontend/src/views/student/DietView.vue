@@ -44,27 +44,21 @@
           </div>
         </div>
         <!-- Water Tracker -->
-        <div
-          class="bg-blue-50 rounded-xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between mb-2 md:mb-4 gap-2 md:gap-0">
-          <div class="mb-2 md:mb-0">
-            <div class="font-bold">Daily Water Intake</div>
-            <div class="text-xs text-gray-600">{{ waterCount }} of 8 glasses</div>
-          </div>
-          <div class="flex gap-1">
-            <span v-for="i in 8" :key="i" class="inline-block w-4 h-6 rounded-b bg-white border-2 border-blue-400 mr-1"
-              :class="{ 'bg-blue-400': i <= waterCount }"></span>
-          </div>
+        <div id="water-section">
+          <WaterTracker :model-value="waterCount" @add="onWaterQuickAdd" />
         </div>
         <!-- Health Status Card -->
         <div class="bg-green-50 border-l-4 border-green-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
           <div class="font-semibold text-green-700 mb-1 text-sm md:text-base">Health Status: Good</div>
-          <div class="text-xs md:text-sm text-gray-700">BMI: 22.5 (Normal) • Weight: 65kg • Height: 170cm<br>Last updated:
+          <div class="text-xs md:text-sm text-gray-700">BMI: 22.5 (Normal) • Weight: 65kg • Height: 170cm<br>Last
+            updated:
             Today</div>
         </div>
         <!-- Nutrition Alert Card -->
         <div class="bg-orange-50 border-l-4 border-orange-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
           <div class="font-semibold text-orange-700 mb-1 text-sm md:text-base">Nutrition Alert</div>
-          <div class="text-xs md:text-sm text-orange-900">Your sugar intake is 15% above recommended daily limit. Consider
+          <div class="text-xs md:text-sm text-orange-900">Your sugar intake is 15% above recommended daily limit.
+            Consider
             reducing sweet snacks.</div>
         </div>
         <!-- Quick Actions -->
@@ -72,7 +66,7 @@
           <div class="font-semibold text-gray-800 mb-3 text-base md:text-lg">Quick Actions</div>
           <div class="grid grid-cols-3 gap-2 md:gap-3">
             <DietQuickActionCard icon="🍎" title="Log Food" @click="showLogFood = true" />
-            <DietQuickActionCard icon="💧" title="Add Water" @click="addWater" />
+            <DietQuickActionCard icon="💧" title="Add Water" @click="scrollTo('water-section')" />
             <DietQuickActionCard icon="⚖️" title="Log Weight" @click="showLogWeight = true" />
           </div>
         </div>
@@ -97,7 +91,8 @@
 
 <script setup>
 import StudentNavBar from '@/components/layout/StudentNavBar.vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getWaterSummary, addWater } from '@/services/waterService'
 import DietQuickActionCard from '@/components/diet/DietQuickActionCard.vue'
 import DietStats from '@/components/diet/DietStats.vue'
 import WaterTracker from '@/components/diet/WaterTracker.vue'
@@ -109,15 +104,23 @@ import ProfileSidebar from '@/components/profile/ProfileSidebar.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 
 const showProfile = ref(false)
-const waterCount = ref(6)
+const waterCount = ref(0)
 const showLogFood = ref(false)
 const showLogWeight = ref(false)
 
-function addWater() {
-  if (waterCount.value < 8) waterCount.value++
+async function addWaterHandler() {
+  const summary = await addWater(250, 'glass')
+  waterCount.value = Math.min(8, Math.round((summary.total_ml || 0) / 250))
 }
-function setWater(i) {
-  waterCount.value = i
+
+onMounted(async () => {
+  const summary = await getWaterSummary()
+  waterCount.value = Math.min(8, Math.round((summary.total_ml || 0) / 250))
+})
+
+async function onWaterQuickAdd(ml) {
+  const summary = await addWater(ml, ml >= 500 ? 'bottle' : ml >= 250 ? 'glass' : 'cup')
+  waterCount.value = Math.min(8, Math.round((summary.total_ml || 0) / 250))
 }
 
 const meals = [
