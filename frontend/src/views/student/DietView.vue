@@ -7,7 +7,7 @@
         <button @click="$router.go(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
           ←
         </button>
-        <h1 class="text-base md:text-lg font-semibold">Diet & Nutrition</h1>
+        <h1 class="text-base md:text-lg font-semibold">Health monitoring and diet tracking</h1>
         <button @click="showProfile = true"
           class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24"
@@ -66,8 +66,8 @@
           <div class="font-semibold text-gray-800 mb-3 text-base md:text-lg">Quick Actions</div>
           <div class="grid grid-cols-3 gap-2 md:gap-3">
             <DietQuickActionCard icon="🍎" title="Log Food" @click="showLogFood = true" />
-            <DietQuickActionCard icon="💧" title="Add Water" @click="scrollTo('water-section')" />
-            <DietQuickActionCard icon="⚖️" title="Log Weight" @click="showLogWeight = true" />
+            <DietQuickActionCard icon="💧" title="Add Water" @click="goToWater" />
+            <DietQuickActionCard icon="⚖️" title="Log Weight" @click="goToHealthMetrics" />
           </div>
         </div>
         <!-- Navigation Grid -->
@@ -92,6 +92,7 @@
 <script setup>
 import StudentNavBar from '@/components/layout/StudentNavBar.vue'
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getWaterSummary, addWater } from '@/services/waterService'
 import DietQuickActionCard from '@/components/diet/DietQuickActionCard.vue'
 import DietStats from '@/components/diet/DietStats.vue'
@@ -107,6 +108,8 @@ const showProfile = ref(false)
 const waterCount = ref(0)
 const showLogFood = ref(false)
 const showLogWeight = ref(false)
+
+const router = useRouter()
 
 async function addWaterHandler() {
   const summary = await addWater(250, 'glass')
@@ -169,6 +172,12 @@ function submitFood(form) {
 function submitWeight(weight) {
   // For now, just log weight
   console.log('Weight submitted:', weight)
+}
+function goToWater() {
+  router.push('/student/water')
+}
+function goToHealthMetrics() {
+  router.push('/student/health-metrics')
 }
 function scrollTo(id) {
   const el = document.getElementById(id)

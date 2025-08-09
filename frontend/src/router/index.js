@@ -119,7 +119,7 @@ const routes = [
         meta: { title: 'Finance Management' }
       },
       {
-        path: 'diet',
+        path: 'health',
         name: 'Diet',
         component: DietView,
         meta: { title: 'Diet & Nutrition' }
