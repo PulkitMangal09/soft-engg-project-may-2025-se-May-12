@@ -29,11 +29,11 @@
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-4">
           <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
-            <div class="text-lg md:text-xl font-bold text-emerald-500">1,842</div>
+            <div class="text-lg md:text-xl font-bold text-emerald-500">{{ totalCaloriesDisplay }}</div>
             <div class="text-xs text-gray-500">Calories Today</div>
-            <div class="w-full h-2 bg-gray-200 rounded mt-2">
+            <!-- <div class="w-full h-2 bg-gray-200 rounded mt-2">
               <div class="h-2 bg-emerald-500 rounded" style="width: 75%"></div>
-            </div>
+            </div> -->
           </div>
           <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
             <div class="text-lg md:text-xl font-bold text-emerald-500">{{ waterCount }}/8</div>
@@ -91,9 +91,10 @@
 
 <script setup>
 import StudentNavBar from '@/components/layout/StudentNavBar.vue'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getWaterSummary, addWater } from '@/services/waterService'
+import { getMeals } from '@/services/dietService'
 import DietQuickActionCard from '@/components/diet/DietQuickActionCard.vue'
 import DietStats from '@/components/diet/DietStats.vue'
 import WaterTracker from '@/components/diet/WaterTracker.vue'
@@ -108,6 +109,8 @@ const showProfile = ref(false)
 const waterCount = ref(0)
 const showLogFood = ref(false)
 const showLogWeight = ref(false)
+const totalCalories = ref(0)
+const totalCaloriesDisplay = computed(() => (totalCalories.value || 0).toLocaleString())
 
 const router = useRouter()
 
@@ -119,11 +122,26 @@ async function addWaterHandler() {
 onMounted(async () => {
   const summary = await getWaterSummary()
   waterCount.value = Math.min(8, Math.round((summary.total_ml || 0) / 250))
+  await loadCalories()
 })
 
 async function onWaterQuickAdd(ml) {
   const summary = await addWater(ml, ml >= 500 ? 'bottle' : ml >= 250 ? 'glass' : 'cup')
   waterCount.value = Math.min(8, Math.round((summary.total_ml || 0) / 250))
+}
+
+async function loadCalories() {
+  try {
+    const rows = await getMeals()
+    let sum = 0
+    for (const r of rows || []) {
+      sum += Math.round(r.calories || 0)
+    }
+    totalCalories.value = sum
+  } catch (e) {
+    // fail silently in UI; keep previous value
+    console.error('Failed to load meals for calories', e)
+  }
 }
 
 const meals = [
