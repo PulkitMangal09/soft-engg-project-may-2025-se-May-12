@@ -33,6 +33,8 @@ import NutritionSuggestionsView from '@/views/student/NutritionSuggestionsView.v
 import HealthMetricsUpdateView from '@/views/student/HealthMetricsUpdateView.vue'
 import DietChatBotView from '@/views/student/DietChatBotView.vue'
 import FoodLogView from '@/views/student/FoodLogView.vue'
+import StudentConnectionsView from '@/views/student/StudentConnectionsView.vue'
+import JoinConnectionView from '@/views/student/JoinConnectionView.vue'
 
 // Insights Views
 import MoodInsights from '@/views/student/insights/MoodInsights.vue'
@@ -57,6 +59,7 @@ import ParentChildAnalyticsView from '@/views/parent/ChildAnalyticsView.vue'
 import ParentTasksView from '@/views/parent/TasksView.vue'
 import ParentAssignTaskView from '@/views/parent/AssignTaskView.vue'
 import ParentSettingsView from '@/views/parent/SettingsView.vue'
+import JoinFamilyView from '@/views/parent/JoinFamilyView.vue'
 
 // Teacher Views
 import TeacherLayout from '@/components/layout/TeacherLayout.vue'
@@ -124,6 +127,8 @@ const routes = [
         component: DietView,
         meta: { title: 'Diet & Nutrition' }
       },
+      { path: 'my-connections', name: 'StudentConnections', component: StudentConnectionsView },
+      { path: 'connections', name: 'JoinConnection', component: JoinConnectionView },
       { path: 'emotion', name: 'StudentEmotion', component: EmotionView },
       { path: 'emotion/new', name: 'NewEmotionEntry', component: NewEmotionEntryView },
       { path: 'emotion/all', name: 'AllEmotionEntries', component: AllEmotionEntriesView },
@@ -177,6 +182,7 @@ const routes = [
       { path: 'tasks', name: 'ParentTasks', component: ParentTasksView },
       { path: 'tasks/assign', name: 'ParentAssignTask', component: ParentAssignTaskView },
       { path: 'settings', name: 'ParentSettings', component: ParentSettingsView },
+      { path: 'join-family', name: 'JoinFamily', component: JoinFamilyView },
     ]
   },
 
