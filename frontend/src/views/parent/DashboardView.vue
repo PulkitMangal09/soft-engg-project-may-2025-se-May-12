@@ -239,12 +239,14 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useStore } from 'vuex'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import { parentService } from '@/services/parentService.js'
+import { invitationService } from '@/services/invitationService.js'
 
 export default {
   name: 'ParentDashboard',
@@ -260,6 +262,9 @@ export default {
     const isGeneratedCodeModalOpen = ref(false)
     const isConnectionsModalOpen = ref(false)
     const generatedCode = ref('')
+    const loading = ref(true)
+    const error = ref(null)
+    const invitationLoading = ref(false)
     
     const newInvitation = ref({
       type: 'parent_student',
@@ -267,52 +272,161 @@ export default {
       maxUses: 1
     })
 
-    const children = ref([
-      { id: 1, name: 'John Jr.', avatar: 'https://randomuser.me/api/portraits/men/75.jpg' },
-      { id: 2, name: 'Emma', avatar: 'https://randomuser.me/api/portraits/women/75.jpg' },
-      { id: 3, name: 'Sophie', avatar: 'https://randomuser.me/api/portraits/women/76.jpg' },
-    ])
+    // Dashboard data - will be loaded from APIs
+    const children = ref([])
+    const attentionItems = ref([])
+    const achievements = ref([])
+    const quickStats = ref([])
+    const activeInvitations = ref([])
+    const pendingRequests = ref([])
+    const dashboardData = ref(null)
+    const familyGroups = ref([])
 
-    const attentionItems = ref([
-      { text: 'John Jr.: Overdue math assignment' },
-      { text: 'Emma: High sugar intake (3 days)' },
-      { text: 'Sophie: Exceeded entertainment budget' },
-    ])
+    // Computed properties for dynamic stats
+    const totalChildren = computed(() => children.value.length)
+    const totalPendingRequests = computed(() => pendingRequests.value.length)
+    const totalActiveInvitations = computed(() => activeInvitations.value.length)
 
-    const achievements = ref([
-      { text: 'John Jr.: Completed savings goal 🎮' },
-      { text: 'Emma: 7-day water intake streak 💧' },
-      { text: 'Sophie: Perfect task completion week ⭐' },
-    ])
+    // Load dashboard data
+    const loadDashboardData = async () => {
+      try {
+        loading.value = true
+        error.value = null
 
-    const quickStats = ref([
-        { icon: '📝', title: 'Tasks', value: '12 pending' },
-        { icon: '💰', title: 'Finance', value: '2 goals active' },
-        { icon: '🍎', title: 'Health', value: '1 alert' },
-        { icon: '👥', title: 'Family', value: '2 requests' },
-    ])
+        const token = store.getters['auth/token']
+        console.log('Token from store:', token ? 'Token exists' : 'No token found')
+        
+        if (!token) {
+          console.error('Authentication token not found in store')
+          throw new Error('Please log in again to access the dashboard')
+        }
 
-    const activeInvitations = ref([
-      { code: 'SMITH-FAM-ABC123', type: 'parent_student', status: 'active', expiresAt: '2024-01-15', uses: 0, maxUses: 1 },
-      { code: 'SMITH-FAM-XYZ789', type: 'parent_parent', status: 'active', expiresAt: '2024-01-16', uses: 1, maxUses: 3 },
-    ])
+        // Load parent dashboard data and children in parallel
+        const [dashboardResponse, childrenResponse] = await Promise.all([
+          parentService.getDashboard(token),
+          parentService.getChildren(token)
+        ])
 
-    const pendingRequests = ref([
-      { id: 1, name: 'Sarah Johnson', type: 'Parent', requestedAt: '2 hours ago' },
-      { id: 2, name: 'Mike Wilson', type: 'Child', requestedAt: '1 day ago' },
-    ])
+        dashboardData.value = dashboardResponse
+        children.value = childrenResponse
 
-    const generateInvitationCode = () => {
-      // Generate a random code (in real app, this would call the API)
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-      let result = ''
-      for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length))
+        // Update quick stats based on real data
+        quickStats.value = [
+          { icon: '📝', title: 'Tasks', value: `${dashboardResponse.pending_tasks || 0} pending` },
+          { icon: '💰', title: 'Finance', value: `${dashboardResponse.active_goals || 0} goals active` },
+          { icon: '🍎', title: 'Health', value: `${dashboardResponse.health_alerts || 0} alert${dashboardResponse.health_alerts !== 1 ? 's' : ''}` },
+          { icon: '👥', title: 'Family', value: `${totalPendingRequests.value} requests` },
+        ]
+
+      } catch (err) {
+        console.error('Error loading dashboard data:', err)
+        error.value = err.message || 'Failed to load dashboard data'
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'Failed to load dashboard data',
+          type: 'error',
+        })
+      } finally {
+        loading.value = false
       }
-      generatedCode.value = `SMITH-FAM-${result}`
-      
-      isInvitationModalOpen.value = false
-      isGeneratedCodeModalOpen.value = true
+    }
+
+    // Load invitation codes
+    const loadInvitationCodes = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const codes = await invitationService.getMyInvitationCodes(token, 'family')
+        activeInvitations.value = codes.map(code => ({
+          code_id: code.code_id,
+          code: code.code,
+          type: code.target_type,
+          expiresAt: code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never',
+          uses: code.usage_count || 0,
+          maxUses: code.max_uses || 'Unlimited',
+          target_id: code.target_id
+        }))
+      } catch (err) {
+        console.error('Error loading invitation codes:', err)
+      }
+    }
+
+    // Load pending requests
+    const loadPendingRequests = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const requests = await parentService.getFamilyJoinRequests(token)
+        pendingRequests.value = requests.map(request => ({
+          id: request.request_id,
+          name: request.requester_name || 'Unknown',
+          type: request.requester_type || 'Unknown',
+          requestedAt: request.created_at ? new Date(request.created_at).toLocaleDateString() : 'Unknown'
+        }))
+      } catch (err) {
+        console.error('Error loading pending requests:', err)
+      }
+    }
+
+    const generateInvitationCode = async () => {
+      if (familyGroups.value.length === 0) {
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'No family groups found. Please create a family group first.',
+          type: 'error',
+        })
+        return
+      }
+
+      try {
+        invitationLoading.value = true
+        const token = store.getters['auth/token']
+        
+        if (!token) {
+          throw new Error('Authentication token not found')
+        }
+
+        // Calculate expiration date
+        const expiresAt = new Date()
+        expiresAt.setHours(expiresAt.getHours() + parseInt(newInvitation.value.expiresIn))
+
+        // Use the first family group as target_id for family invitations
+        const targetId = familyGroups.value[0]?.group_id || familyGroups.value[0]?.id
+
+        const invitationData = {
+          target_type: 'family',
+          target_id: targetId,
+          expires_at: expiresAt.toISOString(),
+          max_uses: parseInt(newInvitation.value.maxUses)
+        }
+
+        const response = await invitationService.generateInvitationCode(invitationData, token)
+        generatedCode.value = response.code
+        
+        // Refresh invitation codes list
+        await loadInvitationCodes()
+        
+        isInvitationModalOpen.value = false
+        isGeneratedCodeModalOpen.value = true
+
+        store.dispatch('ui/showToast', {
+          title: 'Success',
+          message: 'Family invitation code generated successfully!',
+          type: 'success',
+        })
+
+      } catch (err) {
+        console.error('Error generating invitation code:', err)
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: err.message || 'Failed to generate invitation code',
+          type: 'error',
+        })
+      } finally {
+        invitationLoading.value = false
+      }
     }
 
     const copyToClipboard = () => {
@@ -324,32 +438,83 @@ export default {
       })
     }
 
-    const handleRequest = (id, status) => {
-      const request = pendingRequests.value.find(req => req.id === id)
-      if (!request) return
+    const handleRequest = async (id, status) => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
 
-      pendingRequests.value = pendingRequests.value.filter(req => req.id !== id)
+        const request = pendingRequests.value.find(req => req.id === id)
+        if (!request) return
 
-      if (status === 'accepted') {
+        const action = status === 'accepted' ? 'approve' : 'reject'
+        await parentService.respondToFamilyJoinRequest(id, action, token)
+
+        // Remove from local list
+        pendingRequests.value = pendingRequests.value.filter(req => req.id !== id)
+
+        if (status === 'accepted') {
+          store.dispatch('ui/showToast', {
+            title: 'Request Accepted',
+            message: `${request.name} has been added to your family.`,
+            type: 'success',
+          })
+        } else {
+          store.dispatch('ui/showToast', {
+            title: 'Request Rejected',
+            message: `${request.name}'s request has been rejected.`,
+            type: 'error',
+          })
+        }
+
+        // Refresh dashboard data
+        await loadDashboardData()
+
+      } catch (err) {
+        console.error('Error handling request:', err)
         store.dispatch('ui/showToast', {
-          title: 'Request Accepted',
-          message: `${request.name} has been added to your family.`,
-          type: 'success',
-        })
-      } else {
-        store.dispatch('ui/showToast', {
-          title: 'Request Rejected',
-          message: `${request.name}'s request has been rejected.`,
+          title: 'Error',
+          message: 'Failed to process request',
           type: 'error',
         })
       }
     }
+
+    // Load family groups for invitation generation
+    const loadFamilyGroups = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const groups = await parentService.getFamilyGroups(token)
+        familyGroups.value = groups
+      } catch (err) {
+        console.error('Error loading family groups:', err)
+        // If no family groups exist, we might need to create one or show a message
+        familyGroups.value = [{ id: 'default', name: 'Default Family' }] // Fallback
+      }
+    }
+
+    // Load data on component mount
+    onMounted(async () => {
+      await Promise.all([
+        loadDashboardData(),
+        loadInvitationCodes(),
+        loadPendingRequests(),
+        loadFamilyGroups()
+      ])
+    })
 
     return {
       children,
       attentionItems,
       achievements,
       quickStats,
+      loading,
+      error,
+      invitationLoading,
+      totalChildren,
+      totalPendingRequests,
+      totalActiveInvitations,
       isInvitationModalOpen,
       isGeneratedCodeModalOpen,
       isConnectionsModalOpen,
@@ -357,6 +522,11 @@ export default {
       newInvitation,
       activeInvitations,
       pendingRequests,
+      dashboardData,
+      familyGroups,
+      loadDashboardData,
+      loadInvitationCodes,
+      loadPendingRequests,
       generateInvitationCode,
       copyToClipboard,
       handleRequest,

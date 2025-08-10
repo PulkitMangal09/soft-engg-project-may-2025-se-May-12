@@ -13,6 +13,7 @@ export default {
 
     getters: {
         isAuthenticated: state => state.isAuthenticated,
+        token: state => state.token,
         userRole: state => state.role,
         currentUser: state => state.user,
         hasProfile: state => state.hasProfile,

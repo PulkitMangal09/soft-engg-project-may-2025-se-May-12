@@ -14,22 +14,22 @@
   
       <!-- Key Metrics -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <AppCard icon="🎓" title="Class" subtitle="Grade 9A - Financial Literacy">
+        <AppCard icon="🎓" title="Total Students" :subtitle="classrooms.length > 0 ? `${classrooms.length} Classroom${classrooms.length !== 1 ? 's' : ''}` : 'Loading...'">
           <div class="text-right">
-            <p class="text-3xl font-bold text-gray-800">28</p>
+            <p class="text-3xl font-bold text-gray-800">{{ loading ? '...' : totalStudents }}</p>
             <p class="text-sm text-gray-500">Students</p>
           </div>
         </AppCard>
         <AppCard icon="🔔" title="Health Alerts" variant="error">
            <div class="text-right">
-            <p class="text-3xl font-bold text-red-500">2</p>
-            <p class="text-sm text-gray-500">Urgent</p>
+            <p class="text-3xl font-bold text-red-500">{{ loading ? '...' : healthAlerts }}</p>
+            <p class="text-sm text-gray-500">Active</p>
           </div>
         </AppCard>
-        <AppCard icon="📝" title="Pending Tasks" variant="warning">
+        <AppCard icon="📝" title="Overdue Tasks" variant="warning">
           <div class="text-right">
-            <p class="text-3xl font-bold text-amber-500">15</p>
-            <p class="text-sm text-gray-500">Awaiting Review</p>
+            <p class="text-3xl font-bold text-amber-500">{{ loading ? '...' : overdueCount }}</p>
+            <p class="text-sm text-gray-500">Need Attention</p>
           </div>
           <template #footer>
             <div class="flex justify-end">
@@ -41,8 +41,8 @@
         </AppCard>
          <AppCard icon="📊" title="Class Average" variant="success">
           <div class="text-right">
-            <p class="text-3xl font-bold text-emerald-500">B+</p>
-            <p class="text-sm text-gray-500">Improving</p>
+            <p class="text-3xl font-bold text-emerald-500">{{ loading ? '...' : classAverage }}</p>
+            <p class="text-sm text-gray-500">Performance</p>
           </div>
         </AppCard>
       </div>
@@ -71,32 +71,39 @@
           </AppCard>
   
           <AppCard title="Students Requiring Attention" icon="⚠️" variant="warning">
-            <ul class="space-y-3">
-              <li class="flex items-center justify-between">
+            <div v-if="loading" class="text-center py-4">
+              <p class="text-gray-500">Loading student data...</p>
+            </div>
+            <div v-else-if="classrooms.length === 0" class="text-center py-8">
+              <p class="text-gray-500 mb-4">No classrooms found. Please create a classroom first.</p>
+              <button
+                @click="openCreateClassroomModal"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Create Your First Classroom
+              </button>
+            </div>
+            <div v-else-if="studentsNeedingAttention.length === 0" class="text-center py-4">
+              <p class="text-gray-500">All students are doing well! 🎉</p>
+            </div>
+            <ul v-else class="space-y-3">
+              <li v-for="student in studentsNeedingAttention" :key="student.student_id" class="flex items-center justify-between">
                 <div>
-                  <p class="font-semibold text-gray-800">Michael R.</p>
-                  <p class="text-sm text-gray-500">3 overdue assignments</p>
-                </div>
-                <AppButton label="View Student" size="sm" variant="secondary" />
-              </li>
-              <li class="flex items-center justify-between">
-                <div>
-                  <p class="font-semibold text-gray-800">Sophia T.</p>
-                  <p class="text-sm text-gray-500">Falling behind in tasks</p>
-                </div>
-                <AppButton label="View Student" size="sm" variant="secondary" />
-              </li>
-               <li class="flex items-center justify-between">
-                <div>
-                  <p class="font-semibold text-gray-800">James L.</p>
-                  <p class="text-sm text-gray-500">Low engagement this week</p>
+                  <p class="font-semibold text-gray-800">Student ID: {{ student.student_id }}</p>
+                  <div class="text-sm text-gray-500">
+                    <span v-if="student.tasks_overdue > 0">{{ student.tasks_overdue }} overdue task{{ student.tasks_overdue !== 1 ? 's' : '' }}</span>
+                    <span v-if="student.tasks_overdue > 0 && student.health_alerts > 0"> • </span>
+                    <span v-if="student.health_alerts > 0">{{ student.health_alerts }} health alert{{ student.health_alerts !== 1 ? 's' : '' }}</span>
+                  </div>
                 </div>
                 <AppButton label="View Student" size="sm" variant="secondary" />
               </li>
             </ul>
              <template #footer>
               <div class="flex justify-end">
-                <AppButton label="View All Students" variant="primary" />
+                <router-link to="/teacher/students">
+                  <AppButton label="View All Students" variant="primary" />
+                </router-link>
               </div>
             </template>
           </AppCard>
@@ -223,36 +230,120 @@
           </div>
         </div>
       </AppModal>
+
+      <!-- Create Classroom Modal -->
+      <AppModal :is-open="isCreateClassroomModalOpen" @close="isCreateClassroomModalOpen = false" title="Create New Classroom">
+        <form @submit.prevent="createNewClassroom" class="space-y-4">
+          <div>
+            <label for="className" class="block text-sm font-medium text-gray-700 mb-1">Classroom Name</label>
+            <input
+              id="className"
+              v-model="newClassroom.name"
+              type="text"
+              required
+              placeholder="e.g., Math Grade 5A"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label for="classSubject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input
+              id="classSubject"
+              v-model="newClassroom.subject"
+              type="text"
+              required
+              placeholder="e.g., Mathematics, Science, English"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label for="gradeLevel" class="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
+            <input
+              id="gradeLevel"
+              v-model="newClassroom.grade_level"
+              type="text"
+              placeholder="e.g., Grade 5, Year 8, Senior"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label for="classDescription" class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+            <textarea
+              id="classDescription"
+              v-model="newClassroom.description"
+              rows="3"
+              placeholder="Brief description of the classroom..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <AppButton 
+              label="Cancel" 
+              variant="secondary" 
+              @click="isCreateClassroomModalOpen = false"
+              type="button"
+            />
+            <AppButton 
+              label="Create Classroom" 
+              variant="primary" 
+              type="submit"
+              :disabled="creatingClassroom"
+            />
+          </div>
+        </form>
+      </AppModal>
     </div>
-  </template>
-  
-  <script>
-  // These components should be globally registered or imported locally
-  import { ref } from 'vue'
-import { useStore } from 'vuex'
-import AppCard from '@/components/ui/AppCard.vue'
-import AppButton from '@/components/ui/AppButton.vue'
-import AppModal from '@/components/ui/AppModal.vue'
-  
+</template>
+
+<script>
+// These components should be globally registered or imported locally
+import { ref, onMounted, computed } from 'vue'
+  import { useStore } from 'vuex'
+  import AppCard from '@/components/ui/AppCard.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import AppModal from '@/components/ui/AppModal.vue'
+  import { teacherService, createClassroom } from '@/services/teacherService.js'
+import { invitationService } from '@/services/invitationService.js'
+
   export default {
     name: 'TeacherDashboard',
-  components: {
-    AppCard,
-    AppButton,
-    AppModal,
-  },
+    components: {
+      AppCard,
+      AppButton,
+      AppModal,
+    },
     setup() {
-    const store = useStore()
-    const isJoinRequestsModalOpen = ref(false)
-    const isInvitationModalOpen = ref(false)
-    const isGeneratedCodeModalOpen = ref(false)
-    const generatedCode = ref('')
-    
-    const newInvitation = ref({
-      type: 'teacher_student',
-      expiresIn: 24,
-      maxUses: 1
-    })
+      const store = useStore()
+      const isJoinRequestsModalOpen = ref(false)
+      const isInvitationModalOpen = ref(false)
+      const isGeneratedCodeModalOpen = ref(false)
+      const isCreateClassroomModalOpen = ref(false)
+      const generatedCode = ref('')
+      const creatingClassroom = ref(false)
+
+      // Dashboard data
+      const classrooms = ref([])
+      const studentsMetrics = ref([])
+      const loading = ref(true)
+      const error = ref(null)
+      const invitationLoading = ref(false)
+
+      const newInvitation = ref({
+        type: 'teacher_student',
+        expiresIn: 24,
+        maxUses: 1
+      })
+
+      const newClassroom = ref({
+        name: '',
+        subject: '',
+        description: '',
+        grade_level: ''
+      })
 
     const pendingRequests = ref([
       { 
@@ -278,22 +369,213 @@ import AppModal from '@/components/ui/AppModal.vue'
       },
     ])
 
-    const activeInvitations = ref([
-      { code: 'MATH101-ABC123', type: 'teacher_student', expiresAt: '2024-01-15', uses: 0, maxUses: 1 },
-      { code: 'MATH101-XYZ789', type: 'teacher_student', expiresAt: '2024-01-16', uses: 2, maxUses: 5 },
-    ])
+    // Computed properties for dashboard metrics
+    const totalStudents = computed(() => {
+      return studentsMetrics.value.length
+    })
 
-    const generateInvitationCode = () => {
-      // Generate a random code (in real app, this would call the API)
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-      let result = ''
-      for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length))
+    const healthAlerts = computed(() => {
+      return studentsMetrics.value.filter(student => student.health_alerts > 0).length
+    })
+
+    const pendingTasks = computed(() => {
+      return studentsMetrics.value.reduce((total, student) => {
+        return total + (student.tasks_assigned - student.tasks_completed)
+      }, 0)
+    })
+
+    const overdueCount = computed(() => {
+      return studentsMetrics.value.reduce((total, student) => {
+        return total + student.tasks_overdue
+      }, 0)
+    })
+
+    const classAverage = computed(() => {
+      if (studentsMetrics.value.length === 0) return 'N/A'
+      const totalCompletion = studentsMetrics.value.reduce((total, student) => {
+        const completionRate = student.tasks_assigned > 0 
+          ? (student.tasks_completed / student.tasks_assigned) * 100 
+          : 0
+        return total + completionRate
+      }, 0)
+      const average = totalCompletion / studentsMetrics.value.length
+      if (average >= 90) return 'A'
+      if (average >= 80) return 'B+'
+      if (average >= 70) return 'B'
+      if (average >= 60) return 'C+'
+      return 'C'
+    })
+
+    // Students requiring attention (overdue tasks or health alerts)
+    const studentsNeedingAttention = computed(() => {
+      return studentsMetrics.value.filter(student => 
+        student.tasks_overdue > 0 || student.health_alerts > 0
+      ).slice(0, 5) // Show top 5
+    })
+
+    const activeInvitations = ref([])
+
+    // Load dashboard data
+    const loadDashboardData = async () => {
+      try {
+        loading.value = true
+        error.value = null
+
+        const token = store.getters['auth/token']
+        console.log('Token from store:', token ? 'Token exists' : 'No token found')
+        
+        if (!token) {
+          console.error('Authentication token not found in store')
+          throw new Error('Please log in again to access the dashboard')
+        }
+
+        // Load classrooms and student metrics in parallel
+        const [classroomsData, metricsData] = await Promise.all([
+          teacherService.getClassrooms(token),
+          teacherService.getStudentsMetrics(token)
+        ])
+
+        classrooms.value = classroomsData
+        studentsMetrics.value = metricsData
+
+      } catch (err) {
+        console.error('Error loading dashboard data:', err)
+        error.value = err.message || 'Failed to load dashboard data'
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'Failed to load dashboard data',
+          type: 'error',
+        })
+      } finally {
+        loading.value = false
       }
-      generatedCode.value = `MATH101-${result}`
+    }
+
+    // Load invitation codes
+    const loadInvitationCodes = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const codes = await invitationService.getMyInvitationCodes(token, 'classroom')
+        activeInvitations.value = codes.map(code => ({
+          code_id: code.code_id,
+          code: code.code,
+          type: 'classroom',
+          expiresAt: code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never',
+          uses: code.usage_count || 0,
+          maxUses: code.max_uses || 'Unlimited',
+          target_id: code.target_id
+        }))
+      } catch (err) {
+        console.error('Error loading invitation codes:', err)
+      }
+    }
+
+    // Classroom creation functions
+    const openCreateClassroomModal = () => {
+      isCreateClassroomModalOpen.value = true
+      // Reset form
+      newClassroom.value = {
+        name: '',
+        subject: '',
+        description: '',
+        grade_level: ''
+      }
+    }
+
+    const createNewClassroom = async () => {
+      try {
+        creatingClassroom.value = true
+        const token = store.getters['auth/token']
+        
+        if (!token) {
+          throw new Error('Authentication token not found')
+        }
+
+        const classroomData = await createClassroom(newClassroom.value, token)
+        
+        // Add the new classroom to the list
+        classrooms.value.push(classroomData)
+        
+        // Close modal and show success message
+        isCreateClassroomModalOpen.value = false
+        store.dispatch('ui/showToast', {
+          title: 'Success',
+          message: `Classroom "${newClassroom.value.name}" created successfully!`,
+          type: 'success',
+        })
+
+        // Reload dashboard data to get updated metrics
+        await loadDashboardData()
+        
+      } catch (err) {
+        console.error('Error creating classroom:', err)
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: err.message || 'Failed to create classroom',
+          type: 'error',
+        })
+      } finally {
+        creatingClassroom.value = false
+      }
+    }
+
+    const generateInvitationCode = async () => {
+      if (classrooms.value.length === 0) {
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'No classrooms found. Please create a classroom first.',
+          type: 'error',
+        })
+        return
+      }
       
-      isInvitationModalOpen.value = false
-      isGeneratedCodeModalOpen.value = true
+      try {
+        invitationLoading.value = true
+        const token = store.getters['auth/token']
+        if (!token) {
+          throw new Error('No authentication token found')
+        }
+        
+        // Use the first classroom for now (could be enhanced to let teacher choose)
+        const targetClassroom = classrooms.value[0]
+        
+        // Calculate expiration date based on user selection
+        const expiresAt = new Date()
+        expiresAt.setHours(expiresAt.getHours() + parseInt(newInvitation.value.expiresIn))
+        
+        const codeData = {
+          target_type: 'classroom',
+          target_id: targetClassroom.classroom_id,
+          max_uses: newInvitation.value.maxUses || null,
+          expires_at: expiresAt.toISOString()
+        }
+        
+        const result = await invitationService.generateCode(codeData, token)
+        generatedCode.value = result.code
+        
+        // Reload invitation codes to show the new one
+        await loadInvitationCodes()
+        
+        isInvitationModalOpen.value = false
+        isGeneratedCodeModalOpen.value = true
+        
+        store.dispatch('ui/showToast', {
+          title: 'Success',
+          message: 'Invitation code generated successfully!',
+          type: 'success',
+        })
+      } catch (err) {
+        console.error('Error generating invitation code:', err)
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: err.response?.data?.detail || 'Failed to generate invitation code',
+          type: 'error',
+        })
+      } finally {
+        invitationLoading.value = false
+      }
     }
 
     const copyToClipboard = () => {
@@ -324,29 +606,53 @@ import AppModal from '@/components/ui/AppModal.vue'
           type: 'error',
         })
       }
-      
+
       if (pendingRequests.value.length === 0) {
         isJoinRequestsModalOpen.value = false
       }
     }
 
+    // Load data on component mount
+    onMounted(async () => {
+      await loadDashboardData()
+      await loadInvitationCodes()
+    })
+
     return {
       isJoinRequestsModalOpen,
       isInvitationModalOpen,
       isGeneratedCodeModalOpen,
+      isCreateClassroomModalOpen,
       generatedCode,
+      creatingClassroom,
       newInvitation,
+      newClassroom,
       pendingRequests,
       activeInvitations,
+      classrooms,
+      studentsMetrics,
+      loading,
+      error,
+      totalStudents,
+      healthAlerts,
+      pendingTasks,
+      overdueCount,
+      classAverage,
+      studentsNeedingAttention,
+      loadDashboardData,
+      loadInvitationCodes,
+      invitationLoading,
       generateInvitationCode,
+      openCreateClassroomModal,
+      createNewClassroom,
       copyToClipboard,
       handleRequest,
-    }
-  },
+      }
+    },
   }
-  </script>
-  
-  <style scoped>
-  /* Scoped styles for the dashboard */
-  </style>
+</script>
+
+<style scoped>
+/* Scoped styles for the dashboard */
+</style>
   

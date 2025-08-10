@@ -34,9 +34,9 @@
                 </div>
                 <div class="bg-white rounded-xl shadow p-6 flex flex-col items-center">
                     <span class="text-3xl mb-2">🥗</span>
-                    <div class="font-bold text-lg text-gray-800">Diet</div>
+                    <div class="font-bold text-lg text-gray-800">Health</div>
                     <div class="text-sm text-gray-500">Meals & water</div>
-                    <router-link to="/student/diet" class="mt-3 text-blue-600 hover:underline text-xs">Diet
+                    <router-link to="/student/health" class="mt-3 text-blue-600 hover:underline text-xs">Health
                         Dashboard</router-link>
                 </div>
                 <div class="bg-white rounded-xl shadow p-6 flex flex-col items-center">
