@@ -37,22 +37,21 @@
                     <input v-model="form.time" type="time" class="form-input w-full">
                 </div>
             </div>
-            <div class="bg-emerald-50 border-l-4 border-emerald-400 rounded-lg p-4 text-xs">
+            <!-- <div class="bg-emerald-50 border-l-4 border-emerald-400 rounded-lg p-4 text-xs">
                 <div class="font-semibold mb-1">Nutritional Info (Estimated)</div>
                 <div>
                     <strong>Calories:</strong> 245 • <strong>Carbs:</strong> 35g • <strong>Protein:</strong> 8g •
                     <strong>Fat:</strong> 12g<br>
                     <strong>Sodium:</strong> 450mg • <strong>Sugar:</strong> 15g • <strong>Fiber:</strong> 3g
                 </div>
-            </div>
-            <div>
+            </div> -->
+            <!-- <div>
                 <label class="block font-semibold mb-1">Notes</label>
                 <textarea v-model="form.notes" class="form-textarea w-full"
                     placeholder="Any additional notes about this meal..."></textarea>
-            </div>
-            <div class="flex gap-4">
+            </div> -->
+            <div class="flex justify-center">
                 <button class="btn-primary" type="submit">Log Food</button>
-                <button class="btn-secondary" type="button">📷 Take Photo</button>
             </div>
         </form>
     </div>

@@ -188,6 +188,11 @@ class MealEntry(BaseModel):
     fat: float
 
 
+class MealCreate(BaseModel):
+    mealtype: Literal['breakfast', 'lunch', 'dinner', 'snacks']
+    description: str
+
+
 class HealthMetricsRequest(BaseModel):
     weight: float
     height: float

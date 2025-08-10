@@ -6,19 +6,19 @@
         </div>
         <div class="grid grid-cols-4 gap-4 mb-6">
             <div class="bg-gray-50 rounded-xl p-4 text-center">
-                <div class="text-xl font-bold text-emerald-500">1,842</div>
+                <div class="text-xl font-bold text-emerald-500">{{ totals.calories }}</div>
                 <div class="text-xs text-gray-500">Total Calories</div>
             </div>
             <div class="bg-gray-50 rounded-xl p-4 text-center">
-                <div class="text-xl font-bold text-emerald-500">158g</div>
+                <div class="text-xl font-bold text-emerald-500">{{ totals.carbs }}g</div>
                 <div class="text-xs text-gray-500">Carbs</div>
             </div>
             <div class="bg-gray-50 rounded-xl p-4 text-center">
-                <div class="text-xl font-bold text-emerald-500">68g</div>
+                <div class="text-xl font-bold text-emerald-500">{{ totals.proteins }}g</div>
                 <div class="text-xs text-gray-500">Protein</div>
             </div>
             <div class="bg-gray-50 rounded-xl p-4 text-center">
-                <div class="text-xl font-bold text-emerald-500">82g</div>
+                <div class="text-xl font-bold text-emerald-500">{{ totals.fat }}g</div>
                 <div class="text-xs text-gray-500">Fat</div>
             </div>
         </div>
@@ -43,10 +43,30 @@
     </div>
 </template>
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
     meals: {
         type: Array,
         required: true
     }
-});
+})
+
+const flatItems = computed(() => (props.meals || []).flatMap(m => m.items || []))
+const totals = computed(() => {
+    const sum = { calories: 0, proteins: 0, carbs: 0, fat: 0 }
+    for (const it of flatItems.value) {
+        sum.calories += Number(it.calories || 0)
+        sum.proteins += Number(it.proteins || 0)
+        sum.carbs += Number(it.carbs || 0)
+        sum.fat += Number(it.fat || 0)
+    }
+    // format calories as integer, macros as integers
+    return {
+        calories: Math.round(sum.calories),
+        proteins: Math.round(sum.proteins),
+        carbs: Math.round(sum.carbs),
+        fat: Math.round(sum.fat),
+    }
+})
 </script>

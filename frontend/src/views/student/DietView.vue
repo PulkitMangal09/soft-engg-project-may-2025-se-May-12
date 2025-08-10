@@ -65,7 +65,7 @@
         <div class="bg-gray-50 rounded-xl p-4 md:p-6 mb-2 md:mb-4">
           <div class="font-semibold text-gray-800 mb-3 text-base md:text-lg">Quick Actions</div>
           <div class="grid grid-cols-3 gap-2 md:gap-3">
-            <DietQuickActionCard icon="🍎" title="Log Food" @click="showLogFood = true" />
+            <DietQuickActionCard icon="🍎" title="Log Food" @click="goToFoodLog" />
             <DietQuickActionCard icon="💧" title="Add Water" @click="goToWater" />
             <DietQuickActionCard icon="⚖️" title="Log Weight" @click="goToHealthMetrics" />
           </div>
@@ -178,6 +178,9 @@ function goToWater() {
 }
 function goToHealthMetrics() {
   router.push('/student/health-metrics')
+}
+function goToFoodLog() {
+  router.push('/student/food-log')
 }
 function scrollTo(id) {
   const el = document.getElementById(id)
