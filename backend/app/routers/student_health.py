@@ -36,6 +36,8 @@ def get_latest_metrics(email: str = Depends(get_user_email_from_token)):
         diastolic=m['diastolic'],
         blood_sugar=m['blood_sugar'],
         heart_rate=m['heart_rate'],
+        age_years=m.get('age_years'),
+        sex=m.get('sex'),
         notes=m.get('notes'),
         time=m['created_at']
     )
@@ -46,7 +48,18 @@ def add_health_metrics(
 ):
     bmi = round(data.weight / ((data.height / 100) ** 2), 1)
     child_id = supabase.table("students").select("student_id").eq("email", email).execute()
-    res = supabase.table("health_metrics").insert({
+    # determine if sex already set for this student
+    sex_check = (
+        supabase.table("health_metrics")
+        .select("sex")
+        .eq("student_id", child_id.data[0]['student_id'])
+        .neq("sex", None)
+        .limit(1)
+        .execute()
+    )
+    sex_locked = bool(sex_check.data)
+
+    payload = {
         "student_id": child_id.data[0]['student_id'],
         "weight": data.weight,
         "height": data.height,
@@ -55,9 +68,13 @@ def add_health_metrics(
         "blood_sugar": data.blood_sugar,
         "heart_rate": data.heart_rate,
         "bmi": bmi,
+        "age_years": data.age_years,
         "notes": data.notes,
         "created_at": datetime.now().isoformat()
-    }).execute()
+    }
+    if not sex_locked and getattr(data, 'sex', None):
+        payload["sex"] = data.sex
+    res = supabase.table("health_metrics").insert(payload).execute()
     return {"message": "Health metrics saved"}
 
 @router.patch("/metrics/{entry_id}", response_model=dict)
@@ -69,7 +86,18 @@ def update_health_metrics(
     bmi = round(data.weight / ((data.height / 100) ** 2), 1)
     child_id = supabase.table("students").select("student_id").eq("email", email).execute()
     
-    result = supabase.table("health_metrics").update({
+    # check if sex already set; if yes, ignore incoming sex updates
+    sex_check = (
+        supabase.table("health_metrics")
+        .select("sex")
+        .eq("student_id", child_id.data[0]['student_id'])
+        .neq("sex", None)
+        .limit(1)
+        .execute()
+    )
+    sex_locked = bool(sex_check.data)
+
+    update_payload = {
         "weight": data.weight,
         "height": data.height,
         "systolic": data.systolic,
@@ -77,8 +105,18 @@ def update_health_metrics(
         "blood_sugar": data.blood_sugar,
         "heart_rate": data.heart_rate,
         "bmi": bmi,
+        "age_years": data.age_years,
         "notes": data.notes,
-    }).eq("id", str(entry_id)).eq("student_id", child_id.data[0]['student_id']).execute()
+    }
+    if not sex_locked and getattr(data, 'sex', None):
+        update_payload["sex"] = data.sex
+    result = (
+        supabase.table("health_metrics")
+        .update(update_payload)
+        .eq("id", str(entry_id))
+        .eq("student_id", child_id.data[0]['student_id'])
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(status_code=404, detail="Metric entry not found or unauthorized")

@@ -200,6 +200,8 @@ class HealthMetricsRequest(BaseModel):
     diastolic: int
     blood_sugar: int
     heart_rate: int
+    age_years: Optional[int] = None
+    sex: Optional[str] = None
     notes: Optional[str] = ""
 
 
@@ -211,6 +213,8 @@ class HealthMetricsResponse(BaseModel):
     diastolic: int
     blood_sugar: int
     heart_rate: int
+    age_years: Optional[int] = None
+    sex: Optional[str] = None
     notes: Optional[str]
     time: datetime
 

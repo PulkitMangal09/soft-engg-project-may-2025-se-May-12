@@ -29,8 +29,10 @@ def estimate_nutrition_with_gemini(description: str) -> dict:
             "proteins": {"type": "number"},
             "carbs": {"type": "number"},
             "fat": {"type": "number"},
+            "sodium": {"type": "number"},
+            "sugar": {"type": "number"},
         },
-        "required": ["calories", "proteins", "carbs", "fat"],
+        "required": ["calories", "proteins", "carbs", "fat", "sodium", "sugar"],
     }
     prompt = (
         "Estimate macronutrients for the following food description. "
@@ -58,11 +60,13 @@ def estimate_nutrition_with_gemini(description: str) -> dict:
             "proteins": n(data.get("proteins")),
             "carbs": n(data.get("carbs")),
             "fat": n(data.get("fat")),
+            "sodium": n(data.get("sodium")),
+            "sugar": n(data.get("sugar")),
         }
     except Exception as e:
         # Fallback to zeros on any failure
         print(f"Gemini nutrition estimate failed: {e}")
-        return {"calories": 0.0, "proteins": 0.0, "carbs": 0.0, "fat": 0.0}
+        return {"calories": 0.0, "proteins": 0.0, "carbs": 0.0, "fat": 0.0, "sodium": 0.0, "sugar": 0.0}
 
 def get_user_email_from_token(token: str = Depends(oauth2_scheme)) -> str:
     try:
@@ -174,6 +178,8 @@ def log_meal(data: MealCreate, email: str = Depends(get_user_email_from_token)):
         "proteins": nutrition.get("proteins", 0.0),
         "carbs": nutrition.get("carbs", 0.0),
         "fat": nutrition.get("fat", 0.0),
+        "sodium": nutrition.get("sodium", 0.0),
+        "sugar": nutrition.get("sugar", 0.0),
     }
     try:
         supabase.table("meals").insert(payload).execute()
@@ -197,7 +203,9 @@ def update_meal_entry(
         "calories": data.calories,
         "proteins": data.proteins,
         "carbs": data.carbs,
-        "fat": data.fat
+        "fat": data.fat,
+        "sodium": data.sodium,
+        "sugar": data.sugar,
     }).eq("id", entry_id).eq("student_id", child_id.data[0]['student_id']).execute()
 
     if not response.data:
