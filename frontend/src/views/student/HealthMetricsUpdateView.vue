@@ -129,9 +129,13 @@ onMounted(async () => {
       blood_sugar: latest.blood_sugar?.toString?.() || '',
       heart_rate: latest.heart_rate?.toString?.() || '',
       age_years: latest.age_years?.toString?.() || '',
-      sex: latest.sex || '',
+      sex: (latest.sex || '').trim(),
       notes: latest.notes || '',
       bmi: latest.bmi?.toString?.() || ''
+    }
+    // prefill form.sex to ensure it's not null in payload
+    if (placeholders.value.sex) {
+      form.value.sex = placeholders.value.sex
     }
   } catch (e) {
     // If 404, ignore; else show error
@@ -157,6 +161,10 @@ function validate() {
     proxy?.$toast?.error?.('Weight and Height are required (fill or rely on latest placeholders)')
     return false
   }
+  if (!isSexLocked.value && !form.value.sex) {
+    proxy?.$toast?.error?.('Please select Sex')
+    return false
+  }
   return true
 }
 
@@ -172,12 +180,10 @@ async function onSubmit() {
       blood_sugar: numOrPlaceholder(form.value.blood_sugar, placeholders.value.blood_sugar) ?? 0,
       heart_rate: numOrPlaceholder(form.value.heart_rate, placeholders.value.heart_rate) ?? 0,
       age_years: numOrPlaceholder(form.value.age_years, placeholders.value.age_years),
-      sex: isSexLocked ? undefined : (form.value.sex || null),
+      sex: ((placeholders.value.sex || form.value.sex || '').trim() || null),
       notes: form.value.notes || placeholders.value.notes || null
     }
-    if (isSexLocked) {
-      delete payload.sex
-    }
+    
     await createMetrics(payload)
     proxy?.$toast?.success?.('Health metrics saved')
     router.push('/student/health')

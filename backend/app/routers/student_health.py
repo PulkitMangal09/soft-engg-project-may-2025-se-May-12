@@ -48,17 +48,6 @@ def add_health_metrics(
 ):
     bmi = round(data.weight / ((data.height / 100) ** 2), 1)
     child_id = supabase.table("students").select("student_id").eq("email", email).execute()
-    # determine if sex already set for this student
-    sex_check = (
-        supabase.table("health_metrics")
-        .select("sex")
-        .eq("student_id", child_id.data[0]['student_id'])
-        .neq("sex", None)
-        .limit(1)
-        .execute()
-    )
-    sex_locked = bool(sex_check.data)
-
     payload = {
         "student_id": child_id.data[0]['student_id'],
         "weight": data.weight,
@@ -69,11 +58,10 @@ def add_health_metrics(
         "heart_rate": data.heart_rate,
         "bmi": bmi,
         "age_years": data.age_years,
+        "sex": data.sex,
         "notes": data.notes,
         "created_at": datetime.now().isoformat()
     }
-    if not sex_locked and getattr(data, 'sex', None):
-        payload["sex"] = data.sex
     res = supabase.table("health_metrics").insert(payload).execute()
     return {"message": "Health metrics saved"}
 
@@ -86,17 +74,6 @@ def update_health_metrics(
     bmi = round(data.weight / ((data.height / 100) ** 2), 1)
     child_id = supabase.table("students").select("student_id").eq("email", email).execute()
     
-    # check if sex already set; if yes, ignore incoming sex updates
-    sex_check = (
-        supabase.table("health_metrics")
-        .select("sex")
-        .eq("student_id", child_id.data[0]['student_id'])
-        .neq("sex", None)
-        .limit(1)
-        .execute()
-    )
-    sex_locked = bool(sex_check.data)
-
     update_payload = {
         "weight": data.weight,
         "height": data.height,
@@ -106,10 +83,9 @@ def update_health_metrics(
         "heart_rate": data.heart_rate,
         "bmi": bmi,
         "age_years": data.age_years,
+        "sex": data.sex,
         "notes": data.notes,
     }
-    if not sex_locked and getattr(data, 'sex', None):
-        update_payload["sex"] = data.sex
     result = (
         supabase.table("health_metrics")
         .update(update_payload)
