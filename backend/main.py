@@ -28,6 +28,7 @@ from app.routers.parent_family import router as parent_family_router
 from app.routers.invitation_codes import router as invitation_codes_router
 from app.routers.connection_requests import router as connection_requests_router
 from app.routers.connections import router as connections_router
+from app.routers.student_medical import router as student_medical_router
 
 app = FastAPI(
     title="GrowthGeine API",
@@ -100,6 +101,7 @@ app.include_router(parent_family_router)
 app.include_router(invitation_codes_router)
 app.include_router(connection_requests_router)
 app.include_router(connections_router)
+app.include_router(student_medical_router)
 
 
 @app.get("/")
