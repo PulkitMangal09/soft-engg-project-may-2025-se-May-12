@@ -66,8 +66,7 @@ export default {
         { label: 'Tasks', icon: '🗒️', to: '/student/tasks' },
         { label: 'Finance', icon: '💰', to: '/student/finance' },
         { label: 'Emotions', icon: '😊', to: '/student/emotion' },
-        { label: 'Health', icon: '🥗', to: '/student/health' },
-        // { label: 'Health', icon: '📊', to: '/student/health' },
+        { label: 'Diet', icon: '🥗', to: '/student/health' },
       ]
     }
   },

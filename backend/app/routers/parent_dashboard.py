@@ -52,8 +52,8 @@ def get_parent_dashboard(
     }
 
     # 6. Pending join/access requests
-    requests_resp = supabase.table("parent_requests").select("*").eq("parent_id", parent_id).eq("status", "pending").execute()
-    summary["pendingRequests"] = len(requests_resp.data) if requests_resp.data else 0
+    # requests_resp = supabase.table("parent_requests").select("*").eq("parent_id", parent_id).eq("status", "pending").execute()
+    # summary["pendingRequests"] = len(requests_resp.data) if requests_resp.data else 0
 
     # 7. Active tasks for children
     if children:

@@ -3,10 +3,17 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from typing import List, Dict, Any
 from uuid import UUID
+from pydantic import BaseModel
 from ..config import supabase
 
 router = APIRouter(prefix="/teacher", tags=["teacher-students"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
+class ClassroomCreate(BaseModel):
+    name: str
+    subject: str
+    description: str = ""
+    grade_level: str = ""
 
 def get_teacher_id(token: str) -> UUID:
     auth = supabase.auth.get_user(token)
@@ -36,6 +43,29 @@ def list_classrooms(token: str = Depends(oauth2)):
         .execute()
     )
     return resp.data or []
+
+@router.post("/classrooms", response_model=Dict[str, Any])
+def create_classroom(classroom: ClassroomCreate, token: str = Depends(oauth2)):
+    """Create a new classroom for this teacher."""
+    teacher_id = get_teacher_id(token)
+    
+    # Insert new classroom
+    resp = (
+        supabase.table("classrooms")
+        .insert({
+            "name": classroom.name,
+            "subject": classroom.subject,
+            "description": classroom.description,
+            "grade_level": classroom.grade_level,
+            "teacher_id": teacher_id,
+        })
+        .execute()
+    )
+    
+    if not resp.data:
+        raise HTTPException(400, "Failed to create classroom")
+    
+    return resp.data[0]
 
 @router.get("/classrooms/{classroom_id}/students", response_model=List[Dict[str, Any]])
 def list_classroom_students(classroom_id: UUID, token: str = Depends(oauth2)):
