@@ -280,8 +280,9 @@ const totalTeacherTasks = computed(() => {
 
 // Normalize each row so it always gets a unique __uuid, plus .id & .task_id
 function normalizeRow(row) {
-  const uuid = row.task_id ?? row.id ?? row.ID
-  return { __uuid: uuid, task_id: uuid, id: uuid, ...row }
+  const uuid = row?.task_id ?? row?.id ?? row?.ID
+  // Spread row first, then override with normalized IDs to avoid being overwritten
+  return { ...row, __uuid: uuid, task_id: uuid, id: uuid }
 }
 
 // Load tasks
@@ -329,7 +330,7 @@ async function addTask() {
 // Toggle
 async function toggleTask(task) {
   try {
-    const { data } = await API.patch(`/student/tasks/${task.task_id}/`, {
+    const { data } = await API.patch(`/student/tasks/${task.task_id}`, {
       status: task.status === 'completed' ? 'pending' : 'completed'
     })
     Object.assign(task, normalizeRow(data))
@@ -342,7 +343,7 @@ async function toggleTask(task) {
 // Delete
 async function deleteTask(task) {
   try {
-    await API.delete(`/student/tasks/${task.task_id}/`)
+    await API.delete(`/student/tasks/${task.task_id}`)
     tasks.value = tasks.value.filter(t => t.__uuid !== task.__uuid)
     toast.success('Task deleted!')
   } catch {

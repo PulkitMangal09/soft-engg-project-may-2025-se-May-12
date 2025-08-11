@@ -419,7 +419,8 @@ class TaskBase(BaseModel):
 
     title: str
     description: Optional[str] = None
-    assigned_to: UUID
+    # Optional: allow teacher/parent to assign to a student; defaults to self on server
+    assigned_to: Optional[UUID] = None
     assigned_by: UUID
     category: str
     priority: Optional[str] = "medium"
@@ -430,9 +431,24 @@ class TaskBase(BaseModel):
     attachment_url: Optional[str] = None
 
 
-class TaskCreate(TaskBase):
-    """Create payload (server will add task_id/created_at)."""
+class TaskCreate(BaseModel):
+    """Create payload (server will add task_id/created_at).
+
+    Client may optionally specify `assigned_to` to assign a task to a student.
+    `assigned_by` is always derived from the authenticated user on the server.
+    """
     model_config = ConfigDict(from_attributes=True)
+
+    title: str
+    description: Optional[str] = None
+    assigned_to: Optional[UUID] = None
+    category: str
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    due_time: Optional[str] = None
+    status: Optional[str] = "pending"
+    reward_points: Optional[int] = 0
+    attachment_url: Optional[str] = None
 
 
 class TaskUpdate(BaseModel):

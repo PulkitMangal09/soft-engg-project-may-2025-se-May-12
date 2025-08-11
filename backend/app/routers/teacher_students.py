@@ -400,7 +400,46 @@ def respond_request(request_id: UUID, body: RequestRespond, authorization: str =
 
     # Accepting: perform side-effects FIRST, then mark accepted.
     try:
-        if requester_user.get("user_type") == "student":
+        # Decide actor role using the request's relationship_type first
+        rel = str((req.get("relationship_type") or "")).lower()
+        rt = None
+        if rel in ("student", "parent"):
+            rt = rel
+        else:
+            # Fallback to users.user_type then infer from domain tables
+            rt = str(requester_user.get("user_type", "")).lower()
+            if not rt or rt not in ("student", "parent"):
+                # Try to infer from presence in domain tables
+                try:
+                    st_exists = (
+                        supabase.table("students")
+                        .select("student_id")
+                        .eq("student_id", requester_id)
+                        .limit(1)
+                        .execute()
+                        .data or []
+                    )
+                    if st_exists:
+                        rt = "student"
+                    else:
+                        pr_exists = (
+                            supabase.table("parents")
+                            .select("parent_id")
+                            .eq("parent_id", requester_id)
+                            .limit(1)
+                            .execute()
+                            .data or []
+                        )
+                        if pr_exists:
+                            rt = "parent"
+                except Exception:
+                    # ignore inference errors and fall through
+                    pass
+            # Final safety: for classroom join requests default to student
+            if (not rt or rt not in ("student", "parent")) and req.get("target_type") == "classroom":
+                rt = "student"
+
+        if rt == "student":
             # ---- ensure students row exists ----
             st = (
                 supabase.table("students")
@@ -435,7 +474,7 @@ def respond_request(request_id: UUID, body: RequestRespond, authorization: str =
                     "is_active": True,
                 }).execute()
 
-        elif requester_user.get("user_type") == "parent":
+        elif rt == "parent":
             # ---- idempotent teacher<->parent connection ----
             conn_exists = (
                 supabase.table("user_connections")
@@ -469,7 +508,8 @@ def respond_request(request_id: UUID, body: RequestRespond, authorization: str =
                     "connection_type": "teacher_parent",
                 }).execute()
         else:
-            raise HTTPException(status_code=400, detail="Unsupported requester user_type")
+            val = requester_user.get("user_type")
+            raise HTTPException(status_code=400, detail=f"Unsupported requester user_type: {val}")
     except APIError as e:
         # Side-effect failed -> do NOT mark accepted; return error detail
         raise HTTPException(status_code=400, detail=str(e))

@@ -6,7 +6,7 @@ from ..config import supabase
 from ..models import StudentProfileCreate, ProfileStatusResponse
 from ..utils.profile_utils import (
     get_user_id_from_token, get_user_type, check_profile_exists,
-    get_profile_data, create_profile
+    get_profile_data, create_profile as create_profile_util
 )
 
 router = APIRouter(prefix="/student/profile", tags=["student-profile"])
@@ -68,7 +68,7 @@ def create_profile(data: StudentProfileCreate, token: str = Depends(oauth2)):
             status_code=400, detail="Student profile already exists")
 
     profile_data = data.dict(exclude_unset=True)
-    return create_profile(user_id, user_type, profile_data)
+    return create_profile_util(user_id, user_type, profile_data)
 
 
 @router.patch("/", response_model=dict)

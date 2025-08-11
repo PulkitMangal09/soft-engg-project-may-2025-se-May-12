@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from typing import List
 from uuid import UUID
 from ..config import supabase
-from ..models import TaskBase, TaskCreate, TaskUpdate  # <-- import TaskUpdate
+from ..models import TaskBase, TaskCreate, TaskUpdate, TaskOut
 from datetime import datetime
 
 router = APIRouter(prefix="/student/tasks", tags=["student-tasks"])
@@ -24,7 +24,7 @@ def to_iso(value):
     return value.isoformat() if hasattr(value, "isoformat") else value
 
 
-@router.get("/", response_model=List[TaskBase])
+@router.get("/", response_model=List[TaskOut])
 def list_tasks(token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     resp = supabase.table("tasks") \
@@ -34,7 +34,7 @@ def list_tasks(token: str = Depends(oauth2)):
     return resp.data or []
 
 
-@router.get("/{task_id}", response_model=TaskBase)
+@router.get("/{task_id}", response_model=TaskOut)
 def get_task(task_id: UUID, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     resp = supabase.table("tasks") \
@@ -48,7 +48,7 @@ def get_task(task_id: UUID, token: str = Depends(oauth2)):
     return resp.data
 
 
-@router.post("/", response_model=TaskBase)
+@router.post("/", response_model=TaskOut)
 def add_task(task: TaskCreate, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     payload = task.dict(exclude_none=True)
@@ -65,8 +65,12 @@ def add_task(task: TaskCreate, token: str = Depends(oauth2)):
         payload["completion_date"] = None
     # timestamps
     payload["updated_at"] = datetime.utcnow().isoformat()
+    # Determine assignee: use provided assigned_to if present; otherwise self-assign
+    provided_assigned_to = payload.pop("assigned_to", None)
+    assignee = provided_assigned_to or user_id
     payload.update({
-        "assigned_to": user_id,
+        "assigned_to": assignee,
+        # Never trust client for assigned_by; always the authenticated user
         "assigned_by": user_id,
     })
     resp = supabase.table("tasks").insert(payload).execute()
@@ -76,7 +80,7 @@ def add_task(task: TaskCreate, token: str = Depends(oauth2)):
     return data[0]
 
 
-@router.patch("/{task_id}", response_model=TaskBase)
+@router.patch("/{task_id}", response_model=TaskOut)
 def update_task(
     task_id: UUID,
     task: TaskUpdate,              # <-- use TaskUpdate here

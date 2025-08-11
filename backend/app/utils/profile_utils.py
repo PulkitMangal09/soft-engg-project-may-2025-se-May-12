@@ -6,6 +6,7 @@ from ..config import supabase
 
 # ---- Auth helpers ----
 
+
 def get_user_id_from_token(token: str) -> str:
     """Return the authenticated user's id (or 401)."""
     try:
@@ -30,8 +31,8 @@ def get_user_type(user_id: str) -> str:
     Tries `profiles.role` first, falls back to `users.user_type`.
     """
     # Preferred: profiles table
-    prof = _get_row("profiles", "user_id", user_id)
-    role = (prof or {}).get("role")
+    prof = _get_row("users", "user_id", user_id)
+    role = (prof or {}).get("user_type")
     if isinstance(role, str) and role:
         return role
 
@@ -47,12 +48,15 @@ def get_user_type(user_id: str) -> str:
 
 # ---- Optional profile helpers (if you still use per-role tables) ----
 
-_TABLE_MAP = {"student": "students", "teacher": "teachers", "parent": "parents"}
-_ID_FIELD  = {"student": "student_id", "teacher": "teacher_id", "parent": "user_id"}
+_TABLE_MAP = {"student": "students",
+              "teacher": "teachers", "parent": "parents"}
+_ID_FIELD = {"student": "student_id",
+             "teacher": "teacher_id", "parent": "user_id"}
+
 
 def check_profile_exists(user_id: str, user_type: str) -> bool:
     table = _TABLE_MAP.get(user_type)
-    key   = _ID_FIELD.get(user_type)
+    key = _ID_FIELD.get(user_type)
     if not table or not key:
         raise HTTPException(status_code=400, detail="Invalid user type")
     try:
@@ -64,7 +68,7 @@ def check_profile_exists(user_id: str, user_type: str) -> bool:
 
 def get_profile_data(user_id: str, user_type: str) -> Optional[Dict[str, Any]]:
     table = _TABLE_MAP.get(user_type)
-    key   = _ID_FIELD.get(user_type)
+    key = _ID_FIELD.get(user_type)
     if not table or not key:
         return None
     try:
@@ -82,7 +86,7 @@ def get_user_data(user_id: str) -> Dict[str, Any]:
 
 def create_profile(user_id: str, user_type: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
     table = _TABLE_MAP.get(user_type)
-    key   = _ID_FIELD.get(user_type)
+    key = _ID_FIELD.get(user_type)
     if not table or not key:
         raise HTTPException(status_code=400, detail="Invalid user type")
 
@@ -98,7 +102,8 @@ def create_profile(user_id: str, user_type: str, profile_data: Dict[str, Any]) -
     elif user_type == "teacher":
         payload = {"teacher_id": user_id, **profile_data}
     elif user_type == "parent":
-        payload = {"user_id": user_id, "name": user_data.get("full_name"), **profile_data}
+        payload = {"user_id": user_id, "name": user_data.get(
+            "full_name"), **profile_data}
     else:
         raise HTTPException(status_code=400, detail="Invalid user type")
 

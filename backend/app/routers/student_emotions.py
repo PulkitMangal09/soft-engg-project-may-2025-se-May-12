@@ -308,6 +308,9 @@ def delete_chat_message(message_id: str, token: str = Depends(oauth2)):
 def create_emergency_contact(contact: EmergencyContact, token: str = Depends(oauth2)):
     # Optionally, you can restrict this to admin/teacher if needed
     payload = contact.dict(exclude_unset=True)
+    # Associate contact with current user
+    user_id = get_user_id(token)
+    payload["user_id"] = user_id
     resp = supabase.table("emergency_contacts").insert(payload).execute()
     data = getattr(resp, 'data', None)
     if not data:
@@ -317,15 +320,17 @@ def create_emergency_contact(contact: EmergencyContact, token: str = Depends(oau
 
 @router.get("/contacts", response_model=List[EmergencyContact])
 def list_emergency_contacts(token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
     resp = supabase.table("emergency_contacts").select(
-        "*").order("created_at", desc=True).execute()
+        "*").eq("user_id", user_id).order("created_at", desc=True).execute()
     return getattr(resp, 'data', [])
 
 
 @router.get("/contacts/{contact_id}", response_model=EmergencyContact)
 def get_emergency_contact(contact_id: str, token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
     resp = supabase.table("emergency_contacts").select(
-        "*").eq("contact_id", contact_id).single().execute()
+        "*").eq("contact_id", contact_id).eq("user_id", user_id).single().execute()
     data = getattr(resp, 'data', None)
     if not data:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -339,8 +344,9 @@ def update_emergency_contact(contact_id: str, contact: EmergencyContact, token: 
     allowed = {"name", "phone_number", "description",
                "contact_type", "is_available_24_7"}
     payload = {k: v for k, v in (payload or {}).items() if k in allowed}
+    user_id = get_user_id(token)
     resp = supabase.table("emergency_contacts").update(
-        payload).eq("contact_id", contact_id).execute()
+        payload).eq("contact_id", contact_id).eq("user_id", user_id).execute()
     data = getattr(resp, 'data', None)
     if not data:
         raise HTTPException(status_code=400, detail="Update failed")
@@ -349,8 +355,9 @@ def update_emergency_contact(contact_id: str, contact: EmergencyContact, token: 
 
 @router.delete("/contacts/{contact_id}", response_model=dict)
 def delete_emergency_contact(contact_id: str, token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
     supabase.table("emergency_contacts").delete().eq(
-        "contact_id", contact_id).execute()
+        "contact_id", contact_id).eq("user_id", user_id).execute()
     return {"deleted": True}
 
 

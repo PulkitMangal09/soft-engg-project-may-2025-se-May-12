@@ -46,11 +46,13 @@
           <WaterTracker :model-value="waterCount" @add="onWaterQuickAdd" />
         </div>
         <!-- Health Status Card -->
-        <div class="bg-green-50 border-l-4 border-green-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
-          <div class="font-semibold text-green-700 mb-1 text-sm md:text-base">Health Status: Good</div>
-          <div class="text-xs md:text-sm text-gray-700">BMI: 22.5 (Normal) • Weight: 65kg • Height: 170cm<br>Last
-            updated:
-            Today</div>
+        <div v-if="health" class="bg-green-50 border-l-4 border-green-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
+          <div class="font-semibold text-green-700 mb-1 text-sm md:text-base">Health Status: {{ bmiCategory }}</div>
+          <div class="text-xs md:text-sm text-gray-700">
+            BMI: {{ (health.bmi ?? 0).toFixed(1) }} ({{ bmiCategory }}) • Weight: {{ health.weight }}kg • Height: {{ health.height }}cm
+            <br />
+            Last updated: {{ lastUpdatedText }}
+          </div>
         </div>
         
         <!-- Quick Actions -->
@@ -88,6 +90,7 @@ import { useRouter } from 'vue-router'
 import { getWaterSummary, addWater } from '@/services/waterService'
 import { getLatestSuggestions } from '@/services/nutritionService'
 import { getMeals } from '@/services/dietService'
+import { getLatestMetrics } from '@/services/healthService'
 import DietQuickActionCard from '@/components/diet/DietQuickActionCard.vue'
 import DietStats from '@/components/diet/DietStats.vue'
 import WaterTracker from '@/components/diet/WaterTracker.vue'
@@ -105,6 +108,33 @@ const showLogWeight = ref(false)
 const totalCalories = ref(0)
 const nutritionAlert = ref('')
 const totalCaloriesDisplay = computed(() => (totalCalories.value || 0).toLocaleString())
+
+// Health status state
+const health = ref(null)
+const bmiCategory = computed(() => {
+  const bmi = Number(health.value?.bmi ?? 0)
+  if (!bmi) return 'Unknown'
+  if (bmi < 18.5) return 'Underweight'
+  if (bmi < 25) return 'Normal'
+  if (bmi < 30) return 'Overweight'
+  return 'Obese'
+})
+const lastUpdatedText = computed(() => {
+  const t = health.value?.time
+  if (!t) return 'Unknown'
+  try {
+    const d = new Date(t)
+    const today = new Date()
+    const isToday = d.toDateString() === today.toDateString()
+    if (isToday) return 'Today'
+    const diffMs = today.getTime() - d.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    if (diffDays === 1) return 'Yesterday'
+    return d.toLocaleString()
+  } catch {
+    return String(t)
+  }
+})
 
 const router = useRouter()
 
@@ -128,6 +158,7 @@ onMounted(async () => {
   waterCount.value = Math.min(8, Math.round((summary.total_ml || 0) / 250))
   await loadCalories()
   await loadNutritionAlert()
+  await loadHealth()
 })
 
 async function onWaterQuickAdd(ml) {
@@ -146,6 +177,16 @@ async function loadCalories() {
   } catch (e) {
     // fail silently in UI; keep previous value
     console.error('Failed to load meals for calories', e)
+  }
+}
+
+async function loadHealth() {
+  try {
+    const res = await getLatestMetrics()
+    health.value = res
+  } catch (e) {
+    // Hide card if no metrics yet or error
+    health.value = null
   }
 }
 

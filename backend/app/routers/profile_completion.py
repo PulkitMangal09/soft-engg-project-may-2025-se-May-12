@@ -47,7 +47,14 @@ def create_student_profile(profile: StudentProfileCreate, token: str = Depends(o
             status_code=400, detail="Student profile already exists")
 
     profile_data = profile.dict(exclude_unset=True)
-    return create_profile(user_id, user_type, profile_data)
+    try:
+        return create_profile(user_id, user_type, profile_data)
+    except HTTPException:
+        # Bubble up known HTTP errors
+        raise
+    except Exception as e:
+        # Convert unexpected errors to 400 so client sees details instead of 500
+        raise HTTPException(status_code=400, detail=f"Profile creation failed: {e}")
 
 
 @router.post("/teacher", response_model=dict)
@@ -65,7 +72,12 @@ def create_teacher_profile(profile: TeacherProfileCreate, token: str = Depends(o
             status_code=400, detail="Teacher profile already exists")
 
     profile_data = profile.dict(exclude_unset=True)
-    return create_profile(user_id, user_type, profile_data)
+    try:
+        return create_profile(user_id, user_type, profile_data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Profile creation failed: {e}")
 
 
 @router.post("/parent", response_model=dict)
@@ -83,4 +95,9 @@ def create_parent_profile(profile: ParentProfileCreate, token: str = Depends(oau
             status_code=400, detail="Parent profile already exists")
 
     profile_data = profile.dict(exclude_unset=True)
-    return create_profile(user_id, user_type, profile_data)
+    try:
+        return create_profile(user_id, user_type, profile_data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Profile creation failed: {e}")
