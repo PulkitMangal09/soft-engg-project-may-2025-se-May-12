@@ -20,6 +20,7 @@ from app.routers.student_finance import router as student_finance_router
 from app.routers.student_emotions import router as student_emotions_router
 from app.routers.student_diet import router as student_diet_router
 from app.routers.student_health import router as student_health_router
+from app.routers.student_nutrition import router as student_nutrition_router
 from app.routers.parent_dashboard import router as parent_dashboard_router
 from app.routers.parent_children import router as parent_children_router
 from app.routers.parent_requests import router as parent_requests_router
@@ -28,6 +29,7 @@ from app.routers.parent_family import router as parent_family_router
 from app.routers.invitation_codes import router as invitation_codes_router
 from app.routers.connection_requests import router as connection_requests_router
 from app.routers.connections import router as connections_router
+from app.routers.student_medical import router as student_medical_router
 
 app = FastAPI(
     title="GrowthGeine API",
@@ -92,6 +94,7 @@ app.include_router(student_finance_router)
 app.include_router(student_emotions_router)
 app.include_router(student_diet_router)
 app.include_router(student_health_router)
+app.include_router(student_nutrition_router)
 app.include_router(parent_dashboard_router)
 app.include_router(parent_children_router)
 app.include_router(parent_requests_router)
@@ -100,6 +103,7 @@ app.include_router(parent_family_router)
 app.include_router(invitation_codes_router)
 app.include_router(connection_requests_router)
 app.include_router(connections_router)
+app.include_router(student_medical_router)
 
 
 @app.get("/")

@@ -36,6 +36,8 @@ def get_latest_metrics(email: str = Depends(get_user_email_from_token)):
         diastolic=m['diastolic'],
         blood_sugar=m['blood_sugar'],
         heart_rate=m['heart_rate'],
+        age_years=m.get('age_years'),
+        sex=m.get('sex'),
         notes=m.get('notes'),
         time=m['created_at']
     )
@@ -46,7 +48,7 @@ def add_health_metrics(
 ):
     bmi = round(data.weight / ((data.height / 100) ** 2), 1)
     child_id = supabase.table("students").select("student_id").eq("email", email).execute()
-    res = supabase.table("health_metrics").insert({
+    payload = {
         "student_id": child_id.data[0]['student_id'],
         "weight": data.weight,
         "height": data.height,
@@ -55,9 +57,12 @@ def add_health_metrics(
         "blood_sugar": data.blood_sugar,
         "heart_rate": data.heart_rate,
         "bmi": bmi,
+        "age_years": data.age_years,
+        "sex": data.sex,
         "notes": data.notes,
         "created_at": datetime.now().isoformat()
-    }).execute()
+    }
+    res = supabase.table("health_metrics").insert(payload).execute()
     return {"message": "Health metrics saved"}
 
 @router.patch("/metrics/{entry_id}", response_model=dict)
@@ -69,7 +74,7 @@ def update_health_metrics(
     bmi = round(data.weight / ((data.height / 100) ** 2), 1)
     child_id = supabase.table("students").select("student_id").eq("email", email).execute()
     
-    result = supabase.table("health_metrics").update({
+    update_payload = {
         "weight": data.weight,
         "height": data.height,
         "systolic": data.systolic,
@@ -77,8 +82,17 @@ def update_health_metrics(
         "blood_sugar": data.blood_sugar,
         "heart_rate": data.heart_rate,
         "bmi": bmi,
+        "age_years": data.age_years,
+        "sex": data.sex,
         "notes": data.notes,
-    }).eq("id", str(entry_id)).eq("student_id", child_id.data[0]['student_id']).execute()
+    }
+    result = (
+        supabase.table("health_metrics")
+        .update(update_payload)
+        .eq("id", str(entry_id))
+        .eq("student_id", child_id.data[0]['student_id'])
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(status_code=404, detail="Metric entry not found or unauthorized")

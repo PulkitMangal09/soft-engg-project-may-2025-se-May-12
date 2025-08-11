@@ -2,13 +2,19 @@
   <div class="bg-gray-100 font-sans">
     <div class="p-4 md:p-6">
       <!-- Header -->
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Smith Family Group</h1>
-        <p class="text-sm text-gray-500">Moderator: John Smith Sr.</p>
+      <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Smith Family Group</h1>
+          <p class="text-sm text-gray-500">Moderator: John Smith Sr.</p>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-3">
+          <AppButton label="Generate Family Code" icon="🔑" variant="secondary" @click="isInvitationModalOpen = true" />
+          <AppButton label="Manage Family" icon="👥" variant="primary" />
+        </div>
       </div>
 
       <!-- Key Metrics -->
-      <div class="grid grid-cols-3 gap-4 mb-6 text-center">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
         <div class="bg-white p-3 rounded-lg shadow-sm">
           <p class="text-2xl font-bold text-blue-600">3</p>
           <p class="text-xs text-gray-500">Children</p>
@@ -20,6 +26,10 @@
         <div class="bg-white p-3 rounded-lg shadow-sm">
           <p class="text-2xl font-bold text-green-600">15</p>
           <p class="text-xs text-gray-500">Active Tasks</p>
+        </div>
+        <div class="bg-white p-3 rounded-lg shadow-sm">
+          <p class="text-2xl font-bold text-purple-600">{{ activeInvitations.length }}</p>
+          <p class="text-xs text-gray-500">Active Codes</p>
         </div>
       </div>
 
@@ -65,6 +75,47 @@
         </AppCard>
       </div>
 
+      <!-- Family Connections Section -->
+      <div class="mt-6">
+        <AppCard title="👥 Family Connections" icon="🔗">
+          <template #header-extra>
+            <AppButton label="View All" size="sm" variant="secondary" @click="isConnectionsModalOpen = true" />
+          </template>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <h4 class="font-semibold text-blue-800 mb-2">Active Invitation Codes</h4>
+              <div v-if="activeInvitations.length === 0" class="text-sm text-blue-600">
+                No active codes. Generate one to invite family members.
+              </div>
+              <div v-else class="space-y-2">
+                <div v-for="invitation in activeInvitations.slice(0, 2)" :key="invitation.code" 
+                     class="flex items-center justify-between text-sm">
+                  <code class="font-mono text-blue-600">{{ invitation.code }}</code>
+                  <span class="text-blue-500">{{ invitation.uses }}/{{ invitation.maxUses }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 bg-amber-50 rounded-lg">
+              <h4 class="font-semibold text-amber-800 mb-2">Pending Requests</h4>
+              <div v-if="pendingRequests.length === 0" class="text-sm text-amber-600">
+                No pending requests.
+              </div>
+              <div v-else class="space-y-2">
+                <div v-for="request in pendingRequests.slice(0, 2)" :key="request.id" 
+                     class="flex items-center justify-between text-sm">
+                  <span class="text-amber-700">{{ request.name }}</span>
+                  <span class="text-amber-500">{{ request.type }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex space-x-2">
+            <AppButton label="Join Other Families" icon="🔗" variant="secondary" size="sm" @click="$router.push('/parent/join-family')" />
+            <AppButton label="Manage Family" icon="👥" variant="secondary" size="sm" @click="$router.push('/parent/family')" />
+          </div>
+        </AppCard>
+      </div>
+
       <!-- Quick Stats -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-center">
         <AppCard v-for="stat in quickStats" :key="stat.title" :icon="stat.icon" :title="stat.title" class="p-3">
@@ -72,52 +123,413 @@
         </AppCard>
       </div>
 
+      <!-- Invitation Modal -->
+      <AppModal :is-open="isInvitationModalOpen" @close="isInvitationModalOpen = false" title="Generate Family Invitation Code">
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Invitation Type</label>
+            <select v-model="newInvitation.type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="parent_student">Child Invitation</option>
+              <option value="parent_parent">Parent Invitation</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Expires In</label>
+            <select v-model="newInvitation.expiresIn" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="24">24 hours</option>
+              <option value="48">48 hours</option>
+              <option value="168">1 week</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Max Uses</label>
+            <input v-model="newInvitation.maxUses" type="number" min="1" max="100" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="1">
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <AppButton label="Cancel" variant="secondary" @click="isInvitationModalOpen = false" />
+            <AppButton label="Generate Code" variant="primary" @click="generateInvitationCode" />
+          </div>
+        </div>
+      </AppModal>
+
+      <!-- Generated Code Modal -->
+      <AppModal :is-open="isGeneratedCodeModalOpen" @close="isGeneratedCodeModalOpen = false" title="Family Invitation Code Generated">
+        <div class="space-y-6">
+          <div class="text-center">
+            <div class="bg-gray-100 p-6 rounded-lg">
+              <p class="text-sm text-gray-600 mb-2">Share this code with family members:</p>
+              <div class="flex items-center justify-center space-x-2">
+                <code class="text-2xl font-mono font-bold text-indigo-600 bg-white px-4 py-2 rounded border">{{ generatedCode }}</code>
+                <AppButton label="Copy" icon="📋" size="sm" variant="secondary" @click="copyToClipboard" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <h4 class="font-semibold text-blue-800 mb-2">How to share:</h4>
+            <ul class="text-sm text-blue-700 space-y-1">
+              <li>• Share with your children or other parents</li>
+              <li>• They enter this code in their app</li>
+              <li>• You'll receive a join request to approve</li>
+              <li>• Code expires in {{ newInvitation.expiresIn }} hours</li>
+            </ul>
+          </div>
+
+          <div class="flex justify-end">
+            <AppButton label="Done" variant="primary" @click="isGeneratedCodeModalOpen = false" />
+          </div>
+        </div>
+      </AppModal>
+
+      <!-- Connections Modal -->
+      <AppModal :is-open="isConnectionsModalOpen" @close="isConnectionsModalOpen = false" title="Family Connections">
+        <div class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Active Invitations -->
+            <div>
+              <h3 class="font-semibold text-gray-800 mb-3">Active Invitation Codes</h3>
+              <div v-if="activeInvitations.length === 0" class="text-center py-4 text-gray-500">
+                No active codes
+              </div>
+              <div v-else class="space-y-3">
+                <div v-for="invitation in activeInvitations" :key="invitation.code" 
+                     class="p-3 bg-gray-50 rounded-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <code class="font-mono font-bold text-indigo-600">{{ invitation.code }}</code>
+                    <AppBadge variant="success">Active</AppBadge>
+                  </div>
+                  <p class="text-sm text-gray-600">Type: {{ invitation.type.replace('_', ' ') }}</p>
+                  <p class="text-sm text-gray-600">Uses: {{ invitation.uses }}/{{ invitation.maxUses }}</p>
+                  <p class="text-sm text-gray-600">Expires: {{ invitation.expiresAt }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pending Requests -->
+            <div>
+              <h3 class="font-semibold text-gray-800 mb-3">Pending Requests</h3>
+              <div v-if="pendingRequests.length === 0" class="text-center py-4 text-gray-500">
+                No pending requests
+              </div>
+              <div v-else class="space-y-3">
+                <div v-for="request in pendingRequests" :key="request.id" 
+                     class="p-3 bg-amber-50 rounded-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-amber-800">{{ request.name }}</span>
+                    <AppBadge variant="warning">Pending</AppBadge>
+                  </div>
+                  <p class="text-sm text-amber-600">{{ request.type }}</p>
+                  <p class="text-sm text-amber-600">Requested: {{ request.requestedAt }}</p>
+                  <div class="flex space-x-2 mt-2">
+                    <AppButton label="Accept" size="sm" variant="success" @click="handleRequest(request.id, 'accepted')" />
+                    <AppButton label="Reject" size="sm" variant="error" @click="handleRequest(request.id, 'rejected')" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppModal>
+
     </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useStore } from 'vuex'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
+import AppModal from '@/components/ui/AppModal.vue'
+import AppBadge from '@/components/ui/AppBadge.vue'
+import { parentService } from '@/services/parentService.js'
+import { invitationService } from '@/services/invitationService.js'
 
 export default {
   name: 'ParentDashboard',
   components: {
     AppCard,
     AppButton,
+    AppModal,
+    AppBadge,
   },
   setup() {
-    const children = ref([
-      { id: 1, name: 'John Jr.', avatar: 'https://randomuser.me/api/portraits/men/75.jpg' },
-      { id: 2, name: 'Emma', avatar: 'https://randomuser.me/api/portraits/women/75.jpg' },
-      { id: 3, name: 'Sophie', avatar: 'https://randomuser.me/api/portraits/women/76.jpg' },
-    ])
+    const store = useStore()
+    const isInvitationModalOpen = ref(false)
+    const isGeneratedCodeModalOpen = ref(false)
+    const isConnectionsModalOpen = ref(false)
+    const generatedCode = ref('')
+    const loading = ref(true)
+    const error = ref(null)
+    const invitationLoading = ref(false)
+    
+    const newInvitation = ref({
+      type: 'parent_student',
+      expiresIn: 24,
+      maxUses: 1
+    })
 
-    const attentionItems = ref([
-      { text: 'John Jr.: Overdue math assignment' },
-      { text: 'Emma: High sugar intake (3 days)' },
-      { text: 'Sophie: Exceeded entertainment budget' },
-    ])
+    // Dashboard data - will be loaded from APIs
+    const children = ref([])
+    const attentionItems = ref([])
+    const achievements = ref([])
+    const quickStats = ref([])
+    const activeInvitations = ref([])
+    const pendingRequests = ref([])
+    const dashboardData = ref(null)
+    const familyGroups = ref([])
 
-    const achievements = ref([
-      { text: 'John Jr.: Completed savings goal 🎮' },
-      { text: 'Emma: 7-day water intake streak 💧' },
-      { text: 'Sophie: Perfect task completion week ⭐' },
-    ])
+    // Computed properties for dynamic stats
+    const totalChildren = computed(() => children.value.length)
+    const totalPendingRequests = computed(() => pendingRequests.value.length)
+    const totalActiveInvitations = computed(() => activeInvitations.value.length)
 
-    const quickStats = ref([
-        { icon: '📝', title: 'Tasks', value: '12 pending' },
-        { icon: '💰', title: 'Finance', value: '2 goals active' },
-        { icon: '🍎', title: 'Health', value: '1 alert' },
-        { icon: '👥', title: 'Family', value: '2 requests' },
-    ])
+    // Load dashboard data
+    const loadDashboardData = async () => {
+      try {
+        loading.value = true
+        error.value = null
+
+        const token = store.getters['auth/token']
+        console.log('Token from store:', token ? 'Token exists' : 'No token found')
+        
+        if (!token) {
+          console.error('Authentication token not found in store')
+          throw new Error('Please log in again to access the dashboard')
+        }
+
+        // Load parent dashboard data and children in parallel
+        const [dashboardResponse, childrenResponse] = await Promise.all([
+          parentService.getDashboard(token),
+          parentService.getChildren(token)
+        ])
+
+        dashboardData.value = dashboardResponse
+        children.value = childrenResponse
+
+        // Update quick stats based on real data
+        quickStats.value = [
+          { icon: '📝', title: 'Tasks', value: `${dashboardResponse.pending_tasks || 0} pending` },
+          { icon: '💰', title: 'Finance', value: `${dashboardResponse.active_goals || 0} goals active` },
+          { icon: '🍎', title: 'Health', value: `${dashboardResponse.health_alerts || 0} alert${dashboardResponse.health_alerts !== 1 ? 's' : ''}` },
+          { icon: '👥', title: 'Family', value: `${totalPendingRequests.value} requests` },
+        ]
+
+      } catch (err) {
+        console.error('Error loading dashboard data:', err)
+        error.value = err.message || 'Failed to load dashboard data'
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'Failed to load dashboard data',
+          type: 'error',
+        })
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // Load invitation codes
+    const loadInvitationCodes = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const codes = await invitationService.getMyInvitationCodes(token, 'family')
+        activeInvitations.value = codes.map(code => ({
+          code_id: code.code_id,
+          code: code.code,
+          type: code.target_type,
+          expiresAt: code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never',
+          uses: code.usage_count || 0,
+          maxUses: code.max_uses || 'Unlimited',
+          target_id: code.target_id
+        }))
+      } catch (err) {
+        console.error('Error loading invitation codes:', err)
+      }
+    }
+
+    // Load pending requests
+    const loadPendingRequests = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const requests = await parentService.getFamilyJoinRequests(token)
+        pendingRequests.value = requests.map(request => ({
+          id: request.request_id,
+          name: request.requester_name || 'Unknown',
+          type: request.requester_type || 'Unknown',
+          requestedAt: request.created_at ? new Date(request.created_at).toLocaleDateString() : 'Unknown'
+        }))
+      } catch (err) {
+        console.error('Error loading pending requests:', err)
+      }
+    }
+
+    const generateInvitationCode = async () => {
+      if (familyGroups.value.length === 0) {
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'No family groups found. Please create a family group first.',
+          type: 'error',
+        })
+        return
+      }
+
+      try {
+        invitationLoading.value = true
+        const token = store.getters['auth/token']
+        
+        if (!token) {
+          throw new Error('Authentication token not found')
+        }
+
+        // Calculate expiration date
+        const expiresAt = new Date()
+        expiresAt.setHours(expiresAt.getHours() + parseInt(newInvitation.value.expiresIn))
+
+        // Use the first family group as target_id for family invitations
+        const targetId = familyGroups.value[0]?.group_id || familyGroups.value[0]?.id
+
+        const invitationData = {
+          target_type: 'family',
+          target_id: targetId,
+          expires_at: expiresAt.toISOString(),
+          max_uses: parseInt(newInvitation.value.maxUses)
+        }
+
+        const response = await invitationService.generateInvitationCode(invitationData, token)
+        generatedCode.value = response.code
+        
+        // Refresh invitation codes list
+        await loadInvitationCodes()
+        
+        isInvitationModalOpen.value = false
+        isGeneratedCodeModalOpen.value = true
+
+        store.dispatch('ui/showToast', {
+          title: 'Success',
+          message: 'Family invitation code generated successfully!',
+          type: 'success',
+        })
+
+      } catch (err) {
+        console.error('Error generating invitation code:', err)
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: err.message || 'Failed to generate invitation code',
+          type: 'error',
+        })
+      } finally {
+        invitationLoading.value = false
+      }
+    }
+
+    const copyToClipboard = () => {
+      navigator.clipboard.writeText(generatedCode.value)
+      store.dispatch('ui/showToast', {
+        title: 'Copied!',
+        message: 'Invitation code copied to clipboard',
+        type: 'success',
+      })
+    }
+
+    const handleRequest = async (id, status) => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+
+        const request = pendingRequests.value.find(req => req.id === id)
+        if (!request) return
+
+        const action = status === 'accepted' ? 'approve' : 'reject'
+        await parentService.respondToFamilyJoinRequest(id, action, token)
+
+        // Remove from local list
+        pendingRequests.value = pendingRequests.value.filter(req => req.id !== id)
+
+        if (status === 'accepted') {
+          store.dispatch('ui/showToast', {
+            title: 'Request Accepted',
+            message: `${request.name} has been added to your family.`,
+            type: 'success',
+          })
+        } else {
+          store.dispatch('ui/showToast', {
+            title: 'Request Rejected',
+            message: `${request.name}'s request has been rejected.`,
+            type: 'error',
+          })
+        }
+
+        // Refresh dashboard data
+        await loadDashboardData()
+
+      } catch (err) {
+        console.error('Error handling request:', err)
+        store.dispatch('ui/showToast', {
+          title: 'Error',
+          message: 'Failed to process request',
+          type: 'error',
+        })
+      }
+    }
+
+    // Load family groups for invitation generation
+    const loadFamilyGroups = async () => {
+      try {
+        const token = store.getters['auth/token']
+        if (!token) return
+        
+        const groups = await parentService.getFamilyGroups(token)
+        familyGroups.value = groups
+      } catch (err) {
+        console.error('Error loading family groups:', err)
+        // If no family groups exist, we might need to create one or show a message
+        familyGroups.value = [{ id: 'default', name: 'Default Family' }] // Fallback
+      }
+    }
+
+    // Load data on component mount
+    onMounted(async () => {
+      await Promise.all([
+        loadDashboardData(),
+        loadInvitationCodes(),
+        loadPendingRequests(),
+        loadFamilyGroups()
+      ])
+    })
 
     return {
       children,
       attentionItems,
       achievements,
       quickStats,
+      loading,
+      error,
+      invitationLoading,
+      totalChildren,
+      totalPendingRequests,
+      totalActiveInvitations,
+      isInvitationModalOpen,
+      isGeneratedCodeModalOpen,
+      isConnectionsModalOpen,
+      generatedCode,
+      newInvitation,
+      activeInvitations,
+      pendingRequests,
+      dashboardData,
+      familyGroups,
+      loadDashboardData,
+      loadInvitationCodes,
+      loadPendingRequests,
+      generateInvitationCode,
+      copyToClipboard,
+      handleRequest,
     }
   },
 }
