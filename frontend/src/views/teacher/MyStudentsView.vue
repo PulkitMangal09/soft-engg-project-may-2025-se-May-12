@@ -1,608 +1,487 @@
+<!-- src/views/teacher/MyStudentsView.vue -->
 <template>
-  <div class="p-6 md:p-8 bg-gray-100 min-h-screen">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">My Students</h1>
-        <div class="mt-1 flex items-center space-x-4">
-          <div v-if="classrooms.length > 1" class="flex items-center space-x-2">
-            <label class="text-sm font-medium text-gray-700">Classroom:</label>
-            <select 
-              v-model="selectedClassroom" 
-              @change="loadClassroomStudents(selectedClassroom.classroom_id)"
-              class="text-lg text-gray-600 bg-transparent border-none focus:ring-0 cursor-pointer"
+  <div class="min-h-screen bg-gray-50">
+    <div class="mx-auto max-w-7xl px-4 py-8">
+      <!-- Header + actions -->
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">My Students</h1>
+          <p class="text-gray-600">Overview of your classrooms and connections</p>
+        </div>
+        <div class="flex gap-3">
+          <AppButton label="Generate Invite" icon="✨" variant="secondary" @click="openInviteModal()" />
+          <AppButton label="Create Classroom" icon="➕" variant="primary" @click="openCreateModal" />
+        </div>
+      </div>
+
+      <!-- Top Stats -->
+      <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div class="rounded-xl bg-white p-6 shadow">
+          <p class="text-sm text-gray-500">Total Students</p>
+          <p class="text-3xl font-bold text-gray-900">{{ totalStudents }}</p>
+        </div>
+        <div class="rounded-xl bg-white p-6 shadow">
+          <p class="text-sm text-gray-500">Total Classrooms</p>
+          <p class="text-3xl font-bold text-gray-900">{{ totalClassrooms }}</p>
+        </div>
+        <div class="rounded-xl bg-white p-6 shadow">
+          <p class="text-sm text-gray-500">Active Classrooms</p>
+          <p class="text-3xl font-bold text-gray-900">{{ activeClassrooms }}</p>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <!-- Classrooms -->
+        <div class="lg:col-span-2 rounded-xl bg-white p-6 shadow">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-gray-800">Your Classrooms</h2>
+            <span class="text-sm text-gray-500">{{ classrooms.length }} listed</span>
+          </div>
+
+          <div v-if="loadingClassrooms" class="text-gray-500">Loading classrooms…</div>
+          <div v-else-if="classrooms.length === 0" class="text-gray-500">No classrooms found.</div>
+
+          <div v-else class="space-y-3">
+            <div
+              v-for="c in classrooms"
+              :key="c.classroom_id"
+              class="rounded-lg border p-4"
             >
-              <option v-for="classroom in classrooms" :key="classroom.classroom_id" :value="classroom">
-                {{ classroom.name || `Classroom ${classroom.classroom_id}` }}
-              </option>
-            </select>
-          </div>
-          <p v-else-if="selectedClassroom" class="text-lg text-gray-600">
-            {{ selectedClassroom.name || `Classroom ${selectedClassroom.classroom_id}` }}
-          </p>
-          <p v-else class="text-lg text-gray-600">Loading classrooms...</p>
-        </div>
-      </div>
-      <div class="mt-4 md:mt-0 flex space-x-3">
-        <AppButton label="Invite Students" icon="👥" variant="secondary" @click="isInviteModalOpen = true" />
-        <AppButton label="Manage Invitations" icon="🔑" variant="secondary" @click="isInvitationsModalOpen = true" />
-        <AppButton label="Add New Student" icon="👤" variant="primary" />
-      </div>
-    </div>
-
-    <!-- Connection Stats -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <AppCard title="Connected Students">
-        <p class="text-3xl font-bold text-indigo-600">{{ loading ? '...' : allStudents.length }}</p>
-      </AppCard>
-      <AppCard title="Active Invitations" variant="warning">
-        <p class="text-3xl font-bold text-amber-500">{{ activeInvitations.length }}</p>
-      </AppCard>
-      <AppCard title="Pending Requests" variant="error">
-        <p class="text-3xl font-bold text-red-500">{{ pendingRequests.length }}</p>
-      </AppCard>
-      <AppCard title="Total Classrooms" variant="success">
-        <p class="text-3xl font-bold text-emerald-500">{{ loading ? '...' : classrooms.length }}</p>
-      </AppCard>
-    </div>
-
-    <!-- Filter Tabs -->
-    <div class="mb-6 flex space-x-2 border-b border-gray-200">
-      <button v-for="tab in tabs" :key="tab.name"
-        @click="activeTab = tab.name"
-        :class="['px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200',
-                 activeTab === tab.name ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700']">
-        {{ tab.name }} ({{ tab.count }})
-      </button>
-    </div>
-
-    <!-- Student Grid -->
-    <div v-if="loading" class="text-center py-12">
-      <p class="text-gray-500 text-lg">Loading students...</p>
-    </div>
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-red-500 text-lg">{{ error }}</p>
-      <AppButton label="Retry" variant="primary" @click="loadAllData" class="mt-4" />
-    </div>
-    <div v-else-if="students.length === 0" class="text-center py-12">
-      <p class="text-gray-500 text-lg">No students found for the selected filter.</p>
-      <AppButton label="Invite Students" icon="👥" variant="primary" @click="isInviteModalOpen = true" class="mt-4" />
-    </div>
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <AppCard v-for="student in students" :key="student.id" class="transform hover:-translate-y-1 transition-transform duration-200">
-        <div class="flex flex-col items-center text-center">
-          <div class="relative mb-4">
-            <img class="h-24 w-24 rounded-full object-cover shadow-md" :src="student.avatar" :alt="student.name">
-            <span class="absolute bottom-0 right-0 block h-6 w-6 rounded-full border-2 border-white"
-                  :class="student.lastActive.includes('min') ? 'bg-green-400' : 'bg-gray-400'"></span>
-          </div>
-          <h3 class="text-lg font-bold text-gray-800">{{ student.name }}</h3>
-          <p class="text-xs text-gray-500 mb-2">Last active: {{ student.lastActive }}</p>
-          
-          <AppBadge :variant="student.health.variant" class="mb-4">{{ student.health.text }}</AppBadge>
-
-          <div class="w-full flex justify-around items-center border-t pt-3 mt-2 mb-3">
-            <div class="text-center">
-              <p class="text-xl font-bold text-indigo-600">{{ student.grade }}</p>
-              <p class="text-xs text-gray-500">Grade</p>
-            </div>
-            <div class="text-center">
-              <p class="text-xl font-bold text-indigo-600">{{ student.completion }}%</p>
-              <p class="text-xs text-gray-500">Tasks</p>
-            </div>
-          </div>
-          
-          <!-- Student Actions -->
-          <div class="w-full flex flex-col space-y-2">
-            <AppButton 
-              label="View Details" 
-              size="sm" 
-              variant="secondary" 
-              class="w-full"
-            />
-            <div class="flex space-x-2">
-              <AppButton 
-                label="Remove" 
-                size="sm" 
-                variant="error" 
-                class="flex-1"
-                @click="removeStudentFromClass(student.student_id)"
-                :disabled="!selectedClassroom"
-              />
-              <AppButton 
-                label="Message" 
-                size="sm" 
-                variant="primary" 
-                class="flex-1"
-              />
-            </div>
-          </div>
-        </div>
-      </AppCard>
-    </div>
-
-    <!-- Invite Students Modal -->
-    <AppModal :is-open="isInviteModalOpen" @close="isInviteModalOpen = false" title="Invite Students">
-      <div class="space-y-6">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Invitation Type</label>
-          <select v-model="newInvitation.type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="teacher_student">Student Invitation</option>
-            <option value="parent_student">Parent Invitation</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Expires In</label>
-          <select v-model="newInvitation.expiresIn" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="24">24 hours</option>
-            <option value="48">48 hours</option>
-            <option value="168">1 week</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Max Uses</label>
-          <input v-model="newInvitation.maxUses" type="number" min="1" max="100" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="1">
-        </div>
-
-        <div class="flex justify-end space-x-3">
-          <AppButton label="Cancel" variant="secondary" @click="isInviteModalOpen = false" />
-          <AppButton label="Generate Code" variant="primary" @click="generateInvitationCode" />
-        </div>
-      </div>
-    </AppModal>
-
-    <!-- Manage Invitations Modal -->
-    <AppModal :is-open="isInvitationsModalOpen" @close="isInvitationsModalOpen = false" title="Manage Invitation Codes">
-      <div class="space-y-4">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Active Invitation Codes</h3>
-          <AppButton label="Generate New" variant="primary" size="sm" @click="isInviteModalOpen = true" />
-        </div>
-        
-        <div v-if="activeInvitations.length === 0" class="text-center py-8">
-          <p class="text-gray-500">No active invitation codes.</p>
-        </div>
-        
-        <div v-else class="space-y-3">
-          <div v-for="invitation in activeInvitations" :key="invitation.code" class="p-4 bg-gray-50 rounded-lg">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="flex items-center space-x-2 mb-2">
-                  <code class="font-mono font-bold text-indigo-600">{{ invitation.code }}</code>
-                  <AppBadge :variant="invitation.status === 'active' ? 'success' : 'warning'">
-                    {{ invitation.status }}
-                  </AppBadge>
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="font-semibold text-gray-900">
+                    {{ c.classroom_name || c.name || 'Untitled Classroom' }}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <span v-if="c.subject">Subject: {{ c.subject }}</span>
+                    <span v-if="c.subject && c.grade_level" class="mx-2">•</span>
+                    <span v-if="c.grade_level">Grade: {{ c.grade_level }}</span>
+                  </p>
+                  <p v-if="c.school_name" class="text-sm text-gray-500">{{ c.school_name }}</p>
+                  <p class="mt-1 text-xs text-gray-400">
+                    Key: <code class="rounded bg-gray-100 px-1">{{ c.classroom_key }}</code>
+                  </p>
                 </div>
-                <p class="text-sm text-gray-600">Type: {{ invitation.type.replace('_', ' ') }}</p>
-                <p class="text-sm text-gray-600">Uses: {{ invitation.uses }}/{{ invitation.maxUses }}</p>
-                <p class="text-sm text-gray-600">Expires: {{ invitation.expiresAt }}</p>
+                <div class="text-right">
+                  <div
+                    class="inline-flex items-center rounded-full px-2 py-1 text-xs"
+                    :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
+                  >
+                    {{ c.is_active ? 'Active' : 'Inactive' }}
+                  </div>
+                  <div v-if="c.created_at" class="mt-1 text-xs text-gray-400">
+                    Created: {{ formatDate(c.created_at) }}
+                  </div>
+                </div>
               </div>
-              <div class="flex space-x-2">
-                <AppButton label="Copy" size="sm" variant="secondary" @click="copyCode(invitation.code)" />
-                <AppButton label="Revoke" size="sm" variant="error" @click="revokeCode(invitation.code)" />
+
+              <div class="mt-3 flex flex-wrap gap-2">
+                <AppButton label="Invite Student" size="sm" variant="secondary" @click="openInviteModal(c, 'teacher_student')" />
+                <AppButton label="Invite Parent" size="sm" variant="secondary" @click="openInviteModal(c, 'parent_student')" />
+                <AppButton label="Edit" size="sm" variant="secondary" @click="openEdit(c)" />
+                <AppButton label="Delete" size="sm" variant="error" @click="askDelete(c)" />
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </AppModal>
 
-    <!-- Generated Code Modal -->
-    <AppModal :is-open="isGeneratedCodeModalOpen" @close="isGeneratedCodeModalOpen = false" title="Invitation Code Generated">
-      <div class="space-y-6">
-        <div class="text-center">
-          <div class="bg-gray-100 p-6 rounded-lg">
-            <p class="text-sm text-gray-600 mb-2">Share this code with students:</p>
-            <div class="flex items-center justify-center space-x-2">
-              <code class="text-2xl font-mono font-bold text-indigo-600 bg-white px-4 py-2 rounded border">{{ generatedCode }}</code>
-              <AppButton label="Copy" icon="📋" size="sm" variant="secondary" @click="copyToClipboard" />
+        <!-- RIGHT COLUMN: Connections (accepted) + Pending Requests -->
+        <div class="rounded-xl bg-white p-6 shadow">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-gray-800">Connections</h2>
+            <span class="text-sm text-gray-500">{{ acceptedRequests.length }} total</span>
+          </div>
+
+          <div v-if="loadingAccepted" class="text-gray-500">Loading connections…</div>
+
+          <template v-else>
+            <!-- Students -->
+            <div class="mb-6">
+              <h3 class="mb-2 text-sm font-semibold text-gray-700">
+                Students ({{ studentsAccepted.length }})
+              </h3>
+
+              <div v-if="studentsAccepted.length === 0" class="text-sm text-gray-500">
+                No students connected yet.
+              </div>
+
+              <ul v-else class="max-h-64 space-y-2 overflow-auto pr-1">
+                <li
+                  v-for="r in studentsAccepted"
+                  :key="r.request_id"
+                  class="flex items-center justify-between rounded-md border px-3 py-2"
+                >
+                  <div>
+                    <div class="font-medium text-gray-800">
+                      {{ r.name || r.student_name || r.requester_name || 'Student' }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      <span v-if="r.email">{{ r.email }}</span>
+                      <span v-if="r.classroom_name"> • {{ r.classroom_name }}</span>
+                      <span v-if="r.grade_level"> • Grade: {{ r.grade_level }}</span>
+                    </div>
+                  </div>
+                  <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">accepted</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Parents -->
+            <div>
+              <h3 class="mb-2 text-sm font-semibold text-gray-700">
+                Parents ({{ parentsAccepted.length }})
+              </h3>
+
+              <div v-if="parentsAccepted.length === 0" class="text-sm text-gray-500">
+                No parents connected yet.
+              </div>
+
+              <ul v-else class="max-h-64 space-y-2 overflow-auto pr-1">
+                <li
+                  v-for="r in parentsAccepted"
+                  :key="r.request_id"
+                  class="flex items-center justify-between rounded-md border px-3 py-2"
+                >
+                  <div>
+                    <div class="font-medium text-gray-800">
+                      {{ r.name || r.parent_name || r.requester_name || 'Parent' }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      <span v-if="r.email">{{ r.email }}</span>
+                      <span v-if="r.child_name"> • Child: {{ r.child_name }}</span>
+                    </div>
+                  </div>
+                  <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">accepted</span>
+                </li>
+              </ul>
+            </div>
+          </template>
+
+          <!-- Pending requests -->
+          <div class="mt-8 border-t pt-4">
+            <div class="mb-2 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-gray-700">
+                Connection Requests
+              </h3>
+              <AppButton
+                v-if="pendingRequests.length > 0"
+                size="sm"
+                label="Accept All"
+                variant="primary"
+                :disabled="respondingAll"
+                @click="acceptAll"
+              />
+            </div>
+
+            <div v-if="loadingRequests" class="text-gray-500">Loading requests…</div>
+            <div v-else-if="pendingRequests.length === 0" class="text-sm text-gray-500">No pending requests.</div>
+
+            <div v-else class="space-y-2">
+              <div
+                v-for="req in pendingRequests"
+                :key="req.request_id"
+                class="flex items-start justify-between rounded-md border px-3 py-2"
+              >
+                <div class="mr-3 flex-1">
+                  <p class="font-medium text-gray-900">
+                    {{ req.display_name }}
+                    <span class="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      {{ req.roleLabel }}
+                    </span>
+                  </p>
+                  <p class="text-xs text-gray-600">
+                    {{ req.display_email }}
+                    <span v-if="req.classroom_name" class="mx-2">•</span>
+                    <span v-if="req.classroom_name" class="text-gray-500">Classroom: {{ req.classroom_name }}</span>
+                  </p>
+                  <p v-if="req.message" class="mt-1 text-xs text-gray-500">“{{ req.message }}”</p>
+                  <p class="mt-1 text-[11px] text-gray-400">Requested: {{ formatDateTime(req.requested_at) }}</p>
+                </div>
+
+                <div class="flex gap-2">
+                  <AppButton
+                    size="sm"
+                    label="Accept"
+                    variant="success"
+                    :disabled="req._busy"
+                    @click="respond(req.request_id, 'accepted')"
+                  />
+                  <AppButton
+                    size="sm"
+                    label="Reject"
+                    variant="error"
+                    :disabled="req._busy"
+                    @click="respond(req.request_id, 'rejected')"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div class="bg-blue-50 p-4 rounded-lg">
-          <h4 class="font-semibold text-blue-800 mb-2">How to share:</h4>
-          <ul class="text-sm text-blue-700 space-y-1">
-            <li>• Share in your classroom or via email</li>
-            <li>• Students enter this code in their app</li>
-            <li>• You'll receive a connection request to approve</li>
-            <li>• Code expires in {{ newInvitation.expiresIn }} hours</li>
-          </ul>
+        <!-- /RIGHT COLUMN -->
+      </div>
+    </div>
+
+    <!-- Create/Edit modal -->
+    <AppModal :is-open="isEditOpen" @close="closeEdit" :title="editId ? 'Edit Classroom' : 'Create Classroom'">
+      <form @submit.prevent="submitEdit" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Name</label>
+          <input v-model.trim="form.name" type="text" required class="w-full rounded-md border px-3 py-2">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Subject</label>
+          <input v-model.trim="form.subject" type="text" required class="w-full rounded-md border px-3 py-2">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">School</label>
+          <input v-model.trim="form.school_name" type="text" class="w-full rounded-md border px-3 py-2" placeholder="optional">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Grade Level</label>
+            <input v-model.trim="form.grade_level" type="text" class="w-full rounded-md border px-3 py-2" placeholder="e.g., 4th year">
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Max Students</label>
+            <input v-model.number="form.max_students" type="number" min="1" class="w-full rounded-md border px-3 py-2">
+          </div>
         </div>
 
-        <div class="flex justify-end">
-          <AppButton label="Done" variant="primary" @click="isGeneratedCodeModalOpen = false" />
+        <div class="pt-2 flex justify-end gap-3">
+          <AppButton label="Cancel" variant="secondary" type="button" @click="closeEdit" />
+          <AppButton :label="editId ? 'Save' : 'Create'" variant="primary" type="submit" :disabled="savingEdit" />
         </div>
+      </form>
+    </AppModal>
+
+    <!-- Delete confirm -->
+    <AppModal :is-open="isDeleteOpen" @close="isDeleteOpen=false" title="Delete Classroom">
+      <p class="text-gray-700">Are you sure you want to delete this classroom?</p>
+      <div class="mt-6 flex justify-end gap-3">
+        <AppButton label="Cancel" variant="secondary" @click="isDeleteOpen=false" />
+        <AppButton label="Delete" variant="error" @click="confirmDelete" :disabled="deleting" />
       </div>
     </AppModal>
+
+    <!-- Invite modal -->
+    <TeacherInviteModal
+      :is-open="isInviteOpen"
+      @close="isInviteOpen=false"
+      :classrooms="classrooms"
+      :preselected-classroom-id="inviteClassroomId"
+      :default-type="inviteDefaultType"
+    />
   </div>
 </template>
 
-<script>
-import { ref, onMounted, computed } from 'vue'
+<script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
-import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
-import { teacherService } from '@/services/teacherService.js'
-import { invitationService } from '@/services/invitationService.js'
+import TeacherInviteModal from '@/components/invitations/TeacherInviteModal.vue'
+import { teacherService } from '@/services/teacherService'
+import { requestsService } from '@/services/requestsService'
 
-export default {
-  name: 'MyStudentsView',
-  components: { AppCard, AppButton, AppBadge, AppModal },
-  setup() {
-    const store = useStore()
-    const activeTab = ref('All')
-    const isInviteModalOpen = ref(false)
-    const isInvitationsModalOpen = ref(false)
-    const isGeneratedCodeModalOpen = ref(false)
-    const generatedCode = ref('')
-    const selectedClassroom = ref(null)
-    
-    // API data
-    const classrooms = ref([])
-    const allStudents = ref([])
-    const studentsMetrics = ref([])
-    const loading = ref(true)
-    const error = ref(null)
-    
-    const newInvitation = ref({
-      type: 'teacher_student',
-      expiresIn: 24,
-      maxUses: 1
-    })
+/* ---------- auth ---------- */
+const store = useStore()
+const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
 
-    // Computed properties for tabs and filtering
-    const tabs = computed(() => {
-      const needHelpCount = studentsMetrics.value.filter(s => s.tasks_overdue > 0).length
-      const healthAlertsCount = studentsMetrics.value.filter(s => s.health_alerts > 0).length
-      const topPerformersCount = studentsMetrics.value.filter(s => {
-        const completionRate = s.tasks_assigned > 0 ? (s.tasks_completed / s.tasks_assigned) * 100 : 0
-        return completionRate >= 90
-      }).length
-      
-      return [
-        { name: 'All', count: allStudents.value.length },
-        { name: 'Need Help', count: needHelpCount },
-        { name: 'Health Alerts', count: healthAlertsCount },
-        { name: 'Top Performers', count: topPerformersCount },
-      ]
-    })
+/* ---------- classrooms + metrics ---------- */
+const loadingClassrooms = ref(false)
+const loadingMetrics = ref(false)
+const classrooms = ref([])
+const studentsMetrics = ref({
+  total_classrooms: 0,
+  active_classrooms: 0,
+  total_students: 0,
+})
 
-    // Filtered students based on active tab
-    const students = computed(() => {
-      let filtered = allStudents.value.map(student => {
-        const metrics = studentsMetrics.value.find(m => m.student_id === student.student_id) || {
-          tasks_assigned: 0,
-          tasks_completed: 0,
-          tasks_overdue: 0,
-          health_alerts: 0
-        }
-        
-        const completionRate = metrics.tasks_assigned > 0 
-          ? Math.round((metrics.tasks_completed / metrics.tasks_assigned) * 100)
-          : 0
-        
-        let grade = 'N/A'
-        if (completionRate >= 90) grade = 'A'
-        else if (completionRate >= 80) grade = 'B+'
-        else if (completionRate >= 70) grade = 'B'
-        else if (completionRate >= 60) grade = 'C+'
-        else if (completionRate > 0) grade = 'C'
-        
-        return {
-          id: student.student_id,
-          student_id: student.student_id,
-          name: student.full_name || `Student ${student.student_id}`,
-          avatar: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 99)}.jpg`,
-          lastActive: '2 hours ago', // This would come from a real activity API
-          health: {
-            text: metrics.health_alerts > 0 ? `${metrics.health_alerts} health alert${metrics.health_alerts !== 1 ? 's' : ''}` : 'No health conditions',
-            variant: metrics.health_alerts > 0 ? 'error' : 'default'
-          },
-          grade,
-          completion: completionRate,
-          grade_level: student.grade_level,
-          ...metrics
-        }
-      })
-      
-      // Filter based on active tab
-      switch (activeTab.value) {
-        case 'Need Help':
-          return filtered.filter(s => s.tasks_overdue > 0)
-        case 'Health Alerts':
-          return filtered.filter(s => s.health_alerts > 0)
-        case 'Top Performers':
-          return filtered.filter(s => s.completion >= 90)
-        default:
-          return filtered
-      }
-    })
+const totalStudents = computed(() => studentsMetrics.value?.total_students ?? 0)
+const totalClassrooms = computed(() => studentsMetrics.value?.total_classrooms ?? classrooms.value.length)
+const activeClassrooms = computed(() => studentsMetrics.value?.active_classrooms ?? classrooms.value.filter(c => c.is_active !== false).length)
 
-    const activeInvitations = ref([])
-
-    const pendingRequests = ref([
-      { id: 1, name: 'Olivia Green', email: 'olivia.green@student.edu', requestedAt: '2 hours ago' },
-      { id: 2, name: 'Ben Carter', email: 'ben.carter@student.edu', requestedAt: '1 day ago' },
-    ])
-
-    // Load data functions
-    const loadClassrooms = async () => {
-      try {
-        const token = store.getters['auth/token']
-        console.log('Token from store:', token ? 'Token exists' : 'No token found')
-        if (!token) throw new Error('Please log in again to access student data')
-        
-        const data = await teacherService.getClassrooms(token)
-        classrooms.value = data
-        
-        // If we have classrooms, select the first one by default
-        if (data.length > 0 && !selectedClassroom.value) {
-          selectedClassroom.value = data[0]
-          await loadClassroomStudents(data[0].classroom_id)
-        }
-      } catch (err) {
-        console.error('Error loading classrooms:', err)
-        error.value = err.message
-      }
-    }
-    
-    const loadClassroomStudents = async (classroomId) => {
-      try {
-        const token = store.getters['auth/token']
-        if (!token) throw new Error('No authentication token found')
-        
-        const data = await teacherService.getClassroomStudents(classroomId, token)
-        allStudents.value = data
-      } catch (err) {
-        console.error('Error loading classroom students:', err)
-        error.value = err.message
-      }
-    }
-    
-    const loadStudentsMetrics = async () => {
-      try {
-        const token = store.getters['auth/token']
-        if (!token) throw new Error('No authentication token found')
-        
-        const data = await teacherService.getStudentsMetrics(token)
-        studentsMetrics.value = data
-      } catch (err) {
-        console.error('Error loading student metrics:', err)
-        error.value = err.message
-      }
-    }
-    
-    const loadAllData = async () => {
-      try {
-        loading.value = true
-        error.value = null
-        
-        await Promise.all([
-          loadClassrooms(),
-          loadStudentsMetrics()
-        ])
-      } catch (err) {
-        console.error('Error loading data:', err)
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'Failed to load student data',
-          type: 'error',
-        })
-      } finally {
-        loading.value = false
-      }
-    }
-    
-    // Load invitation codes
-    const loadInvitationCodes = async () => {
-      try {
-        const token = store.getters['auth/token']
-        if (!token) return
-        
-        const codes = await invitationService.getMyInvitationCodes(token, 'classroom')
-        activeInvitations.value = codes.map(code => ({
-          code_id: code.code_id,
-          code: code.code,
-          type: 'classroom',
-          status: 'active',
-          expiresAt: code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never',
-          uses: code.usage_count || 0,
-          maxUses: code.max_uses || 'Unlimited',
-          target_id: code.target_id
-        }))
-      } catch (err) {
-        console.error('Error loading invitation codes:', err)
-      }
-    }
-    
-    const generateInvitationCode = async () => {
-      if (classrooms.value.length === 0) {
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'No classrooms found. Please create a classroom first.',
-          type: 'error',
-        })
-        return
-      }
-      
-      try {
-        const token = store.getters['auth/token']
-        if (!token) {
-          throw new Error('No authentication token found')
-        }
-        
-        // Use the selected classroom or first available
-        const targetClassroom = selectedClassroom.value || classrooms.value[0]
-        
-        // Calculate expiration date based on user selection
-        const expiresAt = new Date()
-        expiresAt.setHours(expiresAt.getHours() + parseInt(newInvitation.value.expiresIn))
-        
-        const codeData = {
-          target_type: 'classroom',
-          target_id: targetClassroom.classroom_id,
-          max_uses: newInvitation.value.maxUses || null,
-          expires_at: expiresAt.toISOString()
-        }
-        
-        const result = await invitationService.generateCode(codeData, token)
-        generatedCode.value = result.code
-        
-        // Reload invitation codes to show the new one
-        await loadInvitationCodes()
-        
-        isInviteModalOpen.value = false
-        isGeneratedCodeModalOpen.value = true
-        
-        store.dispatch('ui/showToast', {
-          title: 'Success',
-          message: 'Invitation code generated successfully!',
-          type: 'success',
-        })
-      } catch (err) {
-        console.error('Error generating invitation code:', err)
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: err.response?.data?.detail || 'Failed to generate invitation code',
-          type: 'error',
-        })
-      }
-    }
-
-    const copyToClipboard = () => {
-      navigator.clipboard.writeText(generatedCode.value)
-      store.dispatch('ui/showToast', {
-        title: 'Copied!',
-        message: 'Invitation code copied to clipboard',
-        type: 'success',
-      })
-    }
-
-    const copyCode = (code) => {
-      navigator.clipboard.writeText(code)
-      store.dispatch('ui/showToast', {
-        title: 'Copied!',
-        message: 'Invitation code copied to clipboard',
-        type: 'success',
-      })
-    }
-
-    const revokeCode = (code) => {
-      activeInvitations.value = activeInvitations.value.filter(inv => inv.code !== code)
-      store.dispatch('ui/showToast', {
-        title: 'Code Revoked',
-        message: 'Invitation code has been revoked',
-        type: 'success',
-      })
-    }
-
-    // Student management functions
-    const addStudentToClass = async (studentId) => {
-      if (!selectedClassroom.value) {
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'No classroom selected',
-          type: 'error',
-        })
-        return
-      }
-
-      try {
-        const token = store.getters['auth/token']
-        if (!token) throw new Error('No authentication token found')
-
-        await teacherService.addStudentToClass(selectedClassroom.value.classroom_id, studentId, token)
-        
-        // Reload classroom students to reflect changes
-        await loadClassroomStudents(selectedClassroom.value.classroom_id)
-        
-        store.dispatch('ui/showToast', {
-          title: 'Success',
-          message: 'Student added to classroom successfully',
-          type: 'success',
-        })
-      } catch (err) {
-        console.error('Error adding student to class:', err)
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'Failed to add student to classroom',
-          type: 'error',
-        })
-      }
-    }
-
-    const removeStudentFromClass = async (studentId) => {
-      if (!selectedClassroom.value) {
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'No classroom selected',
-          type: 'error',
-        })
-        return
-      }
-
-      try {
-        const token = store.getters['auth/token']
-        if (!token) throw new Error('No authentication token found')
-
-        await teacherService.removeStudentFromClass(selectedClassroom.value.classroom_id, studentId, token)
-        
-        // Reload classroom students to reflect changes
-        await loadClassroomStudents(selectedClassroom.value.classroom_id)
-        
-        store.dispatch('ui/showToast', {
-          title: 'Success',
-          message: 'Student removed from classroom successfully',
-          type: 'success',
-        })
-      } catch (err) {
-        console.error('Error removing student from class:', err)
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'Failed to remove student from classroom',
-          type: 'error',
-        })
-      }
-    }
-
-    // Load data on mount
-    onMounted(async () => {
-      await loadAllData()
-      await loadInvitationCodes()
-    })
-    
-    return { 
-      activeTab, 
-      tabs, 
-      students, 
-      classrooms,
-      selectedClassroom,
-      allStudents,
-      studentsMetrics,
-      loading,
-      error,
-      isInviteModalOpen,
-      isInvitationsModalOpen,
-      isGeneratedCodeModalOpen,
-      generatedCode,
-      newInvitation,
-      activeInvitations,
-      pendingRequests,
-      loadAllData,
-      loadClassroomStudents,
-      loadInvitationCodes,
-      addStudentToClass,
-      removeStudentFromClass,
-      generateInvitationCode,
-      copyToClipboard,
-      copyCode,
-      revokeCode
-    }
+const loadClassrooms = async () => {
+  loadingClassrooms.value = true
+  try {
+    classrooms.value = token.value ? await teacherService.getClassrooms(token.value) : []
+  } catch (e) {
+    console.error('Error loading classrooms:', e)
+    classrooms.value = []
+  } finally {
+    loadingClassrooms.value = false
   }
 }
+
+const loadMetrics = async () => {
+  loadingMetrics.value = true
+  try {
+    studentsMetrics.value = token.value
+      ? await teacherService.getStudentsMetrics(token.value)
+      : { total_classrooms: 0, active_classrooms: 0, total_students: 0 }
+  } catch (e) {
+    console.error('Error loading metrics:', e)
+    studentsMetrics.value = { total_classrooms: 0, active_classrooms: 0, total_students: 0 }
+  } finally {
+    loadingMetrics.value = false
+  }
+}
+
+/* ---------- connections (accepted) & pending requests ---------- */
+const loadingAccepted = ref(false)
+const acceptedRequests = ref([])
+
+const loadingRequests = ref(false)
+const pendingRequests = ref([])
+const respondingAll = ref(false)
+
+const studentsAccepted = computed(() => acceptedRequests.value.filter(r => (r.requester_type || r.type) === 'student'))
+const parentsAccepted  = computed(() => acceptedRequests.value.filter(r => (r.requester_type || r.type) === 'parent'))
+
+const loadAccepted = async () => {
+  loadingAccepted.value = true
+  try {
+    acceptedRequests.value = token.value
+      ? await requestsService.listRequests(token.value, 'accepted')
+      : []
+  } catch (e) {
+    console.error('Error loading accepted connections:', e)
+    acceptedRequests.value = []
+  } finally {
+    loadingAccepted.value = false
+  }
+}
+
+const loadRequests = async () => {
+  loadingRequests.value = true
+  try {
+    pendingRequests.value = token.value
+      ? await requestsService.listRequests(token.value, 'pending')
+      : []
+  } catch (e) {
+    console.error('Error loading pending requests:', e)
+    pendingRequests.value = []
+  } finally {
+    loadingRequests.value = false
+  }
+}
+
+const respond = async (id, action) => {
+  if (!token.value) return
+  try {
+    await requestsService.respondToRequest(id, action, token.value)
+    await Promise.all([loadRequests(), loadAccepted(), loadMetrics()])
+  } catch (e) {
+    const msg = e?.response?.data?.detail || 'Failed to update request'
+    console.error('Respond failed:', e?.response?.data || e)
+    store.dispatch?.('ui/showToast', { title: 'Error', message: msg, type: 'error' })
+  }
+}
+
+const acceptAll = async () => {
+  if (!token.value || pendingRequests.value.length === 0) return
+  respondingAll.value = true
+  try {
+    const ids = pendingRequests.value.map(r => r.request_id)
+    await Promise.all(ids.map(id => requestsService.respondToRequest(id, 'accepted', token.value)))
+    await Promise.all([loadRequests(), loadAccepted(), loadMetrics()])
+    store.dispatch?.('ui/showToast', { title: 'All requests accepted', message: 'Everyone is in 🎉', type: 'success' })
+  } catch (e) {
+    console.error('Accept all failed:', e)
+  } finally {
+    respondingAll.value = false
+  }
+}
+
+/* ---------- create / edit / delete classroom ---------- */
+const isEditOpen = ref(false)
+const editId = ref(null)
+const form = ref({ name: '', subject: '', school_name: '', grade_level: '', max_students: null })
+const savingEdit = ref(false)
+
+const isDeleteOpen = ref(false)
+const pendingDeleteId = ref(null)
+const deleting = ref(false)
+
+const openCreateModal = () => {
+  editId.value = null
+  form.value = { name: '', subject: '', school_name: '', grade_level: '', max_students: null }
+  isEditOpen.value = true
+}
+const openEdit = (row) => {
+  editId.value = row.classroom_id
+  form.value = {
+    name: row.classroom_name || row.name || '',
+    subject: row.subject || '',
+    school_name: row.school_name || '',
+    grade_level: row.grade_level || '',
+    max_students: row.max_students ?? null
+  }
+  isEditOpen.value = true
+}
+const closeEdit = () => { isEditOpen.value = false; savingEdit.value = false }
+
+const submitEdit = async () => {
+  if (!token.value) return
+  try {
+    savingEdit.value = true
+    if (editId.value) {
+      await teacherService.updateClassroom(editId.value, { ...form.value }, token.value)
+    } else {
+      await teacherService.createClassroom({ ...form.value }, token.value)
+    }
+    closeEdit()
+    await refreshAll()
+  } catch (e) {
+    console.error('Save classroom failed:', e)
+  } finally {
+    savingEdit.value = false
+  }
+}
+
+const askDelete = (row) => { pendingDeleteId.value = row.classroom_id; isDeleteOpen.value = true }
+
+const confirmDelete = async () => {
+  if (!pendingDeleteId.value || !token.value) return
+  try {
+    deleting.value = true
+    await teacherService.deleteClassroom(pendingDeleteId.value, token.value, { hard: true })
+    isDeleteOpen.value = false
+    pendingDeleteId.value = null
+    await refreshAll()
+  } catch (e) {
+    console.error('Delete failed:', e)
+  } finally {
+    deleting.value = false
+  }
+}
+
+/* ---------- invites ---------- */
+const isInviteOpen = ref(false)
+const inviteClassroomId = ref(null)
+const inviteDefaultType = ref('teacher_student')
+
+const openInviteModal = (row = null, defaultType = 'teacher_student') => {
+  inviteClassroomId.value = row?.classroom_id || null
+  inviteDefaultType.value = defaultType
+  isInviteOpen.value = true
+}
+
+/* ---------- utils ---------- */
+const formatDate = (value) => {
+  try { if (!value) return ''; const d = new Date(value); return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString() }
+  catch { return String(value) }
+}
+const formatDateTime = (value) => {
+  try { if (!value) return ''; const d = new Date(value); return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString() }
+  catch { return String(value) }
+}
+
+/* ---------- load all ---------- */
+const refreshAll = async () => {
+  await Promise.all([loadClassrooms(), loadMetrics(), loadAccepted(), loadRequests()])
+}
+onMounted(refreshAll)
 </script>

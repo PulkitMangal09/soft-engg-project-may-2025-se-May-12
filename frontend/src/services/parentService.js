@@ -1,145 +1,57 @@
-import axios from 'axios'
+// src/services/parentService.js
+import { api } from './api'
 
-const API_BASE_URL = 'http://localhost:8000'
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-})
-
-// Parent Dashboard APIs
 export const parentService = {
-  // GET /parent/dashboard/ - Get Parent Dashboard
-  async getDashboard(token) {
-    try {
-      const response = await api.get('/parent/dashboard/', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching parent dashboard:', error)
-      throw error
-    }
+  // Dashboard (keep if you have these routes)
+  async getDashboard() {
+    const { data } = await api.get('/parent/dashboard')
+    return data
+  },
+  async getTasks() {
+    const { data } = await api.get('/parent/dashboard/tasks')
+    return data
+  },
+  async getHealthAlerts() {
+    const { data } = await api.get('/parent/dashboard/health/alerts')
+    return data
   },
 
-  // GET /parent/dashboard/tasks - Get Parent Tasks
-  async getTasks(token) {
-    try {
-      const response = await api.get('/parent/dashboard/tasks', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching parent tasks:', error)
-      throw error
-    }
+  // Children
+  async getChildren() {
+    const { data } = await api.get('/parent/children')
+    return data
+  },
+  async getChildrenMetrics() {
+    const { data } = await api.get('/parent/children/metrics')
+    return data
   },
 
-  // GET /parent/dashboard/health/alerts - Get Parent Health Alerts
-  async getHealthAlerts(token) {
-    try {
-      const response = await api.get('/parent/dashboard/health/alerts', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching health alerts:', error)
-      throw error
-    }
+  // Family groups
+  async getFamilyOverview() {
+    const { data } = await api.get('/parent/family/overview')
+    return data
+  },
+  async getFamilyGroups() {
+    const { data } = await api.get('/parent/family/groups')
+    return data
+  },
+  async createFamilyGroup(groupData) {
+    const { data } = await api.post('/parent/family/groups', groupData)
+    return data
   },
 
-  // GET /parent/dashboard/family/join-requests - Get Family Join Requests
-  async getFamilyJoinRequests(token) {
-    try {
-      const response = await api.get('/parent/dashboard/family/join-requests', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching family join requests:', error)
-      throw error
-    }
+  // *** Requests (now use /requests router) ***
+  async getFamilyJoinRequests() {
+    // pending for approver (family head)
+    const { data } = await api.get('/requests/pending')
+    return data
   },
-
-  // POST /parent/dashboard/family/join-requests/respond - Respond Family Join Request
-  async respondToFamilyJoinRequest(requestId, action, token) {
-    try {
-      const response = await api.post('/parent/dashboard/family/join-requests/respond', {
-        request_id: requestId,
-        action: action // 'approve' or 'reject'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error responding to family join request:', error)
-      throw error
-    }
+  async respondToFamilyJoinRequest(requestId, action /* 'approve'|'reject' */) {
+    // unified handler expects 'accept'|'reject'
+    const payload = { action: action === 'approve' ? 'accept' : 'reject' }
+    const { data } = await api.patch(`/requests/${requestId}/handle`, payload)
+    return data
   },
-
-  // GET /parent/children - Get Children
-  async getChildren(token) {
-    try {
-      const response = await api.get('/parent/children', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching children:', error)
-      throw error
-    }
-  },
-
-  // GET /parent/children/metrics - View All Children Metrics
-  async getChildrenMetrics(token) {
-    try {
-      const response = await api.get('/parent/children/metrics', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching children metrics:', error)
-      throw error
-    }
-  },
-
-  // GET /parent/family/overview - Family Overview
-  async getFamilyOverview(token) {
-    try {
-      const response = await api.get('/parent/family/overview', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching family overview:', error)
-      throw error
-    }
-  },
-
-  // GET /parent/family/groups - List Family Groups
-  async getFamilyGroups(token) {
-    try {
-      const response = await api.get('/parent/family/groups', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error fetching family groups:', error)
-      throw error
-    }
-  },
-
-  // POST /parent/family/groups - Create Family Group
-  async createFamilyGroup(groupData, token) {
-    try {
-      const response = await api.post('/parent/family/groups', groupData, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      return response.data
-    } catch (error) {
-      console.error('Error creating family group:', error)
-      throw error
-    }
-  }
 }
 
 export default parentService

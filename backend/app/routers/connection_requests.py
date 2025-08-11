@@ -254,17 +254,23 @@ def create_request_alias(payload: Dict[str, Any], token: str = Depends(oauth2)) 
 def list_my_pending_requests(token: str = Depends(oauth2)) -> List[Dict[str, Any]]:
     """List the caller's own pending outbound requests."""
     user_id = get_user_id_from_token(token)
-    rows = (
+
+    q = (
         supabase.table("join_requests")
         .select("*")
         .eq("requester_id", user_id)
         .eq("status", "pending")
-        .order("created_at", desc=True)
-        .execute()
     )
+
+    # Try to order by created_at if it exists; otherwise fall back with no ordering.
+    try:
+        rows = q.order("created_at", desc=True).execute()
+    except Exception:
+        rows = q.execute()
+
     data = getattr(rows, "data", []) or []
-    # Optionally enrich with target info later
     return data
+
 
 
 @router.patch("/{request_id}/handle")

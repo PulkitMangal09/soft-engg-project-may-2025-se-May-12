@@ -1,31 +1,37 @@
-
 from enum import Enum
-from pydantic import BaseModel, EmailStr, model_validator, Field
 from typing import List, Optional, Literal
 from uuid import UUID
 from datetime import date, datetime
 
-# ------------------ Auth Models ------------------
+from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic.config import ConfigDict
 
+# =========================================================
+#                       Auth Models
+# =========================================================
 
 class RoleEnum(str, Enum):
     student = "student"
     teacher = "teacher"
-    parent = "parent"
+    parent  = "parent"
 
 
 class Role(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: RoleEnum
     description: str
 
 
 class SignupRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     full_name: str = Field(..., example="Alice Example")
-    email:      EmailStr = Field(..., example="alice@example.com")
-    password:   str = Field(..., example="Secret123!")
+    email: EmailStr = Field(..., example="alice@example.com")
+    password: str = Field(..., example="Secret123!")
     confirm_password: str = Field(..., example="Secret123!")
-    role:       RoleEnum = Field(..., example=RoleEnum.student)
+    role: RoleEnum = Field(..., example=RoleEnum.student)
     terms_agreed: bool = Field(..., example=True)
 
     @model_validator(mode="after")
@@ -38,14 +44,18 @@ class SignupRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    access_token: str = Field(...,
-                              example="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...")
-    token_type:   str = Field(..., example="bearer")
-    role:    str = Field(..., example="student")
+    model_config = ConfigDict(from_attributes=True)
+
+    access_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...")
+    token_type: str = Field(..., example="bearer")
+    role: str = Field(..., example="student")
     has_profile: Optional[bool] = Field(False, example=False)
 
 
-# --------------- Emotion Enums ---------------
+# =========================================================
+#                   Emotion / Wellbeing
+# =========================================================
+
 class MoodEnum(str, Enum):
     neutral = "neutral"
     anxious = "anxious"
@@ -92,46 +102,25 @@ class ContactTypeEnum(str, Enum):
     local_emergency = "local_emergency"
 
 
-# ---------------- Task Enums ----------------
-class TaskCategoryEnum(str, Enum):
-    homework = "homework"
-    project = "project"
-    study = "study"
-    personal = "personal"
-    chore = "chore"
-    health = "health"
-    financial = "financial"
-
-
-class PriorityEnum(str, Enum):
-    low = "low"
-    medium = "medium"
-    high = "high"
-
-
-class TaskStatusEnum(str, Enum):
-    pending = "pending"
-    in_progress = "in_progress"
-    completed = "completed"
-    overdue = "overdue"
-
-
-# -------------- Data Models ---------------
 class EmotionalEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     entry_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     title: Optional[str] = None
     content: str
     mood: MoodEnum
     intensity: int
-    triggers: Optional[List[str]] = []
-    tags: Optional[List[str]] = []
+    triggers: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
     privacy_level: PrivacyLevelEnum = PrivacyLevelEnum.private
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
 class MoodLog(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     log_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     mood: MoodEnum
@@ -144,6 +133,8 @@ class MoodLog(BaseModel):
 
 
 class ChatSession(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     session_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     session_title: Optional[str] = None
@@ -154,6 +145,8 @@ class ChatSession(BaseModel):
 
 
 class ChatMessage(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     message_id: Optional[UUID] = None
     session_id: UUID
     sender_type: SenderTypeEnum
@@ -162,6 +155,8 @@ class ChatMessage(BaseModel):
 
 
 class EmergencyContact(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     contact_id: Optional[UUID] = None
     name: str
     phone_number: str
@@ -171,7 +166,13 @@ class EmergencyContact(BaseModel):
     created_at: Optional[str] = None
 
 
+# =========================================================
+#                        Nutrition
+# =========================================================
+
 class DietEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: Optional[UUID] = None
     water_glasses: int
     sodium: float
@@ -179,6 +180,8 @@ class DietEntry(BaseModel):
 
 
 class MealEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: Optional[UUID] = None
     mealtype: Literal['breakfast', 'lunch', 'dinner', 'snacks']
     description: str
@@ -189,11 +192,19 @@ class MealEntry(BaseModel):
 
 
 class MealCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     mealtype: Literal['breakfast', 'lunch', 'dinner', 'snacks']
     description: str
 
 
+# =========================================================
+#                         Health
+# =========================================================
+
 class HealthMetricsRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     weight: float
     height: float
     systolic: int
@@ -204,6 +215,8 @@ class HealthMetricsRequest(BaseModel):
 
 
 class HealthMetricsResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     weight: float
     height: float
     bmi: float
@@ -216,11 +229,15 @@ class HealthMetricsResponse(BaseModel):
 
 
 class TrendPoint(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     time: datetime
     value: float
 
 
 class TrendResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     weight: List[TrendPoint]
     blood_sugar: List[TrendPoint]
     systolic: List[TrendPoint]
@@ -232,6 +249,8 @@ class TrendResponse(BaseModel):
 
 
 class ChildHealthSnapshot(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     full_name: str
     weight: float
     height: float
@@ -244,12 +263,20 @@ class ChildHealthSnapshot(BaseModel):
     created_at: str
 
 
+# =========================================================
+#                     Family / Parents
+# =========================================================
+
 class ChildLinkRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     child_id: UUID
     relationship: str
 
 
 class ParentDetails(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     parent_id: UUID
     name: str
     is_head: bool
@@ -257,7 +284,20 @@ class ParentDetails(BaseModel):
     description: Optional[str]
 
 
+# 👇 **Re-added to satisfy `from ..models import Parent`**
+class Parent(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    group: Optional[str] = None
+    is_head: Optional[bool] = False
+    description: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
 class HealthMetric(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     student_id: str
     weight: float
@@ -272,6 +312,8 @@ class HealthMetric(BaseModel):
 
 
 class ChildDietLog(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     child_name: str
     child_id: str
     date: str
@@ -281,6 +323,8 @@ class ChildDietLog(BaseModel):
 
 
 class Meal_Log(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     student_id: str
     time: datetime
@@ -293,13 +337,19 @@ class Meal_Log(BaseModel):
 
 
 class UpdateChildLink(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     child_id: UUID
     relationship: str
 
 
-# Student Finance Models
+# =========================================================
+#                      Student Finance
+# =========================================================
 
 class TransactionCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     amount: float
     type: str  # "credit" or "debit"
     category: str
@@ -308,6 +358,8 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     transaction_id: str
     amount: float
     type: str
@@ -317,50 +369,72 @@ class TransactionOut(BaseModel):
 
 
 class SavingsGoalCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     title: str
     target_amount: float
     saved_amount: Optional[float] = 0.0
 
 
 class SavingsGoalOut(SavingsGoalCreate):
+    model_config = ConfigDict(from_attributes=True)
+
     goal_id: str
 
 
-# Teacher Tasks
+# =========================================================
+#                          Tasks
+# =========================================================
 
-# --- Pydantic Schemas ---
+class TaskCategoryEnum(str, Enum):
+    homework   = "homework"
+    project    = "project"
+    study      = "study"
+    personal   = "personal"
+    chore      = "chore"
+    health     = "health"
+    financial  = "financial"
+
+
+class PriorityEnum(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class TaskStatusEnum(str, Enum):
+    pending     = "pending"
+    in_progress = "in_progress"
+    completed   = "completed"
+    overdue     = "overdue"
+
+
 class TaskBase(BaseModel):
-    task_id:       UUID = Field(..., alias="task_id")
-    title:         str
-    description:   Optional[str] = None
-    assigned_to:   UUID
-    assigned_by:   UUID
-    category:      str
-    priority:      Optional[str] = "medium"
-    due_date:      Optional[datetime] = None
-    due_time:      Optional[str] = None
-    status:        Optional[str] = "pending"
+    """Common user-editable fields."""
+    model_config = ConfigDict(from_attributes=True, validate_by_name=True)
+
+    title: str
+    description: Optional[str] = None
+    assigned_to: UUID
+    assigned_by: UUID
+    category: str
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    due_time: Optional[str] = None
+    status: Optional[str] = "pending"
     reward_points: Optional[int] = 0
     attachment_url: Optional[str] = None
 
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
 
-
-class TaskCreate(BaseModel):
-    title:         str
-    description:   Optional[str] = None
-    category:      str
-    priority:      Optional[str] = "medium"
-    due_date:      Optional[datetime] = None
-    due_time:      Optional[str] = None
-    status:        Optional[str] = "pending"
-    reward_points: Optional[int] = 0
-    attachment_url: Optional[str] = None
+class TaskCreate(TaskBase):
+    """Create payload (server will add task_id/created_at)."""
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TaskUpdate(BaseModel):
+    """Patch/put payload (all optional)."""
+    model_config = ConfigDict(from_attributes=True)
+
     title: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
@@ -372,21 +446,29 @@ class TaskUpdate(BaseModel):
     attachment_url: Optional[str] = None
 
 
+class TaskOut(TaskBase):
+    """Row returned from DB."""
+    model_config = ConfigDict(from_attributes=True, validate_by_name=True)
+
+    task_id: UUID
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
 class JoinRequestAction(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     student_id: str
     action: str  # "accept" or "reject"
 
 
-class Parent(BaseModel):
-    group: Optional[str]
-    is_head: Optional[bool] = False
-    description: Optional[str]
-    is_active: Optional[bool] = True
-    name: str
-# -----------Parent_family-----------------------
-
+# =========================================================
+#                       Family Groups
+# =========================================================
 
 class FamilyGroupBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     family_name: str = Field(..., example="Smith Family")
     description: Optional[str] = Field(None, example="Our household group")
 
@@ -396,26 +478,36 @@ class FamilyGroupCreate(FamilyGroupBase):
 
 
 class FamilyGroup(FamilyGroupBase):
+    model_config = ConfigDict(from_attributes=True)
+
     family_id: UUID
     family_key: str
 
 
 class FamilyMember(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     member_id: UUID
-    user_id:    UUID
-    role:       str  # e.g. 'child', 'parent'
-    joined_at:  str
+    user_id: UUID
+    role: str  # e.g. 'child', 'parent'
+    joined_at: str
 
 
 class JoinRequestCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     target_id: UUID = Field(..., example="a-family-uuid")
     relationship_type: str = Field(..., example="child")
     message: Optional[str] = Field(None, example="I'd like to join!")
 
-# ----------- Profile Completion Models -----------
 
+# =========================================================
+#                    Profile Completion
+# =========================================================
 
 class StudentProfileCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     student_number: Optional[str] = Field(None, example="STU123456")
     grade_level: Optional[str] = Field(None, example="10")
     school_name: Optional[str] = Field(None, example="Springfield High School")
@@ -424,12 +516,16 @@ class StudentProfileCreate(BaseModel):
 
 
 class TeacherProfileCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     school_name: str = Field(..., example="Springfield High School")
     school_district: str = Field(..., example="Springfield School District")
     subject_grade: Optional[str] = Field(None, example="Mathematics, Grade 10")
 
 
 class ParentProfileCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str = Field(..., example="John Smith")
     group: Optional[str] = Field(None, example="Smith Family")
     is_head: Optional[bool] = Field(False, example=False)
@@ -437,6 +533,8 @@ class ParentProfileCreate(BaseModel):
 
 
 class ProfileCompletionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     is_completed: bool
     profile_exists: bool
     redirect_url: Optional[str] = None
@@ -444,14 +542,21 @@ class ProfileCompletionResponse(BaseModel):
 
 
 class ProfileStatusResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     has_profile: bool
     is_completed: bool
     user_type: str
     profile_data: Optional[dict] = None
 
 
-# -------------- Invitation Codes & Connections ---------------
+# =========================================================
+#            Invitation Codes & Connections
+# =========================================================
+
 class InvitationCodeCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     target_type: Literal['family', 'classroom']
     target_id: UUID
     code: Optional[str] = None
@@ -460,6 +565,8 @@ class InvitationCodeCreate(BaseModel):
 
 
 class InvitationCodeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     code_id: UUID
     code: str
     target_type: str
@@ -471,6 +578,8 @@ class InvitationCodeOut(BaseModel):
 
 
 class CodeRedeemRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     code: str
     relationship_type: Optional[str] = None
     message: Optional[str] = None

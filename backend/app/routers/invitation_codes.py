@@ -1,314 +1,168 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
-from fastapi.security import OAuth2PasswordBearer
-from typing import Dict, Any, Optional
+# app/routers/invitation_codes.py
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from typing import Optional, List
 from uuid import UUID
-from datetime import datetime, timezone
-import random
-import string
+import secrets, string
+from postgrest import APIError
 
 from ..config import supabase
-from ..utils.profile_utils import get_user_id_from_token, get_user_type
 from ..models import InvitationCodeCreate, InvitationCodeOut
+from ..utils.profile_utils import get_user_id_from_token  # adjust import path if needed
 
-router = APIRouter(prefix="/codes", tags=["invitation-codes"])
-oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
+router = APIRouter(prefix="/codes", tags=["Invitation Codes"])
 
+# ---------- helpers ----------
 
-def _is_family_head(user_id: str, family_id: str) -> bool:
-    r = (
-        supabase.table("family_groups")
-        .select("family_head_id")
-        .eq("family_id", family_id)
-        .single()
-        .execute()
-    )
-    data = getattr(r, "data", None)
-    return bool(data and data.get("family_head_id") == user_id)
+def _require_token(authorization: Optional[str]) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    return authorization.split(" ", 1)[1]
 
+def _generate_unique_code(length: int = 8) -> str:
+    alphabet = string.ascii_uppercase + string.digits
+    for _ in range(10):
+        candidate = "".join(secrets.choice(alphabet) for _ in range(length))
+        try:
+            resp = supabase.table("invitation_codes").select("code").eq("code", candidate).single().execute()
+            if not getattr(resp, "data", None):  # not found -> unique
+                return candidate
+        except Exception:
+            # .single() raises if not found; treat as unique
+            return candidate
+    # Fallback (extremely unlikely)
+    return "".join(secrets.choice(alphabet) for _ in range(length + 2))
 
-def _generate_code_like(prefix: Optional[str] = None) -> str:
-    # Fallback generator if client doesn't provide a code.
-    part1 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    if prefix:
-        return f"{prefix}-{part1}-{part2}"
-    return f"{part1}-{part2}"
+def _assert_teacher_owns_classroom(teacher_id: str, classroom_id: UUID):
+    resp = supabase.table("classrooms").select("classroom_id, teacher_id").eq("classroom_id", str(classroom_id)).single().execute()
+    data = getattr(resp, "data", None)
+    if not data:
+        raise HTTPException(status_code=404, detail="Classroom not found")
+    if data["teacher_id"] != teacher_id:
+        raise HTTPException(status_code=403, detail="You do not own this classroom")
 
+def _append_usage_counts(codes: List[dict]) -> List[dict]:
+    if not codes:
+        return codes
+    code_ids = [c["code_id"] for c in codes if "code_id" in c]
+    if not code_ids:
+        return codes
+    try:
+        jr = supabase.table("join_requests").select("code_id").in_("code_id", code_ids).execute()
+        rows = getattr(jr, "data", []) or []
+        counts = {}
+        for r in rows:
+            cid = r.get("code_id")
+            if cid:
+                counts[cid] = counts.get(cid, 0) + 1
+        for c in codes:
+            c["usage_count"] = counts.get(c.get("code_id"), 0)
+    except Exception:
+        for c in codes:
+            c["usage_count"] = 0
+    return codes
 
-@router.post("/generate", response_model=InvitationCodeOut)
-def generate_code(payload: InvitationCodeCreate, token: str = Depends(oauth2)):
+# ---------- routes ----------
+
+@router.post(
+    "",
+    response_model=InvitationCodeOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generate an invitation code",
+)
+def create_code(
+    payload: InvitationCodeCreate,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Create an invitation code for a target (e.g., classroom).
+    Works for both **Student** and **Parent** invites. The role is handled at redemption time.
+    """
+    token = _require_token(authorization)
     user_id = get_user_id_from_token(token)
 
-    # Authorization by target_type
     if payload.target_type == "classroom":
-        # Teacher can only generate for their own user_id
-        if str(payload.target_id) != user_id:
-            raise HTTPException(status_code=403, detail="Not the owning teacher")
-    elif payload.target_type == "family":
-        if not _is_family_head(user_id, str(payload.target_id)):
-            raise HTTPException(status_code=403, detail="Not family head for target family")
-    else:
-        raise HTTPException(status_code=400, detail="Invalid target_type")
+        _assert_teacher_owns_classroom(user_id, payload.target_id)
 
-    # Use provided code or generate one
-    code_value = payload.code or _generate_code_like(
-        "MATH" if payload.target_type == "classroom" else "FAM"
-    )
+    # Ensure code uniqueness
+    code_value = payload.code or _generate_unique_code()
 
-    # Validate expires_at format if provided
-    expires_at_iso = None
-    if payload.expires_at is not None:
-        # Ensure timezone-aware UTC ISO for storage consistency
-        if isinstance(payload.expires_at, datetime):
-            dt = payload.expires_at
-        else:
-            raise HTTPException(status_code=400, detail="expires_at must be ISO datetime")
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        expires_at_iso = dt.isoformat()
+    # IMPORTANT: serialize datetime to ISO string (httpx can't JSON-encode datetimes)
+    expires_at_str = payload.expires_at.isoformat() if payload.expires_at else None
 
-    # Insert
-    ins = (
-        supabase.table("invitation_codes")
-        .insert({
-            "code": code_value,
-            "target_type": payload.target_type,
-            "target_id": str(payload.target_id),
-            "created_by": user_id,
-            "expires_at": expires_at_iso,
-            "max_uses": payload.max_uses,
-        })
-        .execute()
-    )
-    data = getattr(ins, "data", None)
+    insert_payload = {
+        "code": code_value,
+        "target_type": payload.target_type,
+        "target_id": str(payload.target_id),
+        "created_by": user_id,
+        "expires_at": expires_at_str,      # serialized
+        "max_uses": payload.max_uses,      # int or None
+    }
+
+    try:
+        resp = supabase.table("invitation_codes").insert(insert_payload).execute()
+    except APIError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    data = (getattr(resp, "data", None) or [None])[0]
     if not data:
         raise HTTPException(status_code=400, detail="Failed to create invitation code")
-    row = data[0]
-    # Derive status for newly created code (uses = 0)
-    status = "active"
-    exp_iso = row.get("expires_at")
-    if exp_iso:
-        try:
-            exp_dt = datetime.fromisoformat(exp_iso.replace('Z', '+00:00'))
-            if exp_dt.tzinfo is None:
-                exp_dt = exp_dt.replace(tzinfo=timezone.utc)
-            if datetime.now(timezone.utc) >= exp_dt:
-                status = "expired"
-        except Exception:
-            pass
-    if row.get("max_uses") is not None and row.get("max_uses") <= 0:
-        status = "exhausted"
 
     return {
-        "code_id": row["code_id"],
-        "code": row["code"],
-        "target_type": row["target_type"],
-        "target_id": row["target_id"],
-        "created_by": row["created_by"],
-        "expires_at": row.get("expires_at"),
-        "max_uses": row.get("max_uses"),
-        "created_at": row.get("created_at"),
-        "status": status,
+        "code_id": data["code_id"],
+        "code": data["code"],
+        "target_type": data["target_type"],
+        "target_id": UUID(data["target_id"]),
+        "created_by": UUID(data["created_by"]),
+        "expires_at": data.get("expires_at"),
+        "max_uses": data.get("max_uses"),
+        "created_at": data.get("created_at"),
     }
 
 
-@router.get("/my")
+@router.get("/my", summary="List invitation codes created by me")
 def list_my_codes(
-    token: str = Depends(oauth2),
-    target_type: Optional[str] = None,
-    active: Optional[bool] = None,
-) -> Any:
+    authorization: Optional[str] = Header(None),
+    target_type: Optional[str] = Query(None, description="Filter by target_type, e.g. 'classroom' or 'family'"),
+):
+    token = _require_token(authorization)
     user_id = get_user_id_from_token(token)
 
     q = supabase.table("invitation_codes").select("*").eq("created_by", user_id)
     if target_type:
         q = q.eq("target_type", target_type)
-    res = q.execute()
-    codes = getattr(res, "data", []) or []
 
-    # Attach usage counts from join_requests
-    code_ids = [c["code_id"] for c in codes]
-    usage_map: Dict[str, int] = {}
-    if code_ids:
-        reqs = (
-            supabase.table("join_requests")
-            .select("code_id")
-            .in_("code_id", code_ids)
-            .execute()
-        )
-        for row in getattr(reqs, "data", []) or []:
-            cid = row.get("code_id")
-            if cid:
-                usage_map[cid] = usage_map.get(cid, 0) + 1
-
-    # Compute derived fields: uses and status (active/expired/exhausted)
-    now = datetime.now(timezone.utc)
-    enriched: list[Dict[str, Any]] = []
-    for c in codes:
-        uses = usage_map.get(c["code_id"], 0)
-        c["usage_count"] = uses
-        c["uses"] = uses
-
-        # Parse expires_at if present and determine expiry
-        expires_at = c.get("expires_at")
-        is_expired = False
-        if expires_at:
-            try:
-                # Normalize 'Z' suffix to '+00:00' for fromisoformat
-                exp_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
-                if exp_dt.tzinfo is None:
-                    exp_dt = exp_dt.replace(tzinfo=timezone.utc)
-                is_expired = now >= exp_dt
-            except Exception:
-                # If unparsable, do not mark as expired by parser error
-                is_expired = False
-
-        max_uses = c.get("max_uses")
-        is_exhausted = isinstance(max_uses, int) and uses >= max_uses if max_uses is not None else False
-
-        status = "active"
-        if is_expired:
-            status = "expired"
-        elif is_exhausted:
-            status = "exhausted"
-        c["status"] = status
-
-        # Optional filtering by active flag
-        if active is None:
-            enriched.append(c)
-        elif active and status == "active":
-            enriched.append(c)
-        elif (active is False) and status != "active":
-            enriched.append(c)
-
-    return enriched
+    resp = q.order("created_at", desc=True).execute()
+    codes = getattr(resp, "data", []) or []
+    codes = _append_usage_counts(codes)
+    return codes
 
 
-@router.get("/active")
-def list_active_codes(token: str = Depends(oauth2)) -> Dict[str, Any]:
-    """Return only active invitations wrapped as { invitations: [...] }.
-
-    This is a thin wrapper over list_my_codes with active filtering and response
-    shape aligned to the spec's active invitations endpoint.
-    """
-    # Reuse computation by calling the same query path
-    user_id = get_user_id_from_token(token)
-    # Fetch all and filter via active flag using the same logic as list_my_codes
-    q = supabase.table("invitation_codes").select("*").eq("created_by", user_id)
-    res = q.execute()
-    codes = getattr(res, "data", []) or []
-
-    # Build usage map
-    code_ids = [c["code_id"] for c in codes]
-    usage_map: Dict[str, int] = {}
-    if code_ids:
-        reqs = (
-            supabase.table("join_requests").select("code_id").in_("code_id", code_ids).execute()
-        )
-        for row in getattr(reqs, "data", []) or []:
-            cid = row.get("code_id")
-            if cid:
-                usage_map[cid] = usage_map.get(cid, 0) + 1
-
-    # Enrich and keep only active
-    now = datetime.now(timezone.utc)
-    invitations: list[Dict[str, Any]] = []
-    for c in codes:
-        uses = usage_map.get(c["code_id"], 0)
-        expires_at = c.get("expires_at")
-        is_expired = False
-        if expires_at:
-            try:
-                exp_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
-                if exp_dt.tzinfo is None:
-                    exp_dt = exp_dt.replace(tzinfo=timezone.utc)
-                is_expired = now >= exp_dt
-            except Exception:
-                is_expired = False
-        max_uses = c.get("max_uses")
-        is_exhausted = isinstance(max_uses, int) and uses >= max_uses if max_uses is not None else False
-
-        status = "active"
-        if is_expired:
-            status = "expired"
-        elif is_exhausted:
-            status = "exhausted"
-
-        if status == "active":
-            invitations.append({
-                **c,
-                "uses": uses,
-                "status": status,
-            })
-
-    return {"invitations": invitations}
-
-
-@router.delete("/{code_id}")
-def revoke_code(code_id: UUID, token: str = Depends(oauth2)) -> Dict[str, Any]:
-    """Revoke an invitation code you created by making it immediately unusable.
-
-    We do not delete the row to preserve history. Instead:
-    - sets expires_at to now (UTC)
-    - sets max_uses to current uses (so status becomes exhausted/expired)
-    """
-    user_id = get_user_id_from_token(token)
-
-    # Fetch the code and verify ownership
-    res = (
-        supabase.table("invitation_codes")
-        .select("*")
-        .eq("code_id", str(code_id))
-        .single()
-        .execute()
-    )
-    code = getattr(res, "data", None)
-    if not code:
-        raise HTTPException(status_code=404, detail="Code not found")
-    if code.get("created_by") != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to revoke this code")
-
-    # Compute current uses
-    usage = (
-        supabase.table("join_requests")
-        .select("count(*)", count="exact")
-        .eq("code_id", str(code_id))
-        .execute()
-    )
-    uses = 0
+@router.get("/{code}", summary="Lookup an invitation code")
+def get_code(code: str):
     try:
-        uses = int(usage.data[0]["count"]) if usage and usage.data else 0
+        resp = supabase.table("invitation_codes").select("*").eq("code", code).single().execute()
+        data = getattr(resp, "data", None)
     except Exception:
-        uses = 0
-
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    # Ensure max_uses is set to at least the current uses so it can't be used again
-    current_max = code.get("max_uses")
-    new_max = uses if current_max is None else max(uses, current_max)
-
-    upd = (
-        supabase.table("invitation_codes")
-        .update({
-            "expires_at": now_iso,
-            "max_uses": new_max,
-        })
-        .eq("code_id", str(code_id))
-        .execute()
-    )
-    updated = getattr(upd, "data", None)
-    if not updated:
-        raise HTTPException(status_code=400, detail="Failed to revoke code")
-    return updated[0]
+        data = None
+    if not data:
+        raise HTTPException(status_code=404, detail="Code not found")
+    return data
 
 
-@router.delete("/{code_id}/revoke", status_code=204)
-def revoke_code_no_content(code_id: UUID, token: str = Depends(oauth2)) -> Response:
-    """No-content variant revoke to align with spec expectations (204).
+@router.delete("/{code_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Revoke (delete) an invitation code I created")
+def delete_code(
+    code_id: UUID,
+    authorization: Optional[str] = Header(None),
+):
+    token = _require_token(authorization)
+    user_id = get_user_id_from_token(token)
 
-    Internally reuses the same logic as revoke_code by performing the same
-    updates, then returning 204.
-    """
-    # Perform the same checks and updates as revoke_code
-    _ = revoke_code(code_id, token)
-    return Response(status_code=204)
+    resp = supabase.table("invitation_codes").select("created_by").eq("code_id", str(code_id)).single().execute()
+    data = getattr(resp, "data", None)
+    if not data:
+        raise HTTPException(status_code=404, detail="Code not found")
+    if data["created_by"] != user_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own codes")
+
+    supabase.table("invitation_codes").delete().eq("code_id", str(code_id)).execute()
+    return None
