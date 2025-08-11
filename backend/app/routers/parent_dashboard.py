@@ -41,14 +41,19 @@ def get_parent_dashboard(
     # 4. Get children details
     children_details = []
     if children:
-        students_resp = supabase.table("students").select("student_id, name, email, grade_level, school_name, avatar_url").in_("student_id", children).execute()
+        students_resp = supabase.table("students").select("student_id, name, email, grade_level, school_name, emergency_contact_phone, created_at").in_("student_id", children).execute()
         children_details = students_resp.data or []
+        
+        # Add avatar_url field for frontend compatibility
+        for child in children_details:
+            child['avatar_url'] = f"https://randomuser.me/api/portraits/lego/{hash(child['student_id']) % 10 + 1}.jpg"
 
     # 5. Summary stats
     summary = {
         "childrenCount": len(children_details),
         "pendingRequests": 0,  # To be filled below
         "activeTasks": 0,      # To be filled below
+        "financeGoals": 0,     # To be filled below
     }
 
     # 6. Pending join/access requests
@@ -61,6 +66,13 @@ def get_parent_dashboard(
         summary["activeTasks"] = len(tasks_resp.data) if tasks_resp.data else 0
     else:
         summary["activeTasks"] = 0
+
+    # 8. Finance goals count
+    if children:
+        finance_resp = supabase.table("savings_goals").select("*").in_("student_id", children).execute()
+        summary["financeGoals"] = len(finance_resp.data) if finance_resp.data else 0
+    else:
+        summary["financeGoals"] = 0
 
     # 8. Alerts (e.g., health)
     alerts = []
@@ -90,7 +102,7 @@ def get_parent_dashboard(
             })
         # Low engagement: e.g., <2 tasks completed in last 7 days
         seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
-        completions_resp = supabase.table("task_completions").select("student_id, completed_on").in_("student_id", children).gte("completed_on", seven_days_ago).execute()
+        completions_resp = supabase.table("task_completions").select("student_id, completed_at").in_("student_id", children).gte("completed_at", seven_days_ago).execute()
         completed_count = {}
         for c in completions_resp.data or []:
             sid = c["student_id"]
@@ -110,7 +122,7 @@ def get_parent_dashboard(
             # Get all tasks assigned in last 7 days
             week_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
             tasks_week = supabase.table("tasks").select("task_id").eq("assigned_to", child).gte("created_at", week_ago).execute().data or []
-            completions_week = supabase.table("task_completions").select("task_id").eq("student_id", child).gte("completed_on", week_ago).execute().data or []
+            completions_week = supabase.table("task_completions").select("task_id").eq("student_id", child).gte("completed_at", week_ago).execute().data or []
             if tasks_week and len(completions_week) == len(tasks_week):
                 achievements.append({
                     "student_id": child,
@@ -119,7 +131,7 @@ def get_parent_dashboard(
         # Example: improvement (score increase)
         # (Assume you have a 'score' field in task_completions)
         for child in children:
-            scores_resp = supabase.table("task_completions").select("score, completed_on").eq("student_id", child).order("completed_on", desc=True).limit(2).execute()
+            scores_resp = supabase.table("task_completions").select("scores, completed_at").eq("student_id", child).order("completed_at", desc=True).limit(2).execute()
             scores = [r["score"] for r in scores_resp.data or [] if r.get("score") is not None]
             if len(scores) == 2 and scores[0] - scores[1] >= 15:
                 achievements.append({
@@ -127,8 +139,18 @@ def get_parent_dashboard(
                     "achievement": "Significant improvement in task scores"
                 })
 
+    parent_details_resp = supabase.table("parents").select("*").eq("user_id", parent_user_id).single().execute()
+
+    # Ensure parent_details has required fields for frontend
+    parent_details = parent_details_resp.data or {}
+    if not parent_details.get("group"):
+        parent_details["group"] = "Family Group"
+    if not parent_details.get("description"):
+        parent_details["description"] = "Parent dashboard for managing children's activities and health"
+
     # 11. Compose response
     return {
+        "parent_details": parent_details,
         "summary": summary,
         "children": children_details,
         "criticalAlerts": alerts,
@@ -169,9 +191,7 @@ def get_parent_tasks(
         query = query.order(sortBy, desc=True)
     else:
         query = query.order("created_at", desc=True)
-    response = query.execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
+    response = query.execute()  
     return response.data
 
 @router.get("/health/alerts")
@@ -247,8 +267,6 @@ def get_parent_finance_goals(
     if status:
         query = query.eq("status", status)
     response = query.execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
     return response.data
 
 @router.get("/family/join-requests")

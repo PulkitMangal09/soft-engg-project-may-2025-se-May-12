@@ -211,6 +211,8 @@ class HealthMetricsRequest(BaseModel):
     diastolic: int
     blood_sugar: int
     heart_rate: int
+    age_years: Optional[int] = None
+    sex: Optional[str] = None
     notes: Optional[str] = ""
 
 
@@ -224,6 +226,8 @@ class HealthMetricsResponse(BaseModel):
     diastolic: int
     blood_sugar: int
     heart_rate: int
+    age_years: Optional[int] = None
+    sex: Optional[str] = None
     notes: Optional[str]
     time: datetime
 
@@ -583,3 +587,90 @@ class CodeRedeemRequest(BaseModel):
     code: str
     relationship_type: Optional[str] = None
     message: Optional[str] = None
+
+# -------------- Medical: Conditions, Medications, Logs ---------------
+class SeverityEnum(str, Enum):
+    mild = "mild"
+    moderate = "moderate"
+    severe = "severe"
+
+
+class HealthConditionBase(BaseModel):
+    condition_name: str
+    severity: SeverityEnum
+    diagnosed_date: Optional[date] = None
+    doctor_clinic: Optional[str] = None
+    dietary_restrictions: Optional[str] = None
+    symptoms_to_monitor: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+class HealthConditionCreate(HealthConditionBase):
+    pass
+
+
+class HealthConditionUpdate(BaseModel):
+    condition_name: Optional[str] = None
+    severity: Optional[SeverityEnum] = None
+    diagnosed_date: Optional[date] = None
+    doctor_clinic: Optional[str] = None
+    dietary_restrictions: Optional[str] = None
+    symptoms_to_monitor: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class HealthConditionOut(HealthConditionBase):
+    condition_id: UUID
+    user_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class MedicationBase(BaseModel):
+    medication_name: str
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    prescribing_doctor: Optional[str] = None
+    instructions: Optional[str] = None
+    is_active: Optional[bool] = True
+    condition_id: Optional[UUID] = None
+
+
+class MedicationCreate(MedicationBase):
+    pass
+
+
+class MedicationUpdate(BaseModel):
+    medication_name: Optional[str] = None
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    prescribing_doctor: Optional[str] = None
+    instructions: Optional[str] = None
+    is_active: Optional[bool] = None
+    condition_id: Optional[UUID] = None
+
+
+class MedicationOut(MedicationBase):
+    medication_id: UUID
+    user_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+
+
+class MedicationLogCreate(BaseModel):
+    taken_at: Optional[datetime] = None
+    quantity_taken: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class MedicationLogOut(BaseModel):
+    log_id: UUID
+    medication_id: UUID
+    user_id: Optional[UUID] = None
+    taken_at: Optional[datetime] = None
+    quantity_taken: Optional[str] = None
+    notes: Optional[str] = None
+    logged_by: Optional[UUID] = None
