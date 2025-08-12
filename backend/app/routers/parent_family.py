@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Path, Body
 from fastapi.security import OAuth2PasswordBearer
-from typing import List, Dict, Any
+from typing import List, Dict, Any,Optional
 from uuid import UUID
 from datetime import datetime
 
@@ -60,21 +60,44 @@ def create_family_group(
 ):
     """Create a new family group (you become the head)."""
     user_id = get_user_id(token)
-    payload = {
-        "family_name": name,
-        "description":  description,
-        "family_head_id": user_id,
-    }
-    resp = supabase.table("family_groups").insert(payload).execute()
-    if not resp.data:
-        raise HTTPException(400, "Could not create family group")
-    group = resp.data[0]
 
-    # Create a reusable family invitation code to serve as family_code (no expiry by default)
-    # This leverages the same table used by general invitation codes.
-    # If insertion fails, we still return the group without a code.
+    # --- generate a short, human-friendly key required by schema ---
+    import random, string, time
+    def _rand_key(n=8):
+        # upper + digits, avoids easily-confused chars
+        alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        return "".join(random.choice(alphabet) for _ in range(n))
+
+    # Try insert (retry once if key collides on unique index)
+    attempt = 0
+    while attempt < 2:
+        attempt += 1
+        family_key = _rand_key(8)
+
+        payload = {
+            "family_name": name,
+            "family_key": family_key,          # <- REQUIRED
+            "family_head_id": user_id,
+            "description": description,
+            "is_active": True,
+        }
+
+        ins = supabase.table("family_groups").insert(payload).execute()
+        if getattr(ins, "data", None):
+            group = ins.data[0]
+            break
+
+        # If there’s a unique violation on family_key, try again once
+        err = getattr(ins, "error", None)
+        if not err or getattr(err, "code", "") != "23505":
+            raise HTTPException(400, detail="Could not create family group")
+
+        time.sleep(0.05)  # tiny backoff and retry
+    else:
+        raise HTTPException(400, detail="Could not create family group (key collision)")
+
+    # Create a reusable family invitation code (optional; keep your existing logic)
     try:
-        # Generate a simple family code like FAM-XXXXXX-YYYYYY
         from random import choices
         import string as _string
         part1 = ''.join(choices(_string.ascii_uppercase + _string.digits, k=6))
@@ -96,10 +119,10 @@ def create_family_group(
         if getattr(code_ins, "data", None):
             group["family_code"] = fam_code
     except Exception:
-        # silently ignore code creation failure
         pass
 
     return group
+
 
 
 @router.get("/groups", response_model=List[Dict[str, Any]])
@@ -285,3 +308,70 @@ def join_family_via_code(
     if not data:
         raise HTTPException(status_code=400, detail="Failed to create join request")
     return data[0]
+@router.patch("/groups/{group_id}", response_model=Dict[str, Any])
+def update_family_group(
+    group_id: UUID = Path(...),
+    name: Optional[str] = Body(None, embed=True),
+    description: Optional[str] = Body(None, embed=True),
+    token: str = Depends(oauth2),
+):
+    """Edit a family group you head (name/description)."""
+    user_id = get_user_id(token)
+
+    # ensure head
+    grp = (
+        supabase.table("family_groups")
+        .select("family_head_id")
+        .eq("family_id", str(group_id))
+        .single()
+        .execute()
+        .data
+    )
+    if not grp or grp["family_head_id"] != user_id:
+        raise HTTPException(403, "Not authorized to edit this family")
+
+    payload = {}
+    if name is not None:
+        payload["family_name"] = name
+    if description is not None:
+        payload["description"] = description
+    if not payload:
+        raise HTTPException(400, "Nothing to update")
+
+    upd = (
+        supabase.table("family_groups")
+        .update(payload)
+        .eq("family_id", str(group_id))
+        .execute()
+    )
+    if not upd.data:
+        raise HTTPException(400, "Update failed")
+    return upd.data[0]
+
+
+@router.delete("/groups/{group_id}", response_model=Dict[str, Any])
+def delete_family_group(
+    group_id: UUID = Path(...),
+    token: str = Depends(oauth2),
+):
+    """Delete a family group you head. (Soft delete is recommended; here we hard-delete + related.)"""
+    user_id = get_user_id(token)
+
+    grp = (
+        supabase.table("family_groups")
+        .select("family_head_id")
+        .eq("family_id", str(group_id))
+        .single()
+        .execute()
+        .data
+    )
+    if not grp or grp["family_head_id"] != user_id:
+        raise HTTPException(403, "Not authorized to delete this family")
+
+    # clean up related rows (best if you have FK ON DELETE CASCADE instead)
+    supabase.table("family_members").delete().eq("family_id", str(group_id)).execute()
+    supabase.table("join_requests").delete().eq("target_type", "family").eq("target_id", str(group_id)).execute()
+    supabase.table("invitation_codes").delete().eq("target_type", "family").eq("target_id", str(group_id)).execute()
+
+    supabase.table("family_groups").delete().eq("family_id", str(group_id)).execute()
+    return {"deleted": True}

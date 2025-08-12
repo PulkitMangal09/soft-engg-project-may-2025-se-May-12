@@ -372,36 +372,39 @@ export default {
     }
 
     const generateInvitationCode = async () => {
-      if (familyGroups.value.length === 0) {
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'No family groups found. Please create a family group first.',
-          type: 'error',
-        })
-        return
-      }
       try {
-        invitationLoading.value = true
-        const token = store.getters['auth/token']
-        const targetId = familyGroups.value[0]?.group_id || familyGroups.value[0]?.id
-        const payload = {
-          target_id: targetId,
-          max_uses: parseInt(newInvitation.value.maxUses),
-          expires_in_hours: parseInt(newInvitation.value.expiresIn)
+        // pick a family group to attach the code to (first one for now)
+        const targetId = groups.value?.[0]?.family_id;
+        if (!targetId) {
+          store.dispatch('ui/showToast', {
+            title: 'No family group',
+            message: 'Create a family group first to generate codes.',
+            type: 'error'
+          });
+          return;
         }
-        const res = await familyCodesService.create(payload, token)
-        generatedCode.value = res.code
-        await loadInvitationCodes()
-        isInvitationModalOpen.value = false
-        isGeneratedCodeModalOpen.value = true
-        store.dispatch('ui/showToast', { title: 'Success', message: 'Invitation code generated.', type: 'success' })
-      } catch (err) {
-        console.error('Error generating code:', err)
-        store.dispatch('ui/showToast', { title: 'Error', message: 'Failed to generate code', type: 'error' })
-      } finally {
-        invitationLoading.value = false
+
+        const payload = {
+          target_id: targetId,                                       // ← REQUIRED
+          max_uses: parseInt(newInvitation.value.maxUses) || null,
+          expires_in_hours: parseInt(newInvitation.value.expiresIn) || null,
+        };
+
+        const res = await familyCodesService.create(payload, token());
+        generatedCode.value = res.code;
+
+        await loadCodes();
+        isInvitationModalOpen.value = false;
+        isGeneratedCodeModalOpen.value = true;
+
+        store.dispatch('ui/showToast', { title: 'Success', message: 'Code generated', type: 'success' });
+      } catch (e) {
+        const msg = e?.response?.data?.detail || 'Failed to generate invitation code';
+        console.error(e);
+        store.dispatch('ui/showToast', { title: 'Error', message: msg, type: 'error' });
       }
-    }
+    };
+
 
 
     const copyToClipboard = () => {
