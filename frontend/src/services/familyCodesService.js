@@ -1,19 +1,15 @@
 import axios from 'axios';
 const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const asBearer = (t) => (typeof t === 'string' ? t : t?.access_token || t?.token || '')
+const withAuth = (t) => ({ headers: { Authorization: `Bearer ${asBearer(t)}` } })
 
 export const familyCodesService = {
   async list(token) {
-    const { data } = await axios.get(`${API}/parent/family/codes/`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const { data } = await axios.get(`${API}/parent/family/codes/`, withAuth(token))
     return data
   },
-
   async create(payload, token) {
-    // payload: { target_id, expires_at, max_uses }
-    const { data } = await axios.post(`${API}/parent/family/codes/`, payload, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const { data } = await axios.post(`${API}/parent/family/codes/`, payload, withAuth(token))
     return data
   },
 

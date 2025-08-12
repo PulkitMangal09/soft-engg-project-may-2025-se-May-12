@@ -1,10 +1,15 @@
 // src/services/parentService.js
 import { api } from './api'
+import axios from 'axios'
+const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const asBearer = (t) => (typeof t === 'string' ? t : t?.access_token || t?.token || '')
+const withAuth = (t) => ({ headers: { Authorization: `Bearer ${asBearer(t)}` } })
+
 
 export const parentService = {
   // Dashboard (keep if you have these routes)
   async getDashboard() {
-    const { data } = await api.get('/parent/dashboard')
+    const { data } = await axios.get(`${API}/parent/dashboard/`, withAuth(token))
     return data
   },
   async getTasks() {
@@ -18,7 +23,7 @@ export const parentService = {
 
   // Children
   async getChildren() {
-    const { data } = await api.get('/parent/children')
+    const { data } = await axios.get(`${API}/parent/children`, withAuth(token))
     return data
   },
   async getChildrenMetrics() {
@@ -42,14 +47,12 @@ export const parentService = {
 
   // *** Requests (now use /requests router) ***
   async getFamilyJoinRequests() {
-    // pending for approver (family head)
-    const { data } = await api.get('/requests/pending')
+    const { data } = await axios.get(`${API}/parent/requests/`, withAuth(token))
     return data
   },
   async respondToFamilyJoinRequest(requestId, action /* 'approve'|'reject' */) {
     // unified handler expects 'accept'|'reject'
-    const payload = { action: action === 'approve' ? 'accept' : 'reject' }
-    const { data } = await api.patch(`/requests/${requestId}/handle`, payload)
+    const { data } = await axios.post(`${API}/parent/requests/${id}/${action}`, {}, withAuth(token))
     return data
   },
 }
