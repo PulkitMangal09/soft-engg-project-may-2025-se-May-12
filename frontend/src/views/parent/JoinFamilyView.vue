@@ -35,19 +35,14 @@
       <!-- Join Family Form -->
       <div class="bg-white rounded-xl shadow p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Enter Family Invitation Code</h2>
-        
         <form @submit.prevent="joinFamily" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Family Invitation Code</label>
             <input 
-              v-model="invitationCode" 
-              type="text" 
-              placeholder="e.g., SMITH-FAM-ABC123"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            >
+              v-model="invitationCode" type="text" placeholder="e.g., FAM-ABC123-XYZ789"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required
+            />
           </div>
-          
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Your Role in Family</label>
             <select v-model="selectedRole" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -57,25 +52,13 @@
               <option value="friend">Family Friend</option>
             </select>
           </div>
-          
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
-            <textarea 
-              v-model="message" 
-              placeholder="Introduce yourself to the family..."
-              rows="3"
+            <textarea v-model="message" rows="3" placeholder="Introduce yourself to the family..."
               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             ></textarea>
           </div>
-
-          <AppButton 
-            type="submit" 
-            label="Join Family" 
-            icon="🔗" 
-            variant="primary" 
-            :loading="isSubmitting"
-            class="w-full"
-          />
+          <AppButton type="submit" label="Join Family" icon="🔗" variant="primary" :loading="isSubmitting" class="w-full" />
         </form>
 
         <div class="mt-6 p-4 bg-blue-50 rounded-lg">
@@ -92,15 +75,14 @@
       <!-- Current Family Connections -->
       <div class="bg-white rounded-xl shadow p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Your Family Connections</h2>
-        
+
         <div v-if="familyConnections.length === 0" class="text-center py-8">
           <span class="text-4xl mb-4 block">👨‍👩‍👧‍👦</span>
           <p class="text-gray-500">No family connections yet. Enter an invitation code to get started!</p>
         </div>
 
         <div v-else class="space-y-4">
-          <div v-for="family in familyConnections" :key="family.id" 
-               class="p-4 bg-gray-50 rounded-lg">
+          <div v-for="family in familyConnections" :key="family.id" class="p-4 bg-gray-50 rounded-lg">
             <div class="flex items-center justify-between mb-3">
               <div>
                 <h3 class="font-semibold text-gray-800">{{ family.name }}</h3>
@@ -119,15 +101,13 @@
           </div>
         </div>
 
-        <!-- Pending Requests -->
+        <!-- Pending Requests (local list just for UI) -->
         <div v-if="pendingRequests.length > 0" class="mt-6">
           <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
-            <span class="text-xl mr-2">⏳</span>
-            Pending Requests
+            <span class="text-xl mr-2">⏳</span> Pending Requests
           </h3>
           <div class="space-y-3">
-            <div v-for="request in pendingRequests" :key="request.id" 
-                 class="p-3 bg-amber-50 rounded-lg">
+            <div v-for="request in pendingRequests" :key="request.id" class="p-3 bg-amber-50 rounded-lg">
               <div class="flex items-center justify-between">
                 <div>
                   <p class="font-semibold text-amber-800">{{ request.familyName }}</p>
@@ -145,8 +125,7 @@
     <div class="mt-8 bg-white rounded-xl shadow p-6">
       <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
       <div class="space-y-3">
-        <div v-for="activity in recentActivity" :key="activity.id" 
-             class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+        <div v-for="activity in recentActivity" :key="activity.id" class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
           <span class="text-lg">{{ activity.icon }}</span>
           <div class="flex-1">
             <p class="text-sm text-gray-800">{{ activity.message }}</p>
@@ -162,175 +141,97 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import { familyGroupsService } from '@/services/familyGroupsService'  // provided earlier
 
 export default {
   name: 'JoinFamilyView',
-  components: { 
-    AppButton, 
-    AppBadge 
-  },
+  components: { AppButton, AppBadge },
   setup() {
     const store = useStore()
+    const token = () => store.getters['auth/token']
+
+    // form
     const invitationCode = ref('')
     const selectedRole = ref('parent')
     const message = ref('')
     const isSubmitting = ref(false)
 
-    // Mock data - in real app, this would come from API
-    const familyConnections = ref([
-      {
-        id: 1,
-        name: 'Smith Family Group',
-        role: 'Parent',
-        memberCount: 5,
-        head: 'John Smith Sr.',
-        joinedAt: '2 weeks ago'
-      },
-      {
-        id: 2,
-        name: 'Johnson Extended Family',
-        role: 'Guardian',
-        memberCount: 8,
-        head: 'Mary Johnson',
-        joinedAt: '1 month ago'
+    // lists
+    const familyConnections = ref([])
+    const pendingRequests = ref([])
+    const recentActivity = ref([])
+
+    const loadConnections = async () => {
+      try {
+        const groups = await familyGroupsService.listGroups(token())
+        familyConnections.value = (groups || []).map(g => ({
+          id: g.family_id,
+          name: g.family_name,
+          role: 'Head',
+          memberCount: Array.isArray(g.members) ? g.members.length : (g.member_count || 1),
+          head: 'You',
+          joinedAt: g.created_at ? new Date(g.created_at).toLocaleDateString() : '-'
+        }))
+      } catch {
+        familyConnections.value = []
       }
-    ])
+    }
 
-    const pendingRequests = ref([
-      {
-        id: 1,
-        familyName: 'Wilson Family',
-        role: 'Relative',
-        requestedAt: '3 days ago'
-      },
-      {
-        id: 2,
-        familyName: 'Davis Family',
-        role: 'Family Friend',
-        requestedAt: '1 week ago'
-      }
-    ])
-
-    const recentActivity = ref([
-      {
-        id: 1,
-        icon: '✅',
-        message: 'Joined Smith Family Group as Parent',
-        time: '2 weeks ago',
-        status: 'success'
-      },
-      {
-        id: 2,
-        icon: '⏳',
-        message: 'Request sent to Wilson Family',
-        time: '3 days ago',
-        status: 'pending'
-      },
-      {
-        id: 3,
-        icon: '✅',
-        message: 'Joined Johnson Extended Family as Guardian',
-        time: '1 month ago',
-        status: 'success'
-      }
-    ])
-
-    const totalMembers = computed(() => {
-      return familyConnections.value.reduce((total, family) => total + family.memberCount, 0)
-    })
-
-    const activeConnections = computed(() => {
-      return familyConnections.value.length
-    })
+    const totalMembers = computed(() =>
+      familyConnections.value.reduce((n, f) => n + (f.memberCount || 0), 0)
+    )
+    const activeConnections = computed(() => familyConnections.value.length)
 
     const joinFamily = async () => {
       if (!invitationCode.value.trim()) return
-
       isSubmitting.value = true
-
       try {
-        // In real app, this would call the API
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // Simulate API call
-        const newRequest = {
-          id: Date.now(),
-          familyName: 'New Family',
-          role: selectedRole.value,
-          requestedAt: 'Just now'
-        }
-
-        pendingRequests.value.unshift(newRequest)
-
-        // Add to recent activity
+        await familyGroupsService.joinViaCode(
+          {
+            family_code: invitationCode.value.trim(),
+            role: selectedRole.value,
+            message: message.value?.trim() || null
+          },
+          token()
+        )
         recentActivity.value.unshift({
           id: Date.now(),
           icon: '⏳',
-          message: `Request sent to join family using code: ${invitationCode.value}`,
+          message: `Request sent with code ${invitationCode.value.trim()}`,
           time: 'Just now',
           status: 'pending'
         })
-
         store.dispatch('ui/showToast', {
-          title: 'Request Sent!',
-          message: 'Your family join request has been sent. You\'ll be notified when it\'s approved.',
-          type: 'success',
+          title: 'Request sent',
+          message: 'The family head will review your request.',
+          type: 'success'
         })
-
-        // Reset form
         invitationCode.value = ''
         selectedRole.value = 'parent'
         message.value = ''
-
-      } catch (error) {
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: 'Failed to send family join request. Please try again.',
-          type: 'error',
-        })
+      } catch (e) {
+        const msg = e?.response?.data?.detail || 'Failed to send request'
+        store.dispatch('ui/showToast', { title: 'Error', message: msg, type: 'error' })
       } finally {
         isSubmitting.value = false
       }
     }
 
     const leaveFamily = (familyId) => {
-      const family = familyConnections.value.find(f => f.id === familyId)
-      if (!family) return
-
-      familyConnections.value = familyConnections.value.filter(f => f.id !== familyId)
-
-      // Add to recent activity
-      recentActivity.value.unshift({
-        id: Date.now(),
-        icon: '👋',
-        message: `Left ${family.name}`,
-        time: 'Just now',
-        status: 'success'
-      })
-
-      store.dispatch('ui/showToast', {
-        title: 'Family Left',
-        message: `You have left ${family.name}.`,
-        type: 'success',
-      })
+      store.dispatch('ui/showToast', { title: 'Not implemented', message: 'Leaving a family isn’t wired yet.', type: 'warning' })
     }
 
+    onMounted(loadConnections)
+
     return {
-      invitationCode,
-      selectedRole,
-      message,
-      isSubmitting,
-      familyConnections,
-      pendingRequests,
-      recentActivity,
-      totalMembers,
-      activeConnections,
-      joinFamily,
-      leaveFamily
+      invitationCode, selectedRole, message, isSubmitting,
+      familyConnections, pendingRequests, recentActivity,
+      totalMembers, activeConnections,
+      joinFamily, leaveFamily
     }
   }
 }

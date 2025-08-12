@@ -247,6 +247,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { parentService } from '@/services/parentService.js'
 import { invitationService } from '@/services/invitationService.js'
+import { familyCodesService } from '@/services/familyCodesService'
 
 export default {
   name: 'ParentDashboard',
@@ -336,21 +337,21 @@ export default {
       try {
         const token = store.getters['auth/token']
         if (!token) return
-        
-        const codes = await invitationService.getMyInvitationCodes(token, 'family')
-        activeInvitations.value = codes.map(code => ({
+        const codes = await familyCodesService.list(token)
+        activeInvitations.value = (codes || []).map(code => ({
           code_id: code.code_id,
           code: code.code,
           type: code.target_type,
           expiresAt: code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never',
           uses: code.usage_count || 0,
-          maxUses: code.max_uses || 'Unlimited',
+          maxUses: code.max_uses ?? 'Unlimited',
           target_id: code.target_id
         }))
       } catch (err) {
         console.error('Error loading invitation codes:', err)
       }
     }
+
 
     // Load pending requests
     const loadPendingRequests = async () => {
@@ -379,55 +380,29 @@ export default {
         })
         return
       }
-
       try {
         invitationLoading.value = true
         const token = store.getters['auth/token']
-        
-        if (!token) {
-          throw new Error('Authentication token not found')
-        }
-
-        // Calculate expiration date
-        const expiresAt = new Date()
-        expiresAt.setHours(expiresAt.getHours() + parseInt(newInvitation.value.expiresIn))
-
-        // Use the first family group as target_id for family invitations
         const targetId = familyGroups.value[0]?.group_id || familyGroups.value[0]?.id
-
-        const invitationData = {
-          target_type: 'family',
+        const payload = {
           target_id: targetId,
-          expires_at: expiresAt.toISOString(),
-          max_uses: parseInt(newInvitation.value.maxUses)
+          max_uses: parseInt(newInvitation.value.maxUses),
+          expires_in_hours: parseInt(newInvitation.value.expiresIn)
         }
-
-        const response = await invitationService.generateInvitationCode(invitationData, token)
-        generatedCode.value = response.code
-        
-        // Refresh invitation codes list
+        const res = await familyCodesService.create(payload, token)
+        generatedCode.value = res.code
         await loadInvitationCodes()
-        
         isInvitationModalOpen.value = false
         isGeneratedCodeModalOpen.value = true
-
-        store.dispatch('ui/showToast', {
-          title: 'Success',
-          message: 'Family invitation code generated successfully!',
-          type: 'success',
-        })
-
+        store.dispatch('ui/showToast', { title: 'Success', message: 'Invitation code generated.', type: 'success' })
       } catch (err) {
-        console.error('Error generating invitation code:', err)
-        store.dispatch('ui/showToast', {
-          title: 'Error',
-          message: err.message || 'Failed to generate invitation code',
-          type: 'error',
-        })
+        console.error('Error generating code:', err)
+        store.dispatch('ui/showToast', { title: 'Error', message: 'Failed to generate code', type: 'error' })
       } finally {
         invitationLoading.value = false
       }
     }
+
 
     const copyToClipboard = () => {
       navigator.clipboard.writeText(generatedCode.value)
