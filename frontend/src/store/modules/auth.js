@@ -5,14 +5,14 @@ export default {
     state: {
         user: null,
         token: localStorage.getItem('token'),
-        isAuthenticated: false,
+        isAuthenticated: !!localStorage.getItem('token'),
         role: localStorage.getItem('userRole') || null,
         hasProfile: false,
         profileCompleted: false
     },
 
     getters: {
-        isAuthenticated: state => state.isAuthenticated,
+        isAuthenticated: state => !!state.token,
         token: state => state.token,
         userRole: state => state.role,
         currentUser: state => state.user,
@@ -28,6 +28,7 @@ export default {
 
         SET_TOKEN(state, token) {
             state.token = token
+            state.isAuthenticated = !!token
             if (token) {
                 localStorage.setItem('token', token)
             } else {

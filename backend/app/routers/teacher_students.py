@@ -262,11 +262,28 @@ def students_metrics(authorization: str = Header(...)):
         # distinct
         total_students = len({r["student_id"] for r in rows})
 
-    # by grade (quick aggregate over all students table; could be refined to only students in teacher's classes)
+    # by grade (aggregate only students in the teacher's classrooms; distinct by student_id)
     by: Dict[str, int] = {}
-    for r in supabase.table("students").select("grade_level").execute().data or []:
-        g = r.get("grade_level") or "N/A"
-        by[g] = by.get(g, 0) + 1
+    if classroom_ids:
+        cs_rows = (
+            supabase.table("classroom_students")
+            .select("student_id, students:student_id (grade_level)")
+            .in_("classroom_id", classroom_ids)
+            .execute()
+            .data or []
+        )
+        # build distinct map: student_id -> grade_level
+        distinct: Dict[str, Any] = {}
+        for r in cs_rows:
+            sid = r.get("student_id")
+            if not sid or sid in distinct:
+                continue
+            s = r.get("students") or {}
+            distinct[sid] = s.get("grade_level")
+
+        for g in distinct.values():
+            key = g or "N/A"
+            by[key] = by.get(key, 0) + 1
 
     return {
         "total_classrooms": total_classrooms,
@@ -315,6 +332,22 @@ def list_requests(status: str = Query("pending"), authorization: str = Header(..
         )
         user_map = {u["user_id"]: u for u in users}
 
+        # Fetch students by email to enrich with grade_level (no schema changes)
+        student_emails = [u.get("email") for u in users if u.get("user_type") == "student" and u.get("email")]
+        students_map = {}
+        if student_emails:
+            try:
+                s_rows = (
+                    supabase.table("students")
+                    .select("email, grade_level")
+                    .in_("email", student_emails)
+                    .execute()
+                    .data or []
+                )
+                students_map = {s.get("email"): s for s in s_rows}
+            except APIError:
+                students_map = {}
+
         classrooms = (
             supabase.table("classrooms")
             .select("classroom_id, classroom_name")
@@ -328,6 +361,12 @@ def list_requests(status: str = Query("pending"), authorization: str = Header(..
         for r in reqs:
             u = user_map.get(r["requester_id"], {})
             c = cls_map.get(r["target_id"], {})
+            # Only include grade_level for student requesters
+            grade_level = None
+            if r.get("relationship_type") == "student":
+                email = u.get("email")
+                if email and email in students_map:
+                    grade_level = students_map[email].get("grade_level")
             out.append({
                 "request_id": r["request_id"],
                 "requested_at": r.get("requested_at") or r.get("created_at"),
@@ -341,6 +380,7 @@ def list_requests(status: str = Query("pending"), authorization: str = Header(..
                     "full_name": u.get("full_name"),
                     "email": u.get("email"),
                     "user_type": u.get("user_type"),
+                    "grade_level": grade_level,
                 },
             })
         return out

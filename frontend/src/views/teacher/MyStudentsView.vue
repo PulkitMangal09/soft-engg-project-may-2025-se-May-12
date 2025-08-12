@@ -114,10 +114,10 @@
                 >
                   <div>
                     <div class="font-medium text-gray-800">
-                      {{ r.name || r.student_name || r.requester_name || 'Student' }}
+                      {{ r.display_name || 'Student' }}
                     </div>
                     <div class="text-xs text-gray-500">
-                      <span v-if="r.email">{{ r.email }}</span>
+                      <span v-if="r.display_email">{{ r.display_email }}</span>
                       <span v-if="r.classroom_name"> • {{ r.classroom_name }}</span>
                       <span v-if="r.grade_level"> • Grade: {{ r.grade_level }}</span>
                     </div>
@@ -145,10 +145,10 @@
                 >
                   <div>
                     <div class="font-medium text-gray-800">
-                      {{ r.name || r.parent_name || r.requester_name || 'Parent' }}
+                      {{ r.display_name || 'Parent' }}
                     </div>
                     <div class="text-xs text-gray-500">
-                      <span v-if="r.email">{{ r.email }}</span>
+                      <span v-if="r.display_email">{{ r.display_email }}</span>
                       <span v-if="r.child_name"> • Child: {{ r.child_name }}</span>
                     </div>
                   </div>
@@ -337,15 +337,30 @@ const loadingRequests = ref(false)
 const pendingRequests = ref([])
 const respondingAll = ref(false)
 
-const studentsAccepted = computed(() => acceptedRequests.value.filter(r => (r.requester_type || r.type) === 'student'))
-const parentsAccepted  = computed(() => acceptedRequests.value.filter(r => (r.requester_type || r.type) === 'parent'))
+// Normalize helper to unify API responses
+const normalizeRequest = (r) => {
+  try {
+    const requester = r?.requester || {}
+    const requester_type = r?.relationship_type || requester?.user_type || r?.requester_type || r?.type || ''
+    const display_name = requester?.full_name || r?.display_name || r?.name || r?.student_name || r?.parent_name || r?.requester_name || ''
+    const display_email = requester?.email || r?.display_email || r?.email || ''
+    const roleLabel = requester_type === 'student' ? 'Student' : requester_type === 'parent' ? 'Parent' : (requester_type || 'User')
+    return { ...r, requester_type, display_name, display_email, roleLabel }
+  } catch {
+    return r
+  }
+}
+
+const studentsAccepted = computed(() => acceptedRequests.value.filter(r => r.requester_type === 'student'))
+const parentsAccepted  = computed(() => acceptedRequests.value.filter(r => r.requester_type === 'parent'))
 
 const loadAccepted = async () => {
   loadingAccepted.value = true
   try {
-    acceptedRequests.value = token.value
+    const raw = token.value
       ? await requestsService.listRequests(token.value, 'accepted')
       : []
+    acceptedRequests.value = Array.isArray(raw) ? raw.map(normalizeRequest) : []
   } catch (e) {
     console.error('Error loading accepted connections:', e)
     acceptedRequests.value = []
@@ -357,9 +372,10 @@ const loadAccepted = async () => {
 const loadRequests = async () => {
   loadingRequests.value = true
   try {
-    pendingRequests.value = token.value
+    const raw = token.value
       ? await requestsService.listRequests(token.value, 'pending')
       : []
+    pendingRequests.value = Array.isArray(raw) ? raw.map(normalizeRequest) : []
   } catch (e) {
     console.error('Error loading pending requests:', e)
     pendingRequests.value = []
