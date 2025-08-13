@@ -1,15 +1,38 @@
 <template>
     <div class="min-h-screen bg-gray-50 flex flex-col items-center py-6 px-2 md:px-0">
-        <div class="w-full max-w-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <button @click="$router.go(-1)"
-                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">←</button>
-                <h2 class="text-lg font-bold">Today's Meals</h2>
-                <button @click="showLogFood = true"
-                    class="px-3 py-1 text-sm rounded-lg bg-emerald-500 text-white hover:bg-emerald-600">Add</button>
-            </div>
-            <FoodLog :meals="meals" />
-        </div>
+            <button
+      @click="$router.go(-1)"
+      class="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white text-rose-600 shadow-md hover:bg-rose-100 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all"
+      aria-label="Go Back"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+<div class="w-full max-w-2xl space-y-5">
+  <!-- Header -->
+  <div class="flex items-center justify-between bg-white rounded-2xl shadow p-3">
+    <!-- Back Button -->
+
+
+    <!-- Title -->
+    <h2 class="text-xl font-extrabold text-gray-800 flex items-center gap-2">
+      🍎 Today's Meals
+    </h2>
+
+    <!-- Add Button -->
+    <button
+      @click="showLogFood = true"
+      class="flex items-center gap-1 px-5 py-2 text-sm rounded-full bg-emerald-500 text-white font-semibold shadow hover:bg-emerald-600 transition-transform hover:scale-105"
+    >
+      ➕ Add Meal
+    </button>
+  </div>
+
+  <!-- Food Log List -->
+  <FoodLog :meals="meals" />
+</div>
+
         <div class="text-xs text-gray-400 mt-4">Daily Food Log</div>
 
         <!-- Log Food Modal -->

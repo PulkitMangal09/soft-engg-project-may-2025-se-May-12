@@ -1,85 +1,90 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-100 relative">
     <StudentNavBar />
-    <div class="flex flex-col min-h-screen">
-      <!-- Header -->
-      <div class="px-2 py-2 md:px-4 md:py-3 border-b border-gray-200 flex items-center justify-between bg-white">
-        <button @click="$router.go(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-          ←
-        </button>
-        <h1 class="text-base md:text-lg font-semibold">Health monitoring and diet tracking</h1>
-        <button @click="showProfile = true"
-          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+
+    <button @click="$router.go(-1)" class="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 shadow-md hover:bg-gray-200 hover:scale-105 transition-all" aria-label="Go Back">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    
+    <header class="max-w-6xl mx-auto px-4 pt-6">
+      <div class="bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-center gap-4 md:gap-6">
+        <div class="flex items-center gap-4">
+          <div class="w-20 h-20 rounded-full bg-white/25 flex items-center justify-center text-4xl shadow-md">
+            🩺
+          </div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-extrabold leading-tight">Your Health Dashboard</h1>
+            <p class="mt-1 text-sm md:text-base opacity-95">Track your vitals, diet, and overall well-being.</p>
+          </div>
+        </div>
+        <div class="ml-auto flex gap-3">
+          <button @click="showProfile = true" class="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center">
+            ☰
+          </button>
+        </div>
       </div>
-      <!-- Main Content -->
-      <div class="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 md:space-y-6 max-w-5xl mx-auto w-full">
-        <!-- Nutrition Alert (dynamic from latest suggestions) -->
-        <div v-if="nutritionAlert"
-          class="bg-orange-50 border border-orange-200 border-l-4 border-l-orange-500 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
-          <div class="font-semibold text-orange-700 mb-1 flex items-center gap-1 text-sm md:text-base">⚠️ Nutrition Alert</div>
-          <div class="text-xs md:text-sm text-orange-900">{{ nutritionAlert }}</div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 space-y-6 max-w-6xl mx-auto">
+      
+      <div v-if="nutritionAlert" class="bg-orange-100 border border-orange-200 border-l-4 border-l-orange-500 rounded-xl p-4 shadow-sm">
+        <div class="font-semibold text-orange-700 mb-1 flex items-center gap-2 text-base">
+          <span class="text-xl">⚠️</span> Nutrition Alert
         </div>
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-4">
-          <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
-            <div class="text-lg md:text-xl font-bold text-emerald-500">{{ totalCaloriesDisplay }}</div>
-            <div class="text-xs text-gray-500">Calories Today</div>
-            <!-- <div class="w-full h-2 bg-gray-200 rounded mt-2">
-              <div class="h-2 bg-emerald-500 rounded" style="width: 75%"></div>
-            </div> -->
-          </div>
-          <div class="bg-white rounded-xl p-4 md:p-6 flex flex-col items-center shadow">
-            <div class="text-lg md:text-xl font-bold text-emerald-500">{{ waterCount }}/8</div>
-            <div class="text-xs text-gray-500">Water Glasses</div>
-            <div class="w-full h-2 bg-gray-200 rounded mt-2">
-              <div class="h-2 bg-emerald-500 rounded" :style="`width: ${(waterCount / 8) * 100}%`"></div>
-            </div>
-          </div>
+        <div class="text-sm text-orange-900">{{ nutritionAlert }}</div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-5 flex flex-col items-center shadow-md">
+          <div class="text-2xl font-bold text-emerald-500">{{ totalCaloriesDisplay }}</div>
+          <div class="text-xs text-gray-500">Calories Today</div>
         </div>
-        <!-- Water Tracker -->
-        <div id="water-section">
-          <WaterTracker :model-value="waterCount" @add="onWaterQuickAdd" />
-        </div>
-        <!-- Health Status Card -->
-        <div v-if="health" class="bg-green-50 border-l-4 border-green-400 rounded-xl p-3 md:p-4 mb-2 md:mb-4">
-          <div class="font-semibold text-green-700 mb-1 text-sm md:text-base">Health Status: {{ bmiCategory }}</div>
-          <div class="text-xs md:text-sm text-gray-700">
-            BMI: {{ (health.bmi ?? 0).toFixed(1) }} ({{ bmiCategory }}) • Weight: {{ health.weight }}kg • Height: {{ health.height }}cm
-            <br />
-            Last updated: {{ lastUpdatedText }}
+        <div class="bg-white rounded-xl p-5 flex flex-col items-center shadow-md">
+          <div class="text-2xl font-bold text-emerald-500">{{ waterCount }}/8</div>
+          <div class="text-xs text-gray-500">Water Glasses</div>
+          <div class="w-full h-2 bg-gray-200 rounded-full mt-2">
+            <div class="h-2 bg-emerald-500 rounded-full transition-all duration-300" :style="`width: ${(waterCount / 8) * 100}%`"></div>
           </div>
         </div>
         
-        <!-- Quick Actions -->
-        <div class="bg-gray-50 rounded-xl p-4 md:p-6 mb-2 md:mb-4">
-          <div class="font-semibold text-gray-800 mb-3 text-base md:text-lg">Quick Actions</div>
-          <div class="grid grid-cols-3 gap-2 md:gap-3">
-            <DietQuickActionCard icon="🍎" title="Log Food" @click="goToFoodLog" />
-            <DietQuickActionCard icon="💧" title="Add Water" @click="goToWater" />
-            <DietQuickActionCard icon="⚖️" title="Log Weight" @click="goToHealthMetrics" />
+        <div v-if="health" class="bg-white rounded-xl p-5 flex flex-col items-center shadow-md lg:col-span-2">
+          <div class="text-lg font-bold text-gray-800">Health Status: {{ bmiCategory }}</div>
+          <div class="text-sm text-gray-500 mt-1">
+            BMI: <span class="font-semibold text-emerald-600">{{ (health.bmi ?? 0).toFixed(1) }}</span> •
+            Weight: <span class="font-semibold">{{ health.weight }}kg</span> •
+            Height: <span class="font-semibold">{{ health.height }}cm</span>
           </div>
-        </div>
-        <!-- Navigation Grid -->
-        <div class="overflow-x-auto">
-          <DietNavigationGrid />
+          <div class="text-xs text-gray-400 mt-2">Last updated: {{ lastUpdatedText }}</div>
         </div>
       </div>
-      <!-- Log Food Modal -->
-      <AppModal :show="showLogFood" title="Log Food" size="md" @close="showLogFood = false">
-        <LogFoodForm :model-value="foodForm" @submit="submitFood; showLogFood = false" />
-      </AppModal>
-      <!-- Log Weight Modal -->
-      <AppModal :show="showLogWeight" title="Log Weight" size="sm" @close="showLogWeight = false">
-        <LogWeightForm @submit="submitWeight; showLogWeight = false" />
-      </AppModal>
-      <!-- Profile Sidebar -->
-      <ProfileSidebar v-if="showProfile" @close="showProfile = false" />
-    </div>
+      
+      <section class="bg-white rounded-2xl p-6 shadow-md">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <DietQuickActionCard icon="🍎" title="Log Food" subtitle="Add your meals" @click="goToFoodLog" />
+          <DietQuickActionCard icon="💧" title="Track Water" subtitle="Add a glass" @click="goToWater" />
+          <DietQuickActionCard icon="⚖️" title="Log Metrics" subtitle="Weight & Vitals" @click="goToHealthMetrics" />
+          <DietQuickActionCard icon="💡" title="AI Suggestions" subtitle="Get diet tips" @click="$router.push('/student/nutrition-suggestions')" />
+        </div>
+      </section>
+
+      <section id="water-section">
+        <WaterTracker :model-value="waterCount" @add="onWaterQuickAdd" />
+      </section>
+
+      <DietNavigationGrid />
+      
+    </main>
+
+    <AppModal :show="showLogFood" title="Log Food" size="md" @close="showLogFood = false">
+      <LogFoodForm :model-value="foodForm" @submit="submitFood; showLogFood = false" />
+    </AppModal>
+    <AppModal :show="showLogWeight" title="Log Weight" size="sm" @close="showLogWeight = false">
+      <LogWeightForm @submit="submitWeight; showLogWeight = false" />
+    </AppModal>
+    <ProfileSidebar v-if="showProfile" @close="showProfile = false" />
   </div>
 </template>
 
@@ -175,7 +180,6 @@ async function loadCalories() {
     }
     totalCalories.value = sum
   } catch (e) {
-    // fail silently in UI; keep previous value
     console.error('Failed to load meals for calories', e)
   }
 }
@@ -185,7 +189,6 @@ async function loadHealth() {
     const res = await getLatestMetrics()
     health.value = res
   } catch (e) {
-    // Hide card if no metrics yet or error
     health.value = null
   }
 }
@@ -230,11 +233,9 @@ const foodForm = ref({
 })
 
 function submitFood(form) {
-  // For now, just reset form
   foodForm.value = { mealType: 'Breakfast', foodName: '', quantity: 1, unit: 'Cup', time: '12:30', notes: '' }
 }
 function submitWeight(weight) {
-  // For now, just log weight
   console.log('Weight submitted:', weight)
 }
 function goToWater() {
