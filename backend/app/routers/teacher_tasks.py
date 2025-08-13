@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 from ..config import supabase
 from ..models import TaskBase, TaskUpdate  # TaskBase has task_id, assigned_*; TaskUpdate = partial
@@ -35,8 +35,9 @@ class TeacherTaskCreate(BaseModel):
     reward_points: Optional[int] = 0
     attachment_url: Optional[str] = None
 
-    # target student
-    assigned_to: UUID = Field(..., description="Student user_id to assign the task to")
+    # target student (provide exactly one)
+    assigned_to: Optional[UUID] = Field(None, description="Student user_id to assign the task to")
+    assigned_to_email: Optional[EmailStr] = Field(None, description="Student email to assign the task to")
 
 
 @router.get("/summary")
@@ -68,16 +69,24 @@ def get_tasks_summary(token: str = Depends(oauth2)):
             overdue.append(t)
 
     # Completion rate via task_completions
-    task_ids = [t.get("task_id") for t in tasks if t.get("task_id")]
+    # Normalize to strings for stable comparison in PostgREST filters
+    task_ids = [str(t.get("task_id")) for t in tasks if t.get("task_id")]
     completed_count = 0
     if task_ids:
-        completions_resp = supabase.table("task_completions") \
-            .select("task_id") \
-            .in_("task_id", task_ids) \
+        completions_resp = (
+            supabase.table("task_completions")
+            .select("task_id")
+            .in_("task_id", task_ids)
             .execute()
-        completions = completions_resp.data or []
-        completed_task_ids = {c["task_id"] for c in completions}
-        completed_count = len(completed_task_ids)
+        )
+        completions = getattr(completions_resp, "data", None) or []
+        # Coerce to str and drop nulls to avoid falsy mismatches
+        completed_task_ids = {str(c.get("task_id")) for c in completions if c.get("task_id")}
+
+    # Also include tasks directly marked as completed in tasks table
+    status_completed_ids = {str(t.get("task_id")) for t in tasks if str(t.get("status")) == "completed" and t.get("task_id")}
+    completed_union = completed_task_ids.union(status_completed_ids) if task_ids else status_completed_ids
+    completed_count = len(completed_union)
 
     completion_rate = round((completed_count / total * 100), 0) if total else 0
 
@@ -113,7 +122,7 @@ def recent_tasks(token: str = Depends(oauth2)):
 
     task_resp = (
         supabase.table("tasks")
-        .select("task_id, title, due_date")
+        .select("task_id, title, due_date, status")
         .eq("assigned_by", teacher_id)
         .order("due_date", desc=True)
         .limit(10)
@@ -138,9 +147,12 @@ def recent_tasks(token: str = Depends(oauth2)):
         tid = t["task_id"]
         completed = completion_map.get(tid, 0)
         total = 1
+        is_completed = bool(completed >= total) or (str(t.get("status")) == "completed")
         result.append({
             "title": t["title"],
             "due": t["due_date"],
+            "status": t.get("status"),
+            "is_completed": is_completed,
             "completed": f"{completed}/{total}",
         })
     return result
@@ -170,6 +182,30 @@ def overdue_tasks(token: str = Depends(oauth2)):
 def create_task(task: TeacherTaskCreate, token: str = Depends(oauth2)):
     teacher_id = get_user_id(token)
     payload = task.dict()
+
+    # Validate assignment target: exactly one of assigned_to or assigned_to_email
+    provided = int(bool(payload.get("assigned_to"))) + int(bool(payload.get("assigned_to_email")))
+    if provided != 1:
+        raise HTTPException(status_code=400, detail="Provide exactly one of assigned_to (UUID) or assigned_to_email (email)")
+
+    # Resolve email to UUID if email path provided
+    if payload.get("assigned_to_email"):
+        email = payload["assigned_to_email"]
+        user_rows = (
+            supabase.table("users")
+            .select("user_id, email, user_type")
+            .eq("email", email)
+            .eq("user_type", "student")
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        if not user_rows:
+            raise HTTPException(status_code=400, detail="No student found with the provided email")
+        payload["assigned_to"] = user_rows[0]["user_id"]
+        # Remove helper field before insert
+        payload.pop("assigned_to_email", None)
 
     # Ensure proper types & values
     if payload.get("due_date"):

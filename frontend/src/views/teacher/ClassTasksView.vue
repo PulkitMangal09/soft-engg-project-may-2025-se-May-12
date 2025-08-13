@@ -6,12 +6,10 @@
         <h1 class="text-3xl font-bold text-gray-900">Class Tasks</h1>
         <p class="text-lg text-gray-600 mt-1">Manage and track all class assignments.</p>
       </div>
-      <button
-        @click="showNewTask = true"
-        class="mt-4 md:mt-0 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
-      >
+      <!-- <button @click="showNewTask = true"
+        class="mt-4 md:mt-0 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
         📝 New Task
-      </button>
+      </button> -->
     </div>
 
     <!-- Key Metrics -->
@@ -54,15 +52,12 @@
                   </p>
                 </div>
                 <span class="text-xs px-2 py-1 rounded-full" :class="badgeClass(t.completed)">
-                  {{ t.completed }}
+                  {{ isItemComplete(t) ? 'Completed' : t.completed }}
                 </span>
               </div>
               <div class="mt-3 h-2 bg-gray-200 rounded-full">
-                <div
-                  class="h-2 rounded-full"
-                  :class="barClass(t.completed)"
-                  :style="{ width: progressPercent(t.completed) + '%' }"
-                ></div>
+                <div class="h-2 rounded-full" :class="barClass(t.completed)"
+                  :style="{ width: (isItemComplete(t) ? 100 : progressPercent(t.completed)) + '%' }"></div>
               </div>
             </li>
           </ul>
@@ -86,107 +81,47 @@
           <div v-else class="text-sm text-gray-500">No overdue tasks 🎉</div>
 
           <div class="mt-4 flex justify-end">
-            <button class="px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+            <!-- <button class="px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
               Send Reminders
-            </button>
+            </button> -->
           </div>
         </div>
 
         <div class="bg-white rounded-xl shadow p-6">
           <h3 class="font-semibold text-lg mb-3">Actions</h3>
           <div class="grid grid-cols-1 gap-3">
-            <button @click="showNewTask = true" class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
+            <button @click="showNewTask = true"
+              class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
               📝 New Task
             </button>
-            <button class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
-              📊 Analytics
+            <button @click="goToReports" class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
+              📊 Reports
             </button>
-            <button class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
+            <!-- <button class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800">
               📋 Templates
-            </button>
+            </button> -->
           </div>
         </div>
       </div>
     </div>
 
-    <!-- New Task Modal -->
-    <div v-if="showNewTask" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div class="bg-white w-full max-w-xl rounded-2xl shadow-xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-lg">Create Task</h3>
-          <button @click="showNewTask = false" class="text-gray-500 hover:text-gray-700">✖</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="md:col-span-2">
-            <label class="block text-sm text-gray-600 mb-1">Title</label>
-            <input v-model="form.title" type="text" class="w-full border rounded-lg px-3 py-2" />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-gray-600 mb-1">Description</label>
-            <textarea v-model="form.description" rows="2" class="w-full border rounded-lg px-3 py-2"></textarea>
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Category</label>
-            <select v-model="form.category" class="w-full border rounded-lg px-3 py-2">
-              <option disabled value="">Select…</option>
-              <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Priority</label>
-            <select v-model="form.priority" class="w-full border rounded-lg px-3 py-2">
-              <option disabled value="">Select…</option>
-              <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Due Date</label>
-            <input v-model="form.due_date" type="date" class="w-full border rounded-lg px-3 py-2" />
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Due Time</label>
-            <input v-model="form.due_time" type="time" class="w-full border rounded-lg px-3 py-2" />
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Reward Points</label>
-            <input v-model.number="form.reward_points" type="number" min="0" class="w-full border rounded-lg px-3 py-2" />
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Attachment URL</label>
-            <input v-model="form.attachment_url" type="url" class="w-full border rounded-lg px-3 py-2" />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-gray-600 mb-1">Assign to (student UUID)</label>
-            <input v-model="form.assigned_to" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="e.g. 8f03e667-b91e-46b2-a897-6c2b18af8839" />
-          </div>
-        </div>
-
-        <div class="mt-6 flex justify-end gap-3">
-          <button @click="showNewTask = false" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
-          <button @click="createTask" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Create</button>
-        </div>
-      </div>
-    </div>
+    <!-- New Task Modal (reusable) -->
+    <NewTaskModal :is-open="showNewTask" @close="showNewTask = false" @created="onTaskCreated" />
   </div>
 </template>
 
 <script setup>
 import axios from 'axios'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
+import NewTaskModal from '@/components/teacher/NewTaskModal.vue'
 
 const store = useStore()
+const router = useRouter()
+const route = useRoute()
 
 // ---- Token helpers: normalize and always include on requests ----
 function getAuthHeader() {
@@ -214,6 +149,10 @@ API.interceptors.request.use(cfg => {
   return cfg
 })
 
+function goToReports() {
+  router.push('/teacher/reports')
+}
+
 // ---------------- UI state ----------------
 const summary = ref({ activeTasks: 0, overdue: 0, completionRate: '0%', totalThisMonth: 0 })
 const recent = ref([])
@@ -230,11 +169,11 @@ const form = ref({
   status: 'pending',
   reward_points: 0,
   attachment_url: '',
-  assigned_to: ''
+  assigned_to_email: ''
 })
 
-const categories = ['homework','project','study','personal','chore','health','financial']
-const priorities = ['low','medium','high']
+const categories = ['homework', 'project', 'study', 'personal', 'chore', 'health', 'financial']
+const priorities = ['low', 'medium', 'high']
 
 function formatDate(isoLike) {
   if (!isoLike) return '—'
@@ -260,6 +199,20 @@ function barClass(completedStr) {
 function progressPercent(completedStr) {
   const [c, t] = completedStr.split('/').map(Number)
   return t ? Math.min(100, Math.round((c / t) * 100)) : 0
+}
+
+function isComplete(completedStr) {
+  return progressPercent(completedStr) === 100
+}
+
+function isItemComplete(item) {
+  if (item && typeof item.is_completed === 'boolean') return item.is_completed
+  return isComplete(item?.completed || '0/1')
+}
+
+// When a task is created from modal, refresh lists
+function onTaskCreated() {
+  fetchSummary(); fetchRecent(); fetchOverdue()
 }
 
 // ---------------- API calls ----------------
@@ -289,8 +242,8 @@ async function fetchOverdue() {
 }
 
 async function createTask() {
-  if (!form.value.title || !form.value.category || !form.value.priority || !form.value.assigned_to) {
-    toast.error('Title, category, priority, and assigned_to are required')
+  if (!form.value.title || !form.value.category || !form.value.priority || !form.value.assigned_to_email) {
+    toast.error('Title, category, priority, and assigned_to_email are required')
     return
   }
   const payload = { ...form.value }
@@ -302,6 +255,8 @@ async function createTask() {
   if (!payload.due_time) delete payload.due_time
   if (!payload.attachment_url) delete payload.attachment_url
   if (!payload.description) delete payload.description
+  // Ensure we do not accidentally send legacy field
+  delete payload.assigned_to
 
   try {
     await API.post('/teacher/tasks/', payload)
@@ -310,7 +265,7 @@ async function createTask() {
     Object.assign(form.value, {
       title: '', description: '', category: '', priority: '',
       due_date: '', due_time: '', status: 'pending',
-      reward_points: 0, attachment_url: '', assigned_to: ''
+      reward_points: 0, attachment_url: '', assigned_to_email: ''
     })
     fetchSummary(); fetchRecent(); fetchOverdue()
   } catch (err) {
@@ -318,6 +273,7 @@ async function createTask() {
   }
 }
 
+let _intervalId
 onMounted(() => {
   // If store wasn’t hydrated yet, localStorage fallback in getAuthHeader() covers us
   const authHeader = getAuthHeader()
@@ -326,8 +282,23 @@ onMounted(() => {
     // Optionally redirect: window.location.href = '/login/teacher'
     return
   }
+  // Open New Task modal if navigated with query flag
+  if (route?.query?.newTask) {
+    showNewTask.value = true
+  }
   fetchSummary()
   fetchRecent()
   fetchOverdue()
+
+  // Lightweight auto-refresh to reflect new completions
+  _intervalId = setInterval(() => {
+    fetchSummary()
+    fetchRecent()
+    fetchOverdue()
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (_intervalId) clearInterval(_intervalId)
 })
 </script>

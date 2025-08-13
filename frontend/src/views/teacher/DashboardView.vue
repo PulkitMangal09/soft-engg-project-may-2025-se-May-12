@@ -4,11 +4,11 @@
     <div class="mb-8 flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold text-gray-900">Teacher's Dashboard</h1>
-        <p class="text-gray-600 mt-1">Welcome back, Mrs. Johnson!</p>
+        <p class="text-gray-600 mt-1">Welcome back, {{ teacherName }}!</p>
       </div>
       <div class="flex gap-3">
         <AppButton label="Generate Invitation Code" icon="🔗" variant="secondary" @click="openInvite()" />
-        <AppButton label="Assign New Task" icon="➕" variant="primary" />
+        <AppButton label="Assign New Task" icon="➕" variant="primary" @click="showNewTask = true" />
       </div>
     </div>
 
@@ -22,16 +22,16 @@
         </div>
       </AppCard>
 
-      <AppCard icon="🔔" title="Health Alerts" variant="error">
+      <AppCard icon="🔔" title="Health Conditions" variant="error">
         <div class="text-right">
-          <p class="text-3xl font-bold text-red-500">0</p>
+          <p class="text-3xl font-bold text-red-500">{{ healthConditionsCount }}</p>
           <p class="text-sm text-gray-500">Active</p>
         </div>
       </AppCard>
 
       <AppCard icon="📝" title="Overdue Tasks" variant="warning">
         <div class="text-right">
-          <p class="text-3xl font-bold text-amber-500">0</p>
+          <p class="text-3xl font-bold text-amber-500">{{ overdueCount }}</p>
           <p class="text-sm text-gray-500">Need Attention</p>
         </div>
         <template #footer>
@@ -43,12 +43,12 @@
         </template>
       </AppCard>
 
-      <AppCard icon="📊" title="Class Average" variant="success">
+      <!-- <AppCard icon="📊" title="Class Average" variant="success">
         <div class="text-right">
           <p class="text-3xl font-bold text-emerald-500">N/A</p>
           <p class="text-sm text-gray-500">Performance</p>
         </div>
-      </AppCard>
+      </AppCard> -->
     </div>
 
     <!-- My Students (summary) -->
@@ -129,20 +129,34 @@
     <!-- Invite Modal -->
     <TeacherInviteModal :is-open="inviteOpen" :classrooms="classrooms" :default-type="inviteDefaults.type"
       :preselected-classroom-id="inviteDefaults.classroomId" @close="inviteOpen = false" />
+
+    <!-- New Task Modal (reusable) -->
+    <NewTaskModal :is-open="showNewTask" @close="showNewTask = false" @created="onTaskCreated" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import TeacherInviteModal from '@/components/invitations/TeacherInviteModal.vue'
 import { teacherService } from '@/services/teacherService'
 import { requestsService } from '@/services/requestsService'
+import NewTaskModal from '@/components/teacher/NewTaskModal.vue'
 
 const store = useStore()
+const router = useRouter()
 const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
+// Teacher name for greeting
+const teacherName = ref(
+  store.getters['auth/user']?.full_name ||
+  store.state.auth?.user?.full_name ||
+  (store.state.auth?.user?.email ? store.state.auth.user.email.split('@')[0] : '') ||
+  'Teacher'
+)
 
 const classrooms = ref([])
 const studentsMetrics = ref({
@@ -153,6 +167,8 @@ const studentsMetrics = ref({
 })
 const loadingClassrooms = ref(false)
 const loadingMetrics = ref(false)
+const overdueCount = ref(0)
+const healthConditionsCount = ref(0)
 
 const totalStudents = computed(() => studentsMetrics.value?.total_students ?? 0)
 const totalClassrooms = computed(() => studentsMetrics.value?.total_classrooms ?? 0)
@@ -203,6 +219,37 @@ const loadData = async () => {
     classrooms.value = Array.isArray(cls) ? cls : []
     studentsMetrics.value = metrics || { total_classrooms: 0, active_classrooms: 0, total_students: 0, by_grade_level: {} }
     acceptedRequests.value = Array.isArray(accepted) ? accepted : []
+
+    // Additional dashboard metrics (reuse existing endpoints)
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+    const authHeader = token.value ? { Authorization: `Bearer ${token.value.replace(/^bearer\s+/i, '').replace(/^Bearer\s+/, '')}` } : {}
+    // Overdue tasks count from ClassTasksView endpoint
+    try {
+      const overdueResp = await axios.get(`${API_BASE}/teacher/tasks/overdue`, { headers: authHeader })
+      const overdueList = Array.isArray(overdueResp.data) ? overdueResp.data : []
+      overdueCount.value = overdueList.length
+    } catch {
+      overdueCount.value = 0
+    }
+    // Health conditions: count conditions array from student report
+    try {
+      const studentsResp = await axios.get(`${API_BASE}/teacher/reports/students`, { headers: authHeader })
+      const students = Array.isArray(studentsResp.data) ? studentsResp.data : []
+      if (students.length) {
+        const sid = students[0]?.student_id || students[0]?.id || students[0]?.studentId
+        if (sid) {
+          const reportResp = await axios.get(`${API_BASE}/teacher/reports/${sid}`, { headers: authHeader })
+          const conditions = reportResp.data?.healthSummary?.conditions
+          healthConditionsCount.value = Array.isArray(conditions) ? conditions.length : 0
+        } else {
+          healthConditionsCount.value = 0
+        }
+      } else {
+        healthConditionsCount.value = 0
+      }
+    } catch {
+      healthConditionsCount.value = 0
+    }
   } catch (e) {
     console.error('Dashboard load error:', e)
     classrooms.value = []
@@ -213,6 +260,17 @@ const loadData = async () => {
 }
 
 onMounted(loadData)
+
+// Also fetch profile for name if store lacks it
+onMounted(async () => {
+  if ((!store.getters['auth/user'] || !store.getters['auth/user']?.full_name) && token.value) {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      const { data } = await axios.get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token.value}` } })
+      teacherName.value = data?.full_name || (data?.email ? data.email.split('@')[0] : teacherName.value)
+    } catch {}
+  }
+})
 
 // invite modal
 const inviteOpen = ref(false)
@@ -230,5 +288,12 @@ const formatDate = (v) => {
     const d = new Date(v)
     return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString()
   } catch { return String(v) }
+}
+
+// new task modal state
+const showNewTask = ref(false)
+const onTaskCreated = () => {
+  // Refresh any dashboard data if needed
+  loadData()
 }
 </script>

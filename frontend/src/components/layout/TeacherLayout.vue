@@ -120,6 +120,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import axios from 'axios'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 
@@ -136,7 +137,15 @@ const navItems = [
 const isProfileMenuOpen = ref(false)
 const mobileOpen = ref(false)
 
-const displayName = computed(() => store.getters['auth/user']?.full_name || 'Mrs. Johnson')
+const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
+const displayNameManual = ref('')
+const displayName = computed(() =>
+  displayNameManual.value ||
+  store.getters['auth/user']?.full_name ||
+  store.state.auth?.user?.full_name ||
+  (store.state.auth?.user?.email ? store.state.auth.user.email.split('@')[0] : '') ||
+  'Teacher'
+)
 const toggleProfileMenu = () => { isProfileMenuOpen.value = !isProfileMenuOpen.value }
 
 const onDocClick = (e) => {
@@ -145,7 +154,21 @@ const onDocClick = (e) => {
   if (!menu) return
   if (!menu.contains(e.target) && !btn) isProfileMenuOpen.value = false
 }
-onMounted(() => document.addEventListener('click', onDocClick))
+onMounted(async () => {
+  document.addEventListener('click', onDocClick)
+  // Fetch profile if name missing
+  if (!store.getters['auth/user']?.full_name && token.value) {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      const { data } = await axios.get(`${API_BASE}/users/me`, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      })
+      displayNameManual.value = data?.full_name || (data?.email ? data.email.split('@')[0] : '') || ''
+    } catch (e) {
+      // no-op
+    }
+  }
+})
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 const logout = async () => {
