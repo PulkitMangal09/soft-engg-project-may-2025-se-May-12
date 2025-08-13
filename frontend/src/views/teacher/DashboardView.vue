@@ -14,7 +14,8 @@
 
     <!-- Key Metrics -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-      <AppCard icon="🎓" title="Total Students" :subtitle="`${totalClassrooms} Classroom${totalClassrooms !== 1 ? 's' : ''}`">
+      <AppCard icon="🎓" title="Total Students"
+        :subtitle="`${totalClassrooms} Classroom${totalClassrooms !== 1 ? 's' : ''}`">
         <div class="text-right">
           <p class="text-3xl font-bold text-gray-800">{{ totalStudents }}</p>
           <p class="text-sm text-gray-500">Students</p>
@@ -58,11 +59,7 @@
             <div v-if="loadingClassrooms" class="text-gray-500">Loading classrooms…</div>
             <div v-else-if="classrooms.length === 0" class="text-gray-500">No classrooms found.</div>
             <div v-else class="space-y-3">
-              <div
-                v-for="c in classrooms"
-                :key="c.classroom_id"
-                class="border rounded-lg p-4"
-              >
+              <div v-for="c in classrooms" :key="c.classroom_id" class="border rounded-lg p-4">
                 <div class="flex items-start justify-between">
                   <div>
                     <p class="font-semibold text-gray-900">
@@ -79,10 +76,8 @@
                     </p>
                   </div>
                   <div class="text-right">
-                    <div
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs"
-                      :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
-                    >
+                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs"
+                      :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'">
                       {{ c.is_active ? 'Active' : 'Inactive' }}
                     </div>
                     <div class="text-xs text-gray-400 mt-1" v-if="c.created_at">
@@ -92,8 +87,10 @@
                 </div>
 
                 <div class="mt-3 flex flex-wrap gap-2">
-                  <AppButton label="Invite Student" size="sm" variant="secondary" @click="openInvite(c, 'teacher_student')" />
-                  <AppButton label="Invite Parent" size="sm" variant="secondary" @click="openInvite(c, 'parent_student')" />
+                  <AppButton label="Invite Student" size="sm" variant="secondary"
+                    @click="openInvite(c, 'teacher_student')" />
+                  <AppButton label="Invite Parent" size="sm" variant="secondary"
+                    @click="openInvite(c, 'parent_student')" />
                 </div>
               </div>
             </div>
@@ -117,11 +114,8 @@
                 No grade data yet.
               </div>
               <div v-else class="space-y-2">
-                <div
-                  v-for="row in gradeBuckets"
-                  :key="row.grade"
-                  class="flex items-center justify-between border rounded-lg px-3 py-2"
-                >
+                <div v-for="row in gradeBuckets" :key="row.grade"
+                  class="flex items-center justify-between border rounded-lg px-3 py-2">
                   <div class="font-medium text-gray-800">Grade {{ row.grade }}</div>
                   <div class="text-gray-600">{{ row.count }} students</div>
                 </div>
@@ -133,13 +127,8 @@
     </div>
 
     <!-- Invite Modal -->
-    <TeacherInviteModal
-      :is-open="inviteOpen"
-      :classrooms="classrooms"
-      :default-type="inviteDefaults.type"
-      :preselected-classroom-id="inviteDefaults.classroomId"
-      @close="inviteOpen = false"
-    />
+    <TeacherInviteModal :is-open="inviteOpen" :classrooms="classrooms" :default-type="inviteDefaults.type"
+      :preselected-classroom-id="inviteDefaults.classroomId" @close="inviteOpen = false" />
   </div>
 </template>
 
@@ -150,6 +139,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import TeacherInviteModal from '@/components/invitations/TeacherInviteModal.vue'
 import { teacherService } from '@/services/teacherService'
+import { requestsService } from '@/services/requestsService'
 
 const store = useStore()
 const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
@@ -168,8 +158,28 @@ const totalStudents = computed(() => studentsMetrics.value?.total_students ?? 0)
 const totalClassrooms = computed(() => studentsMetrics.value?.total_classrooms ?? 0)
 
 const gradeBuckets = computed(() => {
-  const map = studentsMetrics.value?.by_grade_level || {}
-  return Object.entries(map)
+  // Prefer server-provided metrics
+  const serverMap = studentsMetrics.value?.by_grade_level || {}
+  const hasServerData = serverMap && Object.keys(serverMap).length > 0
+
+  let entries
+  if (hasServerData) {
+    entries = Object.entries(serverMap)
+  } else {
+    // Fallback: derive from accepted requests
+    const buckets = {}
+    for (const r of acceptedRequests.value) {
+      const type = r?.relationship_type || r?.requester_type || r?.type || r?.requester?.user_type
+      if (type !== 'student') continue
+      const g = r?.grade_level ?? r?.requester?.grade_level
+      if (!g && g !== 0) continue
+      const key = String(g)
+      buckets[key] = (buckets[key] || 0) + 1
+    }
+    entries = Object.entries(buckets)
+  }
+
+  return entries
     .map(([grade, count]) => ({ grade, count }))
     .sort((a, b) => {
       const an = Number(a.grade), bn = Number(b.grade)
@@ -178,16 +188,21 @@ const gradeBuckets = computed(() => {
     })
 })
 
+// accepted requests for fallback derivation
+const acceptedRequests = ref([])
+
 const loadData = async () => {
   try {
     loadingClassrooms.value = true
     loadingMetrics.value = true
-    const [cls, metrics] = await Promise.all([
+    const [cls, metrics, accepted] = await Promise.all([
       token.value ? teacherService.getClassrooms(token.value) : [],
-      token.value ? teacherService.getStudentsMetrics(token.value) : null
+      token.value ? teacherService.getStudentsMetrics(token.value) : null,
+      token.value ? requestsService.listRequests(token.value, 'accepted') : []
     ])
     classrooms.value = Array.isArray(cls) ? cls : []
     studentsMetrics.value = metrics || { total_classrooms: 0, active_classrooms: 0, total_students: 0, by_grade_level: {} }
+    acceptedRequests.value = Array.isArray(accepted) ? accepted : []
   } catch (e) {
     console.error('Dashboard load error:', e)
     classrooms.value = []

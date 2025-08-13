@@ -31,6 +31,7 @@ from app.routers.connection_requests import router as connection_requests_router
 from app.routers.connections import router as connections_router
 from app.routers.connection_activity import router as requests_router
 from app.routers.student_medical import router as student_medical_router
+from app.routers.parent_family_codes import router as parent_family_codes
 
 app = FastAPI(
     title="GrowthGeine API",
@@ -106,7 +107,7 @@ app.include_router(connection_requests_router)
 app.include_router(connections_router)
 app.include_router(requests_router)
 app.include_router(student_medical_router)
-
+app.include_router(parent_family_codes)
 
 @app.get("/")
 def read_root():
