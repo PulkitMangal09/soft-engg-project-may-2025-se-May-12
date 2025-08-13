@@ -35,6 +35,8 @@ import DietChatBotView from '@/views/student/DietChatBotView.vue'
 import FoodLogView from '@/views/student/FoodLogView.vue'
 import StudentConnectionsView from '@/views/student/StudentConnectionsView.vue'
 import JoinConnectionView from '@/views/student/JoinConnectionView.vue'
+import EditTransaction from '@/views/student/EditTransaction.vue'
+import AddSavingGoal from '@/views/student/AddSavingGoal.vue'
 
 // Insights Views
 import MoodInsights from '@/views/student/insights/MoodInsights.vue'
@@ -132,6 +134,15 @@ const routes = [
        name: "addtransaction",
        component: AddTransactions
       },
+      {path: "EditTransaction/:id",
+       name: "edittransaction",
+       component: EditTransaction
+      },
+      {
+  path: 'add-goal',
+  name: 'AddGoal',
+  component: AddSavingGoal // lazy-load
+},
       { path: 'my-connections', name: 'StudentConnections', component: StudentConnectionsView },
       { path: 'connections', name: 'JoinConnection', component: JoinConnectionView },
       { path: 'emotion', name: 'StudentEmotion', component: EmotionView },

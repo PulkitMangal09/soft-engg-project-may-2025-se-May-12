@@ -63,21 +63,46 @@ def add_transaction(tx: TransactionCreate, token: str = Depends(oauth2)):
 # def list_transactions(token: str = Depends(oauth2)):
 #     """List all finance transactions for the student."""
 #     return []
-@router.get("/transactions", response_model=List[TransactionOut])
-def list_transactions(token: str = Depends(oauth2)):
-    user_id = get_user_id(token)
+# @router.get("/transactions", response_model=List[TransactionOut])
+# def list_transactions(token: str = Depends(oauth2)):
+#     user_id = get_user_id(token)
     
-    resp = supabase.table("transactions") \
-        .select("*") \
-        .eq("student_id", user_id) \
-        .order("transaction_date", desc=True) \
-        .execute()
+#     resp = supabase.table("transactions") \
+#         .select("*") \
+#         .eq("student_id", user_id) \
+#         .order("transaction_date", desc=True) \
+#         .execute()
     
-    data = getattr(resp, "data", None)
-    if data is None:
-        raise HTTPException(status_code=500, detail="Could not fetch transactions")
+#     data = getattr(resp, "data", None)
+#     if data is None:
+#         raise HTTPException(status_code=500, detail="Could not fetch transactions")
 
-    return data
+#     return data
+# Get a single transaction
+@router.get("/transactions/{transaction_id}", response_model=TransactionOut)
+def get_transaction(transaction_id: str, token: str = Depends(oauth2)):
+    try:
+        user_id = get_user_id(token)
+
+        # Query supabase for this transaction belonging to the authenticated user
+        result = supabase.table("transactions") \
+            .select("*") \
+            .eq("transaction_id", transaction_id) \
+            .eq("student_id", user_id) \
+            .execute()
+
+        data = getattr(result, "data", None)
+        if not data or len(data) == 0:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+
+        return data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 # @router.get("/dashboard")
 # def get_finance_dashboard(token: str = Depends(oauth2)):
@@ -147,7 +172,6 @@ def get_finance_dashboard(
     .gte("transaction_date", str(first_day)) \
     .lte("transaction_date", str(last_day)) \
     .execute()
-
     tx_data = getattr(tx_resp, "data", []) or []
     return {
         "balance": balance,
@@ -159,6 +183,62 @@ def get_finance_dashboard(
         "transactions": tx_data
     }
 
+# Delete a transaction by ID
+@router.delete("/transactions/{transaction_id}", response_model=dict)
+def delete_transaction(transaction_id: str, token: str = Depends(oauth2)):
+    try:
+        user_id = get_user_id(token)
+
+        # Fetch the transaction to ensure it belongs to the user
+        result = supabase.table("transactions") \
+            .select("*") \
+            .eq("transaction_id", transaction_id) \
+            .eq("student_id", user_id) \
+            .execute()
+        
+        data = getattr(result, "data", [])
+        if not data:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+
+        # Delete the transaction
+        delete_result = supabase.table("transactions") \
+            .delete() \
+            .eq("transaction_id", transaction_id) \
+            .eq("student_id", user_id) \
+            .execute()
+
+        deleted_data = getattr(delete_result, "data", [])
+        if not deleted_data:
+            raise HTTPException(status_code=500, detail="Delete failed")
+
+        return {"message": "Transaction deleted successfully", "transaction_id": transaction_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.put("/transactions/{transaction_id}", response_model=dict)
+def update_transaction(transaction_id: str, tx: TransactionCreate, token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
+
+    # Ensure transaction belongs to this user
+    existing = supabase.table("transactions").select("*").eq("transaction_id", transaction_id).eq("student_id", user_id).execute()
+    data = getattr(existing, "data", [])
+    if not data:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    payload = tx.dict()
+    if isinstance(payload["transaction_date"], date):
+        payload["transaction_date"] = payload["transaction_date"].isoformat()
+
+    # Update
+    result = supabase.table("transactions").update(payload).eq("transaction_id", transaction_id).execute()
+    updated_data = getattr(result, "data", [])
+    if not updated_data:
+        raise HTTPException(status_code=400, detail="Update failed")
+    return updated_data[0]
 
 # -------------------------------
 # -------------------------------
