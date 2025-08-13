@@ -16,7 +16,7 @@
       <div v-else-if="students.length === 0" class="col-span-full text-gray-500">No students found.</div>
       <div v-else v-for="student in students" :key="student.student_id" @click="selectStudent(student)"
         class="p-4 bg-white rounded-lg shadow-md flex items-center space-x-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all">
-        <img class="h-16 w-16 rounded-full object-cover" :src="placeholder" :alt="student.full_name">
+        <!-- <img class="h-16 w-16 rounded-full object-cover" :src="placeholder" :alt="student.full_name"> -->
         <div>
           <p class="font-bold text-gray-800">{{ student.full_name || 'Unnamed' }}</p>
           <p class="text-sm text-gray-500">ID: {{ student.student_number || '—' }} • Grade {{ student.grade_level ?? '—'
@@ -31,7 +31,7 @@
       <AppCard class="mb-8">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
           <div class="flex items-center mb-4 md:mb-0">
-            <img class="h-20 w-20 rounded-full object-cover mr-6" :src="placeholder" :alt="selectedStudent.full_name">
+            <!-- <img class="h-20 w-20 rounded-full object-cover mr-6" :src="placeholder" :alt="selectedStudent.full_name"> -->
             <div>
               <h2 class="text-2xl font-bold text-gray-800">{{ selectedStudent.full_name }}</h2>
               <p class="text-sm text-gray-500">Student ID: {{ report?.student_number || selectedStudent.student_number
