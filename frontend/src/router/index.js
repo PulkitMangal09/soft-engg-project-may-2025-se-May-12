@@ -67,6 +67,7 @@ import TeacherDashboard from '@/views/teacher/DashboardView.vue'
 import MyStudentsView from '@/views/teacher/MyStudentsView.vue'
 import ClassTasksView from '@/views/teacher/ClassTasksView.vue'
 import ReportsView from '@/views/teacher/ReportsView.vue'
+import components from '@/components/index'
 
 // Placeholder component for missing views
 const PlaceholderView = {
@@ -126,6 +127,10 @@ const routes = [
         name: 'Diet',
         component: DietView,
         meta: { title: 'Diet & Nutrition' }
+      },
+      {path: "Addtransaction",
+       name: "addtransaction",
+       component: AddTransactions
       },
       { path: 'my-connections', name: 'StudentConnections', component: StudentConnectionsView },
       { path: 'connections', name: 'JoinConnection', component: JoinConnectionView },

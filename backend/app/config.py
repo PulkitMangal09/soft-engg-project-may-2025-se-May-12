@@ -4,7 +4,6 @@ from typing import Optional
 
 from dotenv import load_dotenv
 import httpx
-
 from supabase import create_client, Client
 
 load_dotenv()
@@ -15,7 +14,7 @@ SUPABASE_URL: Optional[str] = (
 
 SUPABASE_SERVICE_ROLE_KEY: Optional[str] = (os.getenv("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")
 )
-
+    
 SUPABASE_ANON_KEY: Optional[str] = (
  os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 )
