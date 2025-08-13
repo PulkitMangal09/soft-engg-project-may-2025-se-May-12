@@ -1,165 +1,167 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col items-center py-6 px-2 md:px-0">
-    <!-- Toasts -->
-    <div class="fixed top-4 right-4 space-y-2 z-50" v-if="toasts.length">
-      <div v-for="t in toasts" :key="t.id" class="px-3 py-2 rounded shadow text-sm"
+  <div class="min-h-screen bg-gray-100 flex flex-col items-center py-8 px-4 relative">
+    
+    <button
+      @click="$router.go(-1)"
+      class="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 shadow-md hover:bg-gray-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+      aria-label="Go Back"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    
+    <div class="fixed top-4 right-4 space-y-2 z-50">
+      <div v-for="t in toasts" :key="t.id" class="px-4 py-2 rounded-lg shadow-lg text-sm font-medium"
         :class="t.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'">
         {{ t.message }}
       </div>
     </div>
-    <div class="bg-white rounded-xl shadow p-6 w-full max-w-3xl">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold">Medical Conditions & Medications</h2>
-        <div class="text-sm text-gray-500" v-if="loading">Loading...</div>
-      </div>
+    
+    <div class="w-full max-w-4xl space-y-8">
+      <header class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800">Medical Records 🩺</h1>
+        <p class="mt-2 text-gray-500">View and manage your medical conditions and medications.</p>
+      </header>
 
-      <div v-if="error" class="bg-red-50 text-red-700 p-2 rounded mb-4 text-sm">{{ error }}</div>
-
-      <!-- Conditions -->
-      <div class="mb-6">
-        <div class="flex items-center justify-between mb-2">
-          <div class="font-semibold">Conditions</div>
-          <button class="btn-secondary" @click="showAddCondition = !showAddCondition">{{ showAddCondition ? 'Close' :
-            'Add Condition' }}</button>
-        </div>
-
-        <div v-if="showAddCondition" class="bg-gray-50 p-3 rounded mb-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-          <input v-model="newCondition.condition_name" class="input" placeholder="Condition name" />
-          <select v-model="newCondition.severity" class="input">
-            <option disabled value="">Severity</option>
-            <option value="mild">Mild</option>
-            <option value="moderate">Moderate</option>
-            <option value="severe">Severe</option>
-          </select>
-          <input v-model="newCondition.diagnosed_date" type="date" class="input" />
-          <input v-model="newCondition.doctor_clinic" class="input md:col-span-2" placeholder="Doctor/Clinic" />
-          <input v-model="newCondition.dietary_restrictions" class="input md:col-span-3"
-            placeholder="Dietary restrictions" />
-          <input v-model="newCondition.symptoms_to_monitor" class="input md:col-span-3"
-            placeholder="Symptoms to monitor" />
-          <div class="md:col-span-3 flex gap-2">
-            <button class="btn-primary" @click="onCreateCondition">Save</button>
-            <button class="btn-secondary" @click="resetConditionForm">Reset</button>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-700">Conditions</h2>
+            <button class="btn-secondary" @click="showAddCondition = !showAddCondition">
+              <span v-if="showAddCondition">Close</span>
+              <span v-else>+ Add Condition</span>
+            </button>
+          </div>
+          
+          <div v-if="showAddCondition" class="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input v-model="newCondition.condition_name" class="input-field col-span-1" placeholder="Condition name" />
+              <select v-model="newCondition.severity" class="input-field col-span-1">
+                <option disabled value="">Severity</option>
+                <option value="mild">Mild</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+              </select>
+              <input v-model="newCondition.diagnosed_date" type="date" class="input-field" />
+              <input v-model="newCondition.doctor_clinic" class="input-field" placeholder="Doctor/Clinic" />
+              <input v-model="newCondition.dietary_restrictions" class="input-field col-span-2" placeholder="Dietary restrictions" />
+              <textarea v-model="newCondition.symptoms_to_monitor" class="input-field col-span-2" placeholder="Symptoms to monitor..."></textarea>
+            </div>
+            <div class="flex gap-2 mt-4">
+              <button class="btn-primary" @click="onCreateCondition">Save</button>
+              <button class="btn-tertiary" @click="resetConditionForm">Reset</button>
+            </div>
+          </div>
+          
+          <div v-if="conditions.length === 0 && !loading" class="text-center py-8 bg-white rounded-lg shadow">
+            <p class="text-gray-500">You haven't added any conditions yet.</p>
+          </div>
+          <div v-else class="space-y-4">
+            <div v-for="c in conditions" :key="c.condition_id" class="bg-white rounded-lg shadow p-4">
+              <div class="flex items-center justify-between">
+                <div class="flex-grow">
+                  <h3 class="font-bold text-gray-800">{{ c.condition_name }}</h3>
+                  <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="{
+                    'bg-green-100 text-green-700': c.severity === 'mild',
+                    'bg-yellow-100 text-yellow-700': c.severity === 'moderate',
+                    'bg-red-100 text-red-700': c.severity === 'severe'
+                  }">{{ c.severity }}</span>
+                </div>
+                <div class="flex gap-2">
+                  <button class="text-xs text-blue-600 hover:underline" @click="selectCondition(c)">Add Meds</button>
+                  <button class="text-xs text-red-600 hover:underline" @click="onDeleteCondition(c.condition_id)">Delete</button>
+                </div>
+              </div>
+              <div class="text-sm text-gray-500 mt-2 space-y-1">
+                <p v-if="c.diagnosed_date">Diagnosed: {{ formatDate(c.diagnosed_date) }}</p>
+                <p v-if="c.doctor_clinic">Doctor: {{ c.doctor_clinic }}</p>
+                <p v-if="c.dietary_restrictions">Restrictions: {{ c.dietary_restrictions }}</p>
+                <p v-if="c.symptoms_to_monitor">Monitor: {{ c.symptoms_to_monitor }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div v-if="conditions.length === 0" class="text-sm text-gray-500">No conditions yet.</div>
-        <div v-else class="space-y-2">
-          <div v-for="c in conditions" :key="c.condition_id" class="border rounded p-3">
-            <div class="flex items-center justify-between">
-              <div class="font-medium">
-                {{ c.condition_name }}
-                <span class="ml-2 text-xs px-2 py-0.5 rounded-full" :class="{
-                  'bg-green-100 text-green-700': c.severity === 'mild',
-                  'bg-yellow-100 text-yellow-700': c.severity === 'moderate',
-                  'bg-red-100 text-red-700': c.severity === 'severe'
-                }">{{ c.severity }}</span>
-              </div>
-              <div class="flex gap-2">
-                <button class="text-xs text-blue-600 hover:underline" @click="selectCondition(c)">Add
-                  Medication</button>
-                <button class="text-xs text-red-600 hover:underline"
-                  @click="onDeleteCondition(c.condition_id)">Delete</button>
-              </div>
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-700">Medications</h2>
+            <button class="btn-secondary" @click="showAddMedication = !showAddMedication">
+              <span v-if="showAddMedication">Close</span>
+              <span v-else>+ Add Medication</span>
+            </button>
+          </div>
+          
+          <div v-if="showAddMedication" class="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <select v-model="newMedication.condition_id" class="input-field col-span-2">
+                <option disabled value="">Condition (optional)</option>
+                <option v-for="c in conditions" :key="c.condition_id" :value="c.condition_id">{{ c.condition_name }}</option>
+              </select>
+              <input v-model="newMedication.medication_name" class="input-field" placeholder="Medication name" />
+              <input v-model="newMedication.dosage" class="input-field" placeholder="Dosage" />
+              <input v-model="newMedication.frequency" class="input-field" placeholder="Frequency" />
+              <input v-model="newMedication.start_date" type="date" class="input-field" />
+              <input v-model="newMedication.end_date" type="date" class="input-field" />
+              <input v-model="newMedication.prescribing_doctor" class="input-field" placeholder="Prescribing doctor" />
+              <textarea v-model="newMedication.instructions" class="input-field col-span-2" placeholder="Instructions..."></textarea>
             </div>
-            <div class="text-xs text-gray-600 mt-1">
-              <span v-if="c.diagnosed_date">Diagnosed: {{ formatDate(c.diagnosed_date) }}</span>
-              <span v-if="c.doctor_clinic"> • {{ c.doctor_clinic }}</span>
-              <div v-if="c.dietary_restrictions">Diet: {{ c.dietary_restrictions }}</div>
-              <div v-if="c.symptoms_to_monitor">Monitor: {{ c.symptoms_to_monitor }}</div>
+            <div class="flex gap-2 mt-4">
+              <button class="btn-primary" @click="onCreateMedication">Save</button>
+              <button class="btn-tertiary" @click="resetMedicationForm">Reset</button>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Medications -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div class="font-semibold">Medications</div>
-          <button class="btn-secondary" @click="showAddMedication = !showAddMedication">{{ showAddMedication ? 'Close' :
-            'Add Medication' }}</button>
-        </div>
-
-        <div v-if="showAddMedication" class="bg-gray-50 p-3 rounded mb-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-          <select v-model="newMedication.condition_id" class="input">
-            <option disabled value="">Condition (optional)</option>
-            <option v-for="c in conditions" :key="c.condition_id" :value="c.condition_id">{{ c.condition_name }}
-            </option>
-          </select>
-          <input v-model="newMedication.medication_name" class="input" placeholder="Medication name" />
-          <input v-model="newMedication.dosage" class="input" placeholder="Dosage" />
-          <input v-model="newMedication.frequency" class="input" placeholder="Frequency" />
-          <input v-model="newMedication.start_date" type="date" class="input" />
-          <input v-model="newMedication.end_date" type="date" class="input" />
-          <input v-model="newMedication.prescribing_doctor" class="input md:col-span-2"
-            placeholder="Prescribing doctor" />
-          <input v-model="newMedication.instructions" class="input md:col-span-3" placeholder="Instructions" />
-          <div class="md:col-span-3 flex gap-2">
-            <button class="btn-primary" @click="onCreateMedication">Save</button>
-            <button class="btn-secondary" @click="resetMedicationForm">Reset</button>
+          
+          <div v-if="medications.length === 0 && !loading" class="text-center py-8 bg-white rounded-lg shadow">
+            <p class="text-gray-500">You haven't added any medications yet.</p>
           </div>
-        </div>
-
-        <div v-if="medications.length === 0" class="text-sm text-gray-500">No medications yet.</div>
-        <div v-else class="space-y-2">
-          <div v-for="m in medications" :key="m.medication_id" class="border rounded p-3">
-            <div class="flex items-center justify-between">
-              <div class="font-medium">{{ m.medication_name }}<span v-if="m.dosage" class="text-sm text-gray-600"> • {{
-                  m.dosage }}</span></div>
-              <div class="flex gap-2">
-                <button class="text-xs text-blue-700 hover:underline" @click="toggleLogs(m)">{{
-                  logsOpen[m.medication_id] ? 'Hide Logs' : 'Show Logs' }}</button>
-                <button class="text-xs text-red-600 hover:underline"
-                  @click="onDeleteMedication(m.medication_id)">Delete</button>
-              </div>
-            </div>
-            <div class="text-xs text-gray-600 mt-1">
-              <div v-if="m.frequency">Frequency: {{ m.frequency }}</div>
-              <div>
-                <span v-if="m.start_date">Start: {{ formatDate(m.start_date) }}</span>
-                <span v-if="m.end_date"> • End: {{ formatDate(m.end_date) }}</span>
-              </div>
-              <div v-if="m.prescribing_doctor">Doctor: {{ m.prescribing_doctor }}</div>
-              <div v-if="m.instructions">Instructions: {{ m.instructions }}</div>
-            </div>
-
-            <!-- Logs Panel -->
-            <div v-if="logsOpen[m.medication_id]" class="mt-3 border-t pt-3">
-              <div class="flex items-center justify-between mb-2">
-                <div class="font-medium text-sm">Intake Logs</div>
-                <div class="text-xs text-gray-500" v-if="loadingLogs[m.medication_id]">Loading logs...</div>
+          <div v-else class="space-y-4">
+            <div v-for="m in medications" :key="m.medication_id" class="bg-white rounded-lg shadow p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-gray-800">{{ m.medication_name }}<span v-if="m.dosage" class="font-normal text-sm text-gray-600"> • {{ m.dosage }}</span></h3>
+                  <div class="text-sm text-gray-500" v-if="m.frequency">Frequency: {{ m.frequency }}</div>
+                </div>
+                <div class="flex gap-2">
+                  <button class="text-xs text-blue-700 hover:underline" @click="toggleLogs(m)">
+                    {{ logsOpen[m.medication_id] ? 'Hide Logs' : 'Show Logs' }}
+                  </button>
+                  <button class="text-xs text-red-600 hover:underline" @click="onDeleteMedication(m.medication_id)">Delete</button>
+                </div>
               </div>
 
-              <div v-if="(logsByMed[m.medication_id] || []).length === 0" class="text-xs text-gray-500">No logs yet.
-              </div>
-              <ul v-else class="space-y-1 text-xs">
-                <li v-for="log in logsByMed[m.medication_id]" :key="log.log_id"
-                  class="flex items-center justify-between">
-                  <div>
-                    <span class="font-medium">{{ log.quantity_taken || '—' }}</span>
-                    <span class="text-gray-600"> • {{ formatDateTime(log.taken_at) }}</span>
-                    <span v-if="log.notes" class="text-gray-600"> • {{ log.notes }}</span>
+              <div v-if="logsOpen[m.medication_id]" class="mt-4 pt-4 border-t border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="font-semibold text-sm">Intake Logs</div>
+                  <div class="text-xs text-gray-500" v-if="loadingLogs[m.medication_id]">Loading...</div>
+                </div>
+                
+                <div v-if="(logsByMed[m.medication_id] || []).length === 0" class="text-xs text-gray-500">No logs yet.</div>
+                <ul v-else class="space-y-1 text-xs text-gray-600">
+                  <li v-for="log in logsByMed[m.medication_id]" :key="log.log_id" class="flex justify-between items-center bg-gray-50 rounded px-2 py-1">
+                    <span>
+                      <span class="font-medium">{{ log.quantity_taken || '—' }}</span>
+                      <span class="ml-1">{{ formatDateTime(log.taken_at) }}</span>
+                    </span>
+                    <span v-if="log.notes" class="text-xs text-gray-400">Notes: {{ log.notes }}</span>
+                  </li>
+                </ul>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <input v-model="logForms[m.medication_id].quantity" class="input-field" placeholder="Quantity" />
+                  <input v-model="logForms[m.medication_id].taken_at" type="datetime-local" class="input-field" />
+                  <div class="col-span-1">
+                    <button class="btn-primary w-full" @click="onCreateLog(m)">Add Log</button>
                   </div>
-                </li>
-              </ul>
-
-              <!-- Inline Log Form -->
-              <div class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
-                <input v-model="logForms[m.medication_id].quantity" class="input"
-                  placeholder="Quantity (e.g., 1 pill)" />
-                <input v-model="logForms[m.medication_id].notes" class="input md:col-span-2"
-                  placeholder="Notes (optional)" />
-                <input v-model="logForms[m.medication_id].taken_at" type="datetime-local" class="input" />
-                <div class="md:col-span-4">
-                  <button class="btn-primary" @click="onCreateLog(m)">Add Log</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
     </div>
-    <div class="text-xs text-gray-400 mt-4">Medical Conditions</div>
   </div>
 </template>
 
@@ -176,7 +178,6 @@ const error = ref('')
 const conditions = ref([])
 const medications = ref([])
 
-// Toasts
 const toasts = ref([])
 function toast(message, type = 'success', duration = 2500) {
   const id = Date.now() + Math.random()
@@ -186,12 +187,10 @@ function toast(message, type = 'success', duration = 2500) {
   }, duration)
 }
 
-// UI state
 const showAddCondition = ref(false)
 const showAddMedication = ref(false)
 const selectedConditionId = ref('')
 
-// Logs state per medication
 const logsOpen = ref({})
 const logsByMed = ref({})
 const loadingLogs = ref({})
@@ -203,7 +202,6 @@ function ensureLogForm(medId) {
   }
 }
 
-// Forms
 const newCondition = ref({
   condition_name: '',
   severity: '',
@@ -266,7 +264,6 @@ async function loadAll() {
     ])
     conditions.value = cond
     medications.value = meds
-    // initialize forms for each med
     meds.forEach(m => ensureLogForm(m.medication_id))
   } catch (e) {
     error.value = e?.response?.data?.detail || e?.message || 'Failed to load data'
@@ -336,12 +333,10 @@ async function onDeleteMedication(id) {
 
 async function toggleLogs(med) {
   const id = med.medication_id
-  // ensure form exists before rendering panel
   ensureLogForm(id)
   const isOpen = !!logsOpen.value[id]
   logsOpen.value = { ...logsOpen.value, [id]: !isOpen }
   if (!isOpen) {
-    // opening: load logs if not present
     loadingLogs.value = { ...loadingLogs.value, [id]: true }
     try {
       const logs = await getMedicationLogs(id)
@@ -370,10 +365,8 @@ async function onCreateLog(med) {
       notes: form.notes || null,
       taken_at: form.taken_at ? new Date(form.taken_at).toISOString() : null,
     })
-    // reload logs
     const logs = await getMedicationLogs(id)
     logsByMed.value = { ...logsByMed.value, [id]: logs }
-    // reset form
     logForms.value = { ...logForms.value, [id]: { quantity: '', notes: '', taken_at: '' } }
     toast('Log added')
   } catch (e) {
@@ -385,3 +378,18 @@ async function onCreateLog(med) {
 
 onMounted(loadAll)
 </script>
+
+<style scoped>
+.input-field {
+  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm;
+}
+.btn-primary {
+  @apply bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all text-sm;
+}
+.btn-secondary {
+  @apply bg-white text-gray-800 font-semibold px-4 py-2 rounded-lg border border-gray-300 shadow-sm hover:bg-gray-100 transition-all text-sm;
+}
+.btn-tertiary {
+  @apply bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg hover:bg-gray-300 transition-all text-sm;
+}
+</style>
