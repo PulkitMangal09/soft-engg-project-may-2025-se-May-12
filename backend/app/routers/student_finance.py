@@ -6,6 +6,7 @@ from ..models import TransactionCreate,TransactionOut,SavingsGoalCreate, Savings
 from uuid import uuid4
 from fastapi import HTTPException
 from datetime import date,datetime
+from fastapi import Body
 
 router = APIRouter(prefix="/student/finance", tags=["student-finance"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -63,21 +64,46 @@ def add_transaction(tx: TransactionCreate, token: str = Depends(oauth2)):
 # def list_transactions(token: str = Depends(oauth2)):
 #     """List all finance transactions for the student."""
 #     return []
-@router.get("/transactions", response_model=List[TransactionOut])
-def list_transactions(token: str = Depends(oauth2)):
-    user_id = get_user_id(token)
+# @router.get("/transactions", response_model=List[TransactionOut])
+# def list_transactions(token: str = Depends(oauth2)):
+#     user_id = get_user_id(token)
     
-    resp = supabase.table("transactions") \
-        .select("*") \
-        .eq("student_id", user_id) \
-        .order("transaction_date", desc=True) \
-        .execute()
+#     resp = supabase.table("transactions") \
+#         .select("*") \
+#         .eq("student_id", user_id) \
+#         .order("transaction_date", desc=True) \
+#         .execute()
     
-    data = getattr(resp, "data", None)
-    if data is None:
-        raise HTTPException(status_code=500, detail="Could not fetch transactions")
+#     data = getattr(resp, "data", None)
+#     if data is None:
+#         raise HTTPException(status_code=500, detail="Could not fetch transactions")
 
-    return data
+#     return data
+# Get a single transaction
+@router.get("/transactions/{transaction_id}", response_model=TransactionOut)
+def get_transaction(transaction_id: str, token: str = Depends(oauth2)):
+    try:
+        user_id = get_user_id(token)
+
+        # Query supabase for this transaction belonging to the authenticated user
+        result = supabase.table("transactions") \
+            .select("*") \
+            .eq("transaction_id", transaction_id) \
+            .eq("student_id", user_id) \
+            .execute()
+
+        data = getattr(result, "data", None)
+        if not data or len(data) == 0:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+
+        return data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 # @router.get("/dashboard")
 # def get_finance_dashboard(token: str = Depends(oauth2)):
@@ -147,7 +173,6 @@ def get_finance_dashboard(
     .gte("transaction_date", str(first_day)) \
     .lte("transaction_date", str(last_day)) \
     .execute()
-
     tx_data = getattr(tx_resp, "data", []) or []
     return {
         "balance": balance,
@@ -159,6 +184,62 @@ def get_finance_dashboard(
         "transactions": tx_data
     }
 
+# Delete a transaction by ID
+@router.delete("/transactions/{transaction_id}", response_model=dict)
+def delete_transaction(transaction_id: str, token: str = Depends(oauth2)):
+    try:
+        user_id = get_user_id(token)
+
+        # Fetch the transaction to ensure it belongs to the user
+        result = supabase.table("transactions") \
+            .select("*") \
+            .eq("transaction_id", transaction_id) \
+            .eq("student_id", user_id) \
+            .execute()
+        
+        data = getattr(result, "data", [])
+        if not data:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+
+        # Delete the transaction
+        delete_result = supabase.table("transactions") \
+            .delete() \
+            .eq("transaction_id", transaction_id) \
+            .eq("student_id", user_id) \
+            .execute()
+
+        deleted_data = getattr(delete_result, "data", [])
+        if not deleted_data:
+            raise HTTPException(status_code=500, detail="Delete failed")
+
+        return {"message": "Transaction deleted successfully", "transaction_id": transaction_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.put("/transactions/{transaction_id}", response_model=dict)
+def update_transaction(transaction_id: str, tx: TransactionCreate, token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
+
+    # Ensure transaction belongs to this user
+    existing = supabase.table("transactions").select("*").eq("transaction_id", transaction_id).eq("student_id", user_id).execute()
+    data = getattr(existing, "data", [])
+    if not data:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    payload = tx.dict()
+    if isinstance(payload["transaction_date"], date):
+        payload["transaction_date"] = payload["transaction_date"].isoformat()
+
+    # Update
+    result = supabase.table("transactions").update(payload).eq("transaction_id", transaction_id).execute()
+    updated_data = getattr(result, "data", [])
+    if not updated_data:
+        raise HTTPException(status_code=400, detail="Update failed")
+    return updated_data[0]
 
 # -------------------------------
 # -------------------------------
@@ -210,3 +291,103 @@ def delete_savings_goal(goal_id: str, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     supabase.table("savings_goals").delete().eq("goal_id", goal_id).eq("student_id", user_id).execute()
     return {"deleted": True}
+
+@router.post("/savings-goals/contribute/{goal_id}", response_model=SavingsGoalOut)
+def contribute_to_savings_goal(goal_id: str, amount: float, token: str = Depends(oauth2)):
+    """Add a contribution to a savings goal's saved_amount."""
+    user_id = get_user_id(token)
+    print(goal_id,amount)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Contribution amount must be positive")
+
+    # Fetch goal to ensure it exists and belongs to the user
+    goal_resp = supabase.table("savings_goals") \
+        .select("saved_amount") \
+        .eq("goal_id", goal_id) \
+        .eq("student_id", user_id) \
+        .single() \
+        .execute()
+    
+    goal_data = getattr(goal_resp, "data", None)
+    if not goal_data:
+        raise HTTPException(status_code=404, detail="Savings goal not found")
+
+    new_saved_amount = float(goal_data["saved_amount"] or 0) + amount
+
+    # Update saved_amount
+    update_resp = supabase.table("savings_goals") \
+        .update({"saved_amount": new_saved_amount}) \
+        .eq("goal_id", goal_id) \
+        .eq("student_id", user_id) \
+        .execute()
+    
+    updated_data = getattr(update_resp, "data", None)
+    if not updated_data:
+        raise HTTPException(status_code=400, detail="Failed to update savings goal")
+
+    return updated_data[0]
+
+
+@router.delete("/deletegoal/{goal_id}")
+def delete_goal(goal_id: str, token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
+
+    # Ensure the goal belongs to the logged-in student
+    goal = supabase.table("savings_goals").select("*").eq("goal_id", goal_id).eq("student_id", user_id).execute()
+
+    if not goal.data:
+        raise HTTPException(status_code=404, detail="Goal not found or you don't have permission to delete it.")
+
+    # Delete the goal
+    supabase.table("savings_goals").delete().eq("goal_id", goal_id).execute()
+
+    return {"message": "Goal deleted successfully"}
+
+
+@router.get("/goal/{goal_id}")
+def get_goal(goal_id: str):
+    try:
+        response = supabase.table("savings_goals").select(
+            "goal_id, title, target_amount, saved_amount"
+        ).eq("goal_id", goal_id).execute()
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+        return response.data[0]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.put("/editgoal/{goal_id}")
+def update_goal(goal_id: str, payload: dict = Body(...)):
+    try:
+        # Only include provided fields
+        update_data = {}
+        if payload.get("title") is not None:
+            update_data["title"] = payload["title"]
+        if payload.get("target_amount") is not None:
+            update_data["target_amount"] = payload["target_amount"]
+        if payload.get("saved_amount") is not None:
+            update_data["saved_amount"] = payload["saved_amount"]
+
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+
+        # Supabase update
+        response = supabase.table("savings_goals").update(update_data).eq("goal_id", goal_id).execute()
+
+        # Debug logging for Supabase errors
+        if hasattr(response, "error") and response.error:
+            raise HTTPException(status_code=500, detail=response.error.message)
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+        return {"message": "Goal updated successfully", "goal": response.data[0]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
