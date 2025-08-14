@@ -27,11 +27,26 @@ def to_iso(value):
 @router.get("/", response_model=List[TaskOut])
 def list_tasks(token: str = Depends(oauth2)):
     user_id = get_user_id(token)
-    resp = supabase.table("tasks") \
-        .select("*") \
-        .eq("assigned_to", user_id) \
-        .execute()
-    return resp.data or []
+    resp = supabase.table("tasks").select("*").eq("assigned_to", user_id).execute()
+    rows = resp.data or []
+    if not rows:
+        return []
+    # Collect unique assigner IDs
+    assigner_ids = list({str(r.get("assigned_by")) for r in rows if r.get("assigned_by")})
+    users_map = {}
+    if assigner_ids:
+        uresp = supabase.table("users").select("user_id, full_name, email, user_type").in_("user_id", assigner_ids).execute()
+        for u in (uresp.data or []):
+            users_map[str(u.get("user_id"))] = u
+    # Attach enrichment
+    enriched = []
+    for r in rows:
+        aid = str(r.get("assigned_by")) if r.get("assigned_by") else None
+        u = users_map.get(aid) if aid else None
+        r["assigned_by_user_type"] = (u.get("user_type") if u else None)
+        r["assigned_by_name"] = (u.get("full_name") or u.get("email") if u else None)
+        enriched.append(r)
+    return enriched
 
 
 @router.get("/{task_id}", response_model=TaskOut)
@@ -77,7 +92,13 @@ def add_task(task: TaskCreate, token: str = Depends(oauth2)):
     data = resp.data
     if not data:
         raise HTTPException(status_code=400, detail="Insert failed")
-    return data[0]
+    row = data[0]
+    # Enrich the created row with assigner info
+    u = supabase.table("users").select("user_id, full_name, email, user_type").eq("user_id", user_id).single().execute().data
+    if u:
+        row["assigned_by_user_type"] = u.get("user_type")
+        row["assigned_by_name"] = u.get("full_name") or u.get("email")
+    return row
 
 
 @router.patch("/{task_id}", response_model=TaskOut)

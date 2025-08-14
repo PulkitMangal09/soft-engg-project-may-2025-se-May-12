@@ -473,6 +473,9 @@ class TaskOut(TaskBase):
     task_id: UUID
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # Optional enrichment fields (attached by backend for filtering/display)
+    assigned_by_user_type: Optional[str] = None
+    assigned_by_name: Optional[str] = None
 
 
 class JoinRequestAction(BaseModel):

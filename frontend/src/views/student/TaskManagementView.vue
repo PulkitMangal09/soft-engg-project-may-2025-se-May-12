@@ -33,6 +33,7 @@
             <option value="all">All Tasks</option>
             <option value="personal">Personal Tasks</option>
             <option value="teacher">Teacher Tasks</option>
+            <option value="parent">Parent Tasks</option>
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
           </select>
@@ -259,15 +260,21 @@ const filteredTasks = computed(() => {
   let filtered = tasks.value
 
   if (selectedFilter.value === 'personal') {
-    filtered = filtered.filter(task => !task.teacher)
+    // Personal: self-assigned tasks
+    filtered = filtered.filter(task => String(task.assigned_by) === String(task.assigned_to))
   } else if (selectedFilter.value === 'teacher') {
-    filtered = filtered.filter(task => task.teacher)
+    // Teacher: tasks assigned by a teacher
+    filtered = filtered.filter(task => String(task.assigned_by_user_type).toLowerCase() === 'teacher')
     if (selectedTeacher.value !== 'all') {
       const teacher = connectedTeachers.value.find(t => t.id === parseInt(selectedTeacher.value))
       if (teacher) {
-        filtered = filtered.filter(task => task.teacher === teacher.name)
+        // When we have names, try to match by assigned_by_name fallback to task.teacher if present
+        filtered = filtered.filter(task => (task.assigned_by_name && task.assigned_by_name === teacher.name) || (task.teacher && task.teacher === teacher.name))
       }
     }
+  } else if (selectedFilter.value === 'parent') {
+    // Parent: tasks assigned by a parent
+    filtered = filtered.filter(task => String(task.assigned_by_user_type).toLowerCase() === 'parent')
   } else if (selectedFilter.value === 'pending') {
     filtered = filtered.filter(task => task.status === 'pending')
   } else if (selectedFilter.value === 'completed') {
