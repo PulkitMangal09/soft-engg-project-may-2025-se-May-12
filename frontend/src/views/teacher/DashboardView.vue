@@ -1,104 +1,115 @@
 <template>
   <div class="p-6 md:p-8 bg-gray-100 min-h-screen">
-    <!-- Header -->
-    <div class="mb-8 flex items-center justify-between">
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-3xl font-bold text-gray-900">Teacher's Dashboard</h1>
         <p class="text-gray-600 mt-1">Welcome back, {{ teacherName }}!</p>
       </div>
-      <div class="flex gap-3">
-        <AppButton label="Generate Invitation Code" icon="🔗" variant="secondary" @click="openInvite()" />
+      <div class="flex gap-3 mt-4 md:mt-0">
         <AppButton label="Assign New Task" icon="➕" variant="primary" @click="showNewTask = true" />
+        <AppButton label="Invite Students & Parents" icon="🔗" variant="secondary" @click="openInvite()" />
       </div>
     </div>
 
-    <!-- Key Metrics -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-      <AppCard icon="🎓" title="Total Students"
-        :subtitle="`${totalClassrooms} Classroom${totalClassrooms !== 1 ? 's' : ''}`">
-        <div class="text-right">
-          <p class="text-3xl font-bold text-gray-800">{{ totalStudents }}</p>
-          <p class="text-sm text-gray-500">Students</p>
-        </div>
-      </AppCard>
-
-      <AppCard icon="🔔" title="Health Conditions" variant="error">
-        <div class="text-right">
-          <p class="text-3xl font-bold text-red-500">{{ healthConditionsCount }}</p>
-          <p class="text-sm text-gray-500">Active</p>
-        </div>
-      </AppCard>
-
-      <AppCard icon="📝" title="Overdue Tasks" variant="warning">
-        <div class="text-right">
-          <p class="text-3xl font-bold text-amber-500">{{ overdueCount }}</p>
-          <p class="text-sm text-gray-500">Need Attention</p>
-        </div>
-        <template #footer>
-          <div class="flex justify-end">
-            <router-link to="/teacher/tasks">
-              <AppButton label="View All Tasks" variant="secondary" size="sm" />
-            </router-link>
+    <AppCard class="mb-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Student Overview</h2>
+          <div class="flex items-center justify-between border-b pb-3 mb-3">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl text-blue-500">🎓</span>
+              <p class="font-semibold text-gray-800">Total Students</p>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">{{ totalStudents }}</p>
           </div>
-        </template>
-      </AppCard>
-
-      <!-- <AppCard icon="📊" title="Class Average" variant="success">
-        <div class="text-right">
-          <p class="text-3xl font-bold text-emerald-500">N/A</p>
-          <p class="text-sm text-gray-500">Performance</p>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl text-purple-500">🏫</span>
+              <p class="font-semibold text-gray-800">Total Classrooms</p>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">{{ totalClassrooms }}</p>
+          </div>
         </div>
-      </AppCard> -->
-    </div>
 
-    <!-- My Students (summary) -->
+        <div>
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Urgent Actions</h2>
+          <div class="border rounded-lg p-4 bg-red-50 mb-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl text-red-500">🔔</span>
+                <p class="font-semibold text-gray-800">Health Conditions</p>
+              </div>
+              <p class="text-3xl font-bold text-red-500">{{ healthConditionsCount }}</p>
+            </div>
+            <div class="mt-2 text-sm text-red-600">
+              <p>Review and address urgent health conditions reported by students.</p>
+            </div>
+          </div>
+          <div class="border rounded-lg p-4 bg-amber-50">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl text-amber-500">📝</span>
+                <p class="font-semibold text-gray-800">Overdue Tasks</p>
+              </div>
+              <p class="text-3xl font-bold text-amber-500">{{ overdueCount }}</p>
+            </div>
+            <div class="mt-2 flex justify-between items-center">
+              <p class="text-sm text-amber-600">Check on tasks that need attention.</p>
+              <router-link to="/teacher/tasks">
+                <AppButton label="View All Tasks" variant="link" size="sm" />
+              </router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AppCard>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2">
         <AppCard title="Your Classrooms" :subtitle="`${classrooms.length} listed`">
           <template #default>
             <div v-if="loadingClassrooms" class="text-gray-500">Loading classrooms…</div>
             <div v-else-if="classrooms.length === 0" class="text-gray-500">No classrooms found.</div>
-            <div v-else class="space-y-3">
-              <div v-for="c in classrooms" :key="c.classroom_id" class="border rounded-lg p-4">
-                <div class="flex items-start justify-between">
-                  <div>
-                    <p class="font-semibold text-gray-900">
-                      {{ c.classroom_name || c.name || 'Untitled Classroom' }}
-                    </p>
-                    <p class="text-sm text-gray-600">
-                      <span v-if="c.subject">Subject: {{ c.subject }}</span>
-                      <span v-if="c.subject && c.grade_level" class="mx-2">•</span>
-                      <span v-if="c.grade_level">Grade: {{ c.grade_level }}</span>
-                    </p>
-                    <p v-if="c.school_name" class="text-sm text-gray-500">{{ c.school_name }}</p>
-                    <p class="text-xs text-gray-400 mt-1">
-                      Key: <code class="bg-gray-100 px-1 rounded">{{ c.classroom_key }}</code>
-                    </p>
-                  </div>
-                  <div class="text-right">
-                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs"
-                      :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'">
-                      {{ c.is_active ? 'Active' : 'Inactive' }}
-                    </div>
-                    <div class="text-xs text-gray-400 mt-1" v-if="c.created_at">
-                      Created: {{ formatDate(c.created_at) }}
-                    </div>
-                  </div>
-                </div>
+            <div v-else class="space-y-4">
+<div
+  v-for="c in classrooms"
+  :key="c.classroom_id"
+  class="p-4 rounded-md bg-white shadow-sm border hover:shadow-md transition-shadow duration-200"
+>
+  <div class="flex justify-between items-start">
+    <div class="max-w-[70%]">
+      <p class="text-lg font-semibold text-gray-900 break-words">
+        {{ c.classroom_name || c.name || 'Untitled Classroom' }}
+      </p>
+      <p class="text-sm text-gray-600 mt-1">
+        <span v-if="c.subject">Subject: {{ c.subject }}</span>
+        <span v-if="c.subject && c.grade_level" class="mx-2">•</span>
+        <span v-if="c.grade_level">Grade: {{ c.grade_level }}</span>
+      </p>
+    </div>
+    <div class="flex items-center gap-4">
+      <div
+        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+        :class="c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
+      >
+        {{ c.is_active ? 'Active' : 'Inactive' }}
+      </div>
+      <AppButton
+        label="Invite"
+        size="sm"
+        variant="link"
+        @click="openInvite(c, 'teacher_student')"
+      />
+    </div>
+  </div>
+</div>
 
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <AppButton label="Invite Student" size="sm" variant="secondary"
-                    @click="openInvite(c, 'teacher_student')" />
-                  <AppButton label="Invite Parent" size="sm" variant="secondary"
-                    @click="openInvite(c, 'parent_student')" />
-                </div>
-              </div>
             </div>
           </template>
           <template #footer>
             <div class="flex justify-end">
               <router-link to="/teacher/students">
-                <AppButton label="Manage Classrooms" variant="primary" />
+                <AppButton label="Manage All Classrooms" variant="primary" />
               </router-link>
             </div>
           </template>
@@ -126,11 +137,8 @@
       </div>
     </div>
 
-    <!-- Invite Modal -->
     <TeacherInviteModal :is-open="inviteOpen" :classrooms="classrooms" :default-type="inviteDefaults.type"
       :preselected-classroom-id="inviteDefaults.classroomId" @close="inviteOpen = false" />
-
-    <!-- New Task Modal (reusable) -->
     <NewTaskModal :is-open="showNewTask" @close="showNewTask = false" @created="onTaskCreated" />
   </div>
 </template>
@@ -150,7 +158,7 @@ import NewTaskModal from '@/components/teacher/NewTaskModal.vue'
 const store = useStore()
 const router = useRouter()
 const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
-// Teacher name for greeting
+
 const teacherName = ref(
   store.getters['auth/user']?.full_name ||
   store.state.auth?.user?.full_name ||
@@ -174,27 +182,8 @@ const totalStudents = computed(() => studentsMetrics.value?.total_students ?? 0)
 const totalClassrooms = computed(() => studentsMetrics.value?.total_classrooms ?? 0)
 
 const gradeBuckets = computed(() => {
-  // Prefer server-provided metrics
   const serverMap = studentsMetrics.value?.by_grade_level || {}
-  const hasServerData = serverMap && Object.keys(serverMap).length > 0
-
-  let entries
-  if (hasServerData) {
-    entries = Object.entries(serverMap)
-  } else {
-    // Fallback: derive from accepted requests
-    const buckets = {}
-    for (const r of acceptedRequests.value) {
-      const type = r?.relationship_type || r?.requester_type || r?.type || r?.requester?.user_type
-      if (type !== 'student') continue
-      const g = r?.grade_level ?? r?.requester?.grade_level
-      if (!g && g !== 0) continue
-      const key = String(g)
-      buckets[key] = (buckets[key] || 0) + 1
-    }
-    entries = Object.entries(buckets)
-  }
-
+  const entries = Object.entries(serverMap)
   return entries
     .map(([grade, count]) => ({ grade, count }))
     .sort((a, b) => {
@@ -204,34 +193,27 @@ const gradeBuckets = computed(() => {
     })
 })
 
-// accepted requests for fallback derivation
-const acceptedRequests = ref([])
-
 const loadData = async () => {
   try {
     loadingClassrooms.value = true
     loadingMetrics.value = true
-    const [cls, metrics, accepted] = await Promise.all([
+    const [cls, metrics] = await Promise.all([
       token.value ? teacherService.getClassrooms(token.value) : [],
       token.value ? teacherService.getStudentsMetrics(token.value) : null,
-      token.value ? requestsService.listRequests(token.value, 'accepted') : []
     ])
     classrooms.value = Array.isArray(cls) ? cls : []
     studentsMetrics.value = metrics || { total_classrooms: 0, active_classrooms: 0, total_students: 0, by_grade_level: {} }
-    acceptedRequests.value = Array.isArray(accepted) ? accepted : []
 
-    // Additional dashboard metrics (reuse existing endpoints)
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
     const authHeader = token.value ? { Authorization: `Bearer ${token.value.replace(/^bearer\s+/i, '').replace(/^Bearer\s+/, '')}` } : {}
-    // Overdue tasks count from ClassTasksView endpoint
+    
     try {
       const overdueResp = await axios.get(`${API_BASE}/teacher/tasks/overdue`, { headers: authHeader })
-      const overdueList = Array.isArray(overdueResp.data) ? overdueResp.data : []
-      overdueCount.value = overdueList.length
+      overdueCount.value = Array.isArray(overdueResp.data) ? overdueResp.data.length : 0
     } catch {
       overdueCount.value = 0
     }
-    // Health conditions: count conditions array from student report
+    
     try {
       const studentsResp = await axios.get(`${API_BASE}/teacher/reports/students`, { headers: authHeader })
       const students = Array.isArray(studentsResp.data) ? studentsResp.data : []
@@ -261,7 +243,6 @@ const loadData = async () => {
 
 onMounted(loadData)
 
-// Also fetch profile for name if store lacks it
 onMounted(async () => {
   if ((!store.getters['auth/user'] || !store.getters['auth/user']?.full_name) && token.value) {
     try {
@@ -272,28 +253,15 @@ onMounted(async () => {
   }
 })
 
-// invite modal
 const inviteOpen = ref(false)
 const inviteDefaults = ref({ type: 'teacher_student', classroomId: null })
 const openInvite = (row = null, type = 'teacher_student') => {
   inviteDefaults.value = { type, classroomId: row?.classroom_id || classrooms.value?.[0]?.classroom_id || null }
   inviteOpen.value = true
 }
-const openInviteFromHeader = () => openInvite()
 
-// utils
-const formatDate = (v) => {
-  try {
-    if (!v) return ''
-    const d = new Date(v)
-    return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString()
-  } catch { return String(v) }
-}
-
-// new task modal state
 const showNewTask = ref(false)
 const onTaskCreated = () => {
-  // Refresh any dashboard data if needed
   loadData()
 }
 </script>
