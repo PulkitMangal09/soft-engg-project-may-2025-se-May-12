@@ -88,10 +88,11 @@ def approve_family_join_request(request_id: str, approver_id: str) -> Dict[str, 
         .data
     )
     if not exists:
+        # Always store DB role as 'child' for family_members as per requirement
         supabase.table("family_members").insert({
             "family_id": family_id,
             "user_id": requester_id,
-            "role": req.get("relationship_type"),
+            "role": "child",
         }).execute()
 
     return {"request_id": request_id, "status": "approved"}

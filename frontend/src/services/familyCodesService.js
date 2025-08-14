@@ -13,13 +13,12 @@ export const familyCodesService = {
     return data
   },
 
-  // POST /parent/family/codes/{code_id}/revoke
+  // DELETE /parent/family/codes/{code_id}
   async revoke(code_id, token) {
-    const { data } = await axios.post(
-      `${API}/parent/family/codes/${code_id}/revoke`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return data;
+    const { data } = await axios.delete(
+      `${API}/parent/family/codes/${code_id}`,
+      withAuth(token)
+    )
+    return data
   }
 };

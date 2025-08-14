@@ -168,7 +168,44 @@ def get_family_group(
         .execute()
         .data
     )
-    grp["members"] = members or []
+    # Enrich members with user profile fields (full_name/name/email)
+    members = members or []
+    try:
+        user_ids = [m["user_id"] for m in members] if members else []
+        if user_ids:
+            users_res = (
+                supabase
+                .table("users")
+                .select("user_id, full_name, email, user_type")
+                .in_("user_id", user_ids)
+                .execute()
+            )
+            users = getattr(users_res, "data", None) or []
+            by_id = {u["user_id"]: u for u in users}
+            for m in members:
+                u = by_id.get(m["user_id"]) or {}
+                # copy common fields; keep keys consistent with frontend expectations
+                if "full_name" in u and u["full_name"]:
+                    m["full_name"] = u["full_name"]
+                if "email" in u and u["email"]:
+                    m["email"] = u["email"]
+                # derive display role: keep 'head' if set; else from user_type
+                try:
+                    if m.get("role") == "head":
+                        m["display_role"] = "head"
+                    else:
+                        utype = u.get("user_type")
+                        if utype in ("parent", "teacher"):
+                            m["display_role"] = utype
+                        else:
+                            m["display_role"] = "child"
+                except Exception:
+                    pass
+    except Exception:
+        # If enrichment fails, proceed with base member info
+        pass
+
+    grp["members"] = members
     return grp
 
 

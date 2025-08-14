@@ -16,24 +16,54 @@ oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 def get_parent_children_ids(parent_user_id: UUID) -> List[UUID]:
     """
-    Finds the children associated with a given parent's user_id.
-    This is the core authorization function for the parent scope.
+    Resolve parent's children via family groups/members:
+    - Families where the user is family_head_id OR a member with role in ("head", "parent") and is_active.
+    - Children are members in those families with role = "child" and is_active.
+    Returns list of child UUIDs.
     """
-    # Step 1: Find the parent's internal `parent_id` from their `user_id`
-    parent_resp = supabase.table("parents").select("parent_id").eq("user_id", str(parent_user_id)).single().execute()
-    if not parent_resp.data:
-        # This user is not registered as a parent in the `parents` table.
-        raise HTTPException(status_code=403, detail="User is not a registered parent.")
-    
-    parent_id = parent_resp.data['parent_id']
+    # Families where user is head
+    head_resp = (
+        supabase.table("family_groups")
+        .select("family_id")
+        .eq("family_head_id", str(parent_user_id))
+        .eq("is_active", True)
+        .execute()
+    )
+    head_family_ids = {row.get("family_id") for row in (head_resp.data or [])}
 
-    # Step 2: Use the `parent_id` to get all associated children
-    children_resp = supabase.table("parent_children").select("child_id").eq("parent_id", parent_id).execute()
-    if not children_resp.data:
-        return [] # Parent has no children registered
+    # Families where user is parent/head member
+    member_resp = (
+        supabase.table("family_members")
+        .select("family_id, role, is_active")
+        .eq("user_id", str(parent_user_id))
+        .eq("is_active", True)
+        .execute()
+    )
+    member_family_ids = {row.get("family_id") for row in (member_resp.data or []) if row.get("role") in ("head", "parent")}
 
-    # Step 3: Return a list of child UUIDs
-    child_ids = [UUID(child['child_id']) for child in children_resp.data]
+    family_ids = list(head_family_ids.union(member_family_ids))
+    if not family_ids:
+        return []
+
+    # Children within these families
+    fm_resp = (
+        supabase.table("family_members")
+        .select("user_id, role, is_active")
+        .in_("family_id", family_ids)
+        .eq("role", "child")
+        .eq("is_active", True)
+        .execute()
+    )
+    child_ids: List[UUID] = []
+    for row in (fm_resp.data or []):
+        uid = row.get("user_id")
+        if not uid:
+            continue
+        try:
+            child_ids.append(UUID(uid))
+        except Exception:
+            # Skip malformed ids
+            continue
     return child_ids
 
 # =============================================
@@ -172,11 +202,28 @@ def create_task(task: TaskCreate, token: str = Depends(oauth2)):
     # Step 3: Insert the task, ensuring assigned_by is the current parent
     task_data = task.dict()
     task_data['assigned_by'] = str(user.id)
-    
-    response = supabase.table("tasks").insert(task_data).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return response.data[0]
+
+    # Ensure JSON serializable payload (convert UUIDs and datetimes)
+    from datetime import datetime, date
+    serializable = {}
+    for k, v in task_data.items():
+        if isinstance(v, UUID):
+            serializable[k] = str(v)
+        elif isinstance(v, (datetime, date)):
+            # ISO format; for date it yields YYYY-MM-DD
+            serializable[k] = v.isoformat()
+        else:
+            serializable[k] = v
+
+    try:
+        response = supabase.table("tasks").insert(serializable).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to create task: {e}")
+    # Some clients return an APIResponse with .data; ensure we have a row
+    data = getattr(response, "data", None)
+    if not data:
+        raise HTTPException(status_code=400, detail="Failed to create task")
+    return data[0]
 
 # --- Read All Tasks for Parent's Children (Secure) ---
 @router.get("/", response_model=List[dict])
@@ -245,9 +292,10 @@ def update_task(task_id: UUID, task_update: TaskUpdate, token: str = Depends(oau
 
     # Step 4: Perform the update
     update_data = {k: v for k, v in task_update.dict().items() if v is not None}
-    response = supabase.table("tasks").update(update_data).eq("task_id", str(task_id)).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
+    try:
+        supabase.table("tasks").update(update_data).eq("task_id", str(task_id)).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to update task: {e}")
     return {"message": "Task updated successfully"}
 
 # --- Delete Task (Secure) ---
@@ -273,7 +321,8 @@ def delete_task(task_id: UUID, token: str = Depends(oauth2)):
         raise HTTPException(status_code=403, detail="You are not authorized to delete this task.")
 
     # Step 4: Perform the deletion
-    response = supabase.table("tasks").delete().eq("task_id", str(task_id)).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
+    try:
+        supabase.table("tasks").delete().eq("task_id", str(task_id)).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to delete task: {e}")
     return {"message": "Task deleted successfully"}

@@ -20,7 +20,29 @@ oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
 def list_requests(token: str = Depends(oauth2)):
     """List all pending 'family' join requests for families this user heads."""
     user_id = get_user_id_from_token(token)
-    return list_pending_for_family_head(user_id)
+    reqs = list_pending_for_family_head(user_id)
+    # Enrich with requester_name from users table
+    try:
+        requester_ids = [r.get("requester_id") for r in reqs if r.get("requester_id")]
+        if requester_ids:
+            users_res = (
+                supabase
+                .table("users")
+                .select("user_id, full_name, email")
+                .in_("user_id", requester_ids)
+                .execute()
+            )
+            users = getattr(users_res, "data", None) or []
+            by_id = {u["user_id"]: u for u in users}
+            for r in reqs:
+                u = by_id.get(r.get("requester_id")) or {}
+                name = u.get("full_name") or u.get("email")
+                if name:
+                    r["requester_name"] = name
+    except Exception:
+        # If enrichment fails, return base requests
+        pass
+    return reqs
 
 
 @router.post("/{request_id}/approve", response_model=Dict[str, Any])

@@ -43,7 +43,31 @@ def list_family_codes(token: str = Depends(oauth2)):
         .order("created_at", desc=True)
         .execute()
     )
-    return q.data or []
+    codes = q.data or []
+    # attach usage_count from join_requests (consistent with redeem validation)
+    try:
+        code_ids = [c["code_id"] for c in codes if c.get("code_id")]
+        if code_ids:
+            jr = (
+                supabase.table("join_requests")
+                .select("code_id")
+                .in_("code_id", code_ids)
+                .eq("status", "approved")
+                .execute()
+            )
+            rows = getattr(jr, "data", None) or []
+            counts: Dict[str, int] = {}
+            for r in rows:
+                cid = r.get("code_id")
+                if cid:
+                    counts[cid] = counts.get(cid, 0) + 1
+            for c in codes:
+                cid = c.get("code_id")
+                c["usage_count"] = counts.get(cid, 0)
+    except Exception:
+        # if counting fails, leave usage_count absent and let frontend default to 0
+        pass
+    return codes
 
 
 @router.post("/", response_model=Dict[str, Any])
@@ -112,12 +136,13 @@ def revoke_family_code(code_id: UUID = Path(...), token: str = Depends(oauth2)):
     if code["target_id"] not in fam_ids:
         raise HTTPException(403, "Not authorized to revoke this code")
 
-    upd = (
+    # Hard delete the invitation code
+    deleted = (
         supabase.table("invitation_codes")
-        .update({"revoked_at": datetime.utcnow().isoformat() + "Z"})
+        .delete()
         .eq("code_id", str(code_id))
         .execute()
     )
-    if not upd.data:
+    if not getattr(deleted, "data", None):
         raise HTTPException(400, "Failed to revoke code")
     return {"revoked": True}

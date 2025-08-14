@@ -256,16 +256,16 @@
               <li v-for="m in currentGroupMembers" :key="m.user_id" class="py-3 flex items-center justify-between">
                 <div>
                   <div class="font-medium text-gray-800">
-                    {{ m.full_name || m.name || shortId(m.user_id) }}
+                    {{ m.full_name || m.name || m.email || shortId(m.user_id) }}
                   </div>
                   <div class="text-xs text-gray-500">
-                    {{ m.role || 'Member' }}
+                    {{ m.display_role || m.role || 'Member' }}
                     <span v-if="m.joined_at"> • Joined: {{ fmtDate(m.joined_at) }}</span>
                     <span v-if="m.connectionType"> • {{ m.connectionType }}</span>
                   </div>
                 </div>
-                <AppBadge :variant="m.role === 'head' ? 'success' : 'secondary'">
-                  {{ m.role === 'head' ? 'Head' : 'Member' }}
+                <AppBadge :variant="(m.display_role || m.role) === 'head' ? 'success' : ((m.display_role === 'parent' || m.display_role === 'teacher') ? 'info' : 'secondary')">
+                  {{ (m.display_role || m.role) === 'head' ? 'Head' : (m.display_role === 'parent' ? 'Parent' : (m.display_role === 'teacher' ? 'Teacher' : 'Member')) }}
                 </AppBadge>
               </li>
             </ul>

@@ -12,21 +12,26 @@
 
         <!-- Middle section: Navigation Links -->
         <nav class="hidden md:flex space-x-6">
-          <router-link v-for="item in navItems" :key="item.name" :to="item.path" class="text-gray-600 hover:text-blue-600 transition-colors text-lg font-medium" active-class="text-blue-600">
+          <router-link v-for="item in navItems" :key="item.name" :to="item.path"
+            class="text-gray-600 hover:text-blue-600 transition-colors text-lg font-medium"
+            active-class="text-blue-600">
             {{ item.name }}
           </router-link>
         </nav>
 
         <!-- Right section: User Profile -->
         <div class="flex items-center space-x-3">
-          <img src="https://via.placeholder.com/40" alt="User Avatar" class="w-10 h-10 rounded-full object-cover border-2 border-blue-400">
+          <img src="https://via.placeholder.com/40" alt="User Avatar"
+            class="w-10 h-10 rounded-full object-cover border-2 border-blue-400">
           <span class="font-semibold text-gray-700">Mr. Rajnish</span>
         </div>
       </div>
 
       <!-- Mobile Navigation (visible on small screens) -->
       <nav class="md:hidden flex justify-around items-center mt-4">
-        <router-link v-for="item in navItems" :key="item.name" :to="item.path" class="flex flex-col items-center justify-center text-gray-600 hover:text-blue-600 transition-colors w-full" active-class="text-blue-600">
+        <router-link v-for="item in navItems" :key="item.name" :to="item.path"
+          class="flex flex-col items-center justify-center text-gray-600 hover:text-blue-600 transition-colors w-full"
+          active-class="text-blue-600">
           <component :is="item.icon" class="h-6 w-6 mb-1" />
           <span class="text-xs font-medium">{{ item.name }}</span>
         </router-link>
@@ -46,7 +51,6 @@ export default {
       { name: 'Dashboard', path: '/parent/dashboard', icon: HomeIcon },
       { name: 'Analytics', path: '/parent/analytics', icon: ChartBarIcon },
       { name: 'Reports', path: '/parent/reports', icon: ListBulletIcon },
-      { name: 'Settings', path: '/parent/settings', icon: CogIcon },
     ])
 
     return {
@@ -59,6 +63,7 @@ export default {
 <style scoped>
 /* Add a bit of padding to the bottom of the main content to prevent overlap with the fixed footer */
 main {
-  padding-top: 64px; /* Height of the top nav */
+  padding-top: 64px;
+  /* Height of the top nav */
 }
 </style>

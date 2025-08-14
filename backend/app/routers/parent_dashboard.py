@@ -22,31 +22,60 @@ def get_parent_dashboard(
         raise HTTPException(status_code=401, detail="Unauthorized")
     parent_user_id = user_response.user.id
 
-    # 2. Get parent_id
-    parent_resp = supabase.table("parents").select("parent_id").eq("user_id", parent_user_id).single().execute()
-    if not parent_resp.data:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    parent_id = parent_resp.data["parent_id"]
+    # 2. Resolve families via family_groups/family_members
+    head_resp = (
+        supabase.table("family_groups")
+        .select("family_id")
+        .eq("family_head_id", parent_user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    head_family_ids = {row["family_id"] for row in (head_resp.data or [])}
 
-    # 3. Get children (all or specific)
-    children_query = supabase.table("parent_children").select("child_id").eq("parent_id", parent_id)
-    if child_id:
-        children_query = children_query.eq("child_id", child_id)
-    children_resp = children_query.execute()
-    if not children_resp.data:
-        children = []
-    else:
-        children = [c["child_id"] for c in children_resp.data]
+    member_resp = (
+        supabase.table("family_members")
+        .select("family_id, role, is_active")
+        .eq("user_id", parent_user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    member_family_ids = {row["family_id"] for row in (member_resp.data or []) if row.get("role") in ("head", "parent")}
+
+    family_ids = list(head_family_ids.union(member_family_ids))
+
+    # 3. Get children (all or specific) from family memberships
+    children = []
+    if family_ids:
+        fm_query = (
+            supabase.table("family_members")
+            .select("user_id, role, is_active, family_id")
+            .in_("family_id", family_ids)
+            .eq("role", "child")
+            .eq("is_active", True)
+        )
+        if child_id:
+            fm_query = fm_query.eq("user_id", child_id)
+        fm_resp = fm_query.execute()
+        children = list({row["user_id"] for row in (fm_resp.data or [])})
     
-    # 4. Get children details
+    # 4. Get children details (from users table)
     children_details = []
     if children:
-        students_resp = supabase.table("students").select("student_id, name, email, grade_level, school_name, emergency_contact_phone, created_at").in_("student_id", children).execute()
-        children_details = students_resp.data or []
-        
-        # Add avatar_url field for frontend compatibility
-        for child in children_details:
-            child['avatar_url'] = f"https://randomuser.me/api/portraits/lego/{hash(child['student_id']) % 10 + 1}.jpg"
+        users_resp = (
+            supabase.table("users")
+            .select("user_id, full_name, email, created_at, user_type")
+            .in_("user_id", children)
+            .execute()
+        )
+        users = users_resp.data or []
+        for u in users:
+            children_details.append({
+                "student_id": u.get("user_id"),
+                "name": u.get("full_name") or u.get("email") or "Student",
+                "email": u.get("email"),
+                "created_at": u.get("created_at"),
+                "avatar_url": f"https://randomuser.me/api/portraits/lego/{hash(u.get('user_id')) % 10 + 1}.jpg",
+            })
 
     # 5. Summary stats
     summary = {
@@ -139,14 +168,18 @@ def get_parent_dashboard(
                     "achievement": "Significant improvement in task scores"
                 })
 
-    parent_details_resp = supabase.table("parents").select("*").eq("user_id", parent_user_id).single().execute()
-
-    # Ensure parent_details has required fields for frontend
-    parent_details = parent_details_resp.data or {}
-    if not parent_details.get("group"):
-        parent_details["group"] = "Family Group"
-    if not parent_details.get("description"):
-        parent_details["description"] = "Parent dashboard for managing children's activities and health"
+    # Parent details: derive minimal info from users and family_groups (head role)
+    user_resp = supabase.table("users").select("user_id, full_name").eq("user_id", parent_user_id).single().execute()
+    parent_details = {
+        "user_id": parent_user_id,
+        "name": (user_resp.data or {}).get("full_name") or "Parent",
+        "group": "Family",
+        "is_head": bool(head_family_ids),
+        "description": "Parent dashboard for managing children's activities and health",
+        "is_active": True,
+        "created_at": (user_resp.data or {}).get("created_at"),
+        "updated_at": (user_resp.data or {}).get("created_at"),
+    }
 
     # 11. Compose response
     return {
@@ -172,15 +205,40 @@ def get_parent_tasks(
     if not user_response or not user_response.user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     parent_user_id = user_response.user.id
-    parent_resp = supabase.table("parents").select("parent_id").eq("user_id", parent_user_id).single().execute()
-    if not parent_resp.data:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    parent_id = parent_resp.data["parent_id"]
-    children_query = supabase.table("parent_children").select("child_id").eq("parent_id", parent_id)
-    if child_id:
-        children_query = children_query.eq("child_id", child_id)
-    children_resp = children_query.execute()
-    children = [c["child_id"] for c in children_resp.data] if children_resp.data else []
+
+    # Resolve families
+    head_resp = (
+        supabase.table("family_groups")
+        .select("family_id")
+        .eq("family_head_id", parent_user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    head_family_ids = {row["family_id"] for row in (head_resp.data or [])}
+    member_resp = (
+        supabase.table("family_members")
+        .select("family_id, role, is_active")
+        .eq("user_id", parent_user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    member_family_ids = {row["family_id"] for row in (member_resp.data or []) if row.get("role") in ("head", "parent")}
+    family_ids = list(head_family_ids.union(member_family_ids))
+
+    # Resolve children
+    children = []
+    if family_ids:
+        fm_query = (
+            supabase.table("family_members")
+            .select("user_id, role, is_active")
+            .in_("family_id", family_ids)
+            .eq("role", "child")
+            .eq("is_active", True)
+        )
+        if child_id:
+            fm_query = fm_query.eq("user_id", child_id)
+        fm_resp = fm_query.execute()
+        children = list({row["user_id"] for row in (fm_resp.data or [])})
     if not children:
         return []
     query = supabase.table("tasks").select("*")
@@ -193,6 +251,105 @@ def get_parent_tasks(
         query = query.order("created_at", desc=True)
     response = query.execute()  
     return response.data
+
+@router.get("/finance/transactions")
+def get_parent_finance_transactions(
+    token: str = Depends(oauth2),
+    child_id: Optional[str] = Query(None),
+    from_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    to_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    type: Optional[str] = Query(None, description="Income or Expense"),
+    q: Optional[str] = Query(None, description="search text for category/note"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=200),
+):
+    """Return transactions for the parent's children (from family groups), with optional filters.
+
+    Resolution logic:
+    - Identify families where the requester is head (family_head_id) OR a member with role in ('head','parent') and is_active.
+    - Children are users in those families with role = 'child' and is_active.
+    - child_id, if provided, must be within this set.
+    """
+    # Auth: user id
+    user_response = supabase.auth.get_user(token)
+    if not user_response or not user_response.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = user_response.user.id
+
+    # Families where user is head
+    head_resp = (
+        supabase.table("family_groups")
+        .select("family_id")
+        .eq("family_head_id", user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    head_family_ids = {row["family_id"] for row in (head_resp.data or [])}
+
+    # Families where user is a parent/head member
+    member_resp = (
+        supabase.table("family_members")
+        .select("family_id, role, is_active")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    member_family_ids = {row["family_id"] for row in (member_resp.data or []) if row.get("role") in ("head", "parent")}
+
+    family_ids = list(head_family_ids.union(member_family_ids))
+    if not family_ids:
+        return {"items": [], "page": page, "limit": limit, "total": 0}
+
+    # Resolve children (role='child') within these families
+    children_query = (
+        supabase.table("family_members")
+        .select("user_id, family_id, role, is_active")
+        .in_("family_id", family_ids)
+        .eq("role", "child")
+        .eq("is_active", True)
+    )
+    if child_id:
+        children_query = children_query.eq("user_id", child_id)
+    children_resp = children_query.execute()
+    children = list({row["user_id"] for row in (children_resp.data or [])})
+    if not children:
+        return {"items": [], "page": page, "limit": limit, "total": 0}
+
+    # Build base query using transactions.student_id = users.user_id
+    query = (
+        supabase.table("transactions")
+        .select("transaction_id, type, amount, transaction_date, category, note, student_id")
+        .in_("student_id", children)
+    )
+
+    # Date range filter
+    if from_date:
+        query = query.gte("transaction_date", from_date)
+    if to_date:
+        query = query.lte("transaction_date", to_date)
+
+    # Type filter
+    if type in ("Income", "Expense"):
+        query = query.eq("type", type)
+
+    # Order newest first
+    query = query.order("transaction_date", desc=True)
+
+    # Execute (Supabase PostgREST does not support server-side pagination easily without RPC; do client-side slice)
+    resp = query.execute()
+    rows = resp.data or []
+
+    # Text filter (category/note)
+    if q:
+        q_lower = q.lower()
+        rows = [r for r in rows if (str(r.get("category") or "").lower().find(q_lower) >= 0) or (str(r.get("note") or "").lower().find(q_lower) >= 0)]
+
+    total = len(rows)
+    start = (page - 1) * limit
+    end = start + limit
+    items = rows[start:end]
+
+    return {"items": items, "page": page, "limit": limit, "total": total}
 
 @router.get("/health/alerts")
 def get_parent_health_alerts(
@@ -252,15 +409,40 @@ def get_parent_finance_goals(
     if not user_response or not user_response.user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     parent_user_id = user_response.user.id
-    parent_resp = supabase.table("parents").select("parent_id").eq("user_id", parent_user_id).single().execute()
-    if not parent_resp.data:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    parent_id = parent_resp.data["parent_id"]
-    children_query = supabase.table("parent_children").select("child_id").eq("parent_id", parent_id)
-    if child_id:
-        children_query = children_query.eq("child_id", child_id)
-    children_resp = children_query.execute()
-    children = [c["child_id"] for c in children_resp.data] if children_resp.data else []
+
+    # Resolve families
+    head_resp = (
+        supabase.table("family_groups")
+        .select("family_id")
+        .eq("family_head_id", parent_user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    head_family_ids = {row["family_id"] for row in (head_resp.data or [])}
+    member_resp = (
+        supabase.table("family_members")
+        .select("family_id, role, is_active")
+        .eq("user_id", parent_user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    member_family_ids = {row["family_id"] for row in (member_resp.data or []) if row.get("role") in ("head", "parent")}
+    family_ids = list(head_family_ids.union(member_family_ids))
+
+    # Resolve children
+    children = []
+    if family_ids:
+        fm_query = (
+            supabase.table("family_members")
+            .select("user_id, role, is_active")
+            .in_("family_id", family_ids)
+            .eq("role", "child")
+            .eq("is_active", True)
+        )
+        if child_id:
+            fm_query = fm_query.eq("user_id", child_id)
+        fm_resp = fm_query.execute()
+        children = list({row["user_id"] for row in (fm_resp.data or [])})
     if not children:
         return []
     query = supabase.table("savings_goals").select("*").in_("student_id", children)
