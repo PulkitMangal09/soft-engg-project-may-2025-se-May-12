@@ -1,64 +1,47 @@
 <template>
   <div class="flex min-h-screen flex-col bg-gray-100 font-sans">
-    <!-- Header -->
-    <header class="sticky top-0 z-30 border-b bg-white shadow-sm">
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <!-- Left: brand + desktop nav -->
+    <header class="sticky top-0 z-30 bg-white shadow-sm border-b">
+      <div class="mx-auto max-w-7xl flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-6">
-          <RouterLink to="/teacher" class="text-2xl font-bold text-gray-800">
-            GrowthGeine
+          <RouterLink to="/teacher" class="text-xl font-bold text-blue-700">
+            GrowthGenie
           </RouterLink>
 
-          <!-- Desktop nav -->
-          <nav class="hidden md:flex items-center gap-1">
+          <nav class="hidden md:flex items-center gap-3">
             <RouterLink v-for="item in navItems" :key="item.name" :to="item.path"
-              class="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+              class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
               exact-active-class="bg-blue-50 text-blue-600 font-semibold">
               {{ item.name }}
             </RouterLink>
           </nav>
         </div>
 
-        <!-- Right: icons + profile -->
         <div class="flex items-center gap-3">
-          <!-- Notification (placeholder) -->
-          <!-- <button class="text-gray-500 hover:text-gray-700" aria-label="Notifications">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-          </button> -->
-
-          <!-- Profile -->
-          <div class="relative">
-            <button @click="toggleProfileMenu" class="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-gray-100"
-              aria-haspopup="menu" :aria-expanded="isProfileMenuOpen">
+          <div class="relative" ref="profileMenuContainer">
+            <button @click="toggleProfileMenu"
+              class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100" aria-haspopup="true"
+              :aria-expanded="isProfileMenuOpen">
               <span class="hidden md:inline text-sm text-gray-700">{{ displayName }}</span>
-              <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
             <div v-if="isProfileMenuOpen"
-              class="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5" role="menu">
-              <RouterLink to="/teacher" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
-                @click="isProfileMenuOpen = false">
+              class="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black/10">
+              <RouterLink to="/teacher" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="isProfileMenuOpen = false">
                 Profile
               </RouterLink>
-              <RouterLink to="/teacher" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
-                @click="isProfileMenuOpen = false">
+              <RouterLink to="/teacher/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="isProfileMenuOpen = false">
                 Settings
               </RouterLink>
-              <button class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
-                @click="logout">
+              <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" @click="logout">
                 Logout
               </button>
             </div>
           </div>
 
-          <!-- Mobile menu button -->
-          <button class="md:hidden rounded-md p-2 text-gray-600 hover:bg-gray-100" @click="mobileOpen = !mobileOpen"
-            aria-label="Toggle menu">
+          <button class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded" @click="mobileOpen = !mobileOpen">
             <svg v-if="!mobileOpen" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -69,11 +52,10 @@
         </div>
       </div>
 
-      <!-- Mobile nav -->
       <nav v-if="mobileOpen" class="md:hidden border-t bg-white">
-        <div class="mx-auto flex max-w-7xl flex-col px-4 py-2">
+        <div class="px-4 py-2">
           <RouterLink v-for="item in navItems" :key="item.name" :to="item.path"
-            class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+            class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
             exact-active-class="bg-blue-50 text-blue-600 font-semibold" @click="mobileOpen = false">
             {{ item.name }}
           </RouterLink>
@@ -81,9 +63,8 @@
       </nav>
     </header>
 
-    <!-- Main content (single router-view only) -->
-    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-      <div class="mx-auto max-w-7xl px-4 py-6">
+    <main class="flex-1 overflow-y-auto px-4 py-6">
+      <div class="mx-auto max-w-7xl">
         <router-view />
       </div>
     </main>
@@ -108,9 +89,11 @@ const navItems = [
 
 const isProfileMenuOpen = ref(false)
 const mobileOpen = ref(false)
+const profileMenuContainer = ref(null)
 
-const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
 const displayNameManual = ref('')
+const token = computed(() => store.getters['auth/token'] || store.state.auth?.token || '')
+
 const displayName = computed(() =>
   displayNameManual.value ||
   store.getters['auth/user']?.full_name ||
@@ -118,41 +101,41 @@ const displayName = computed(() =>
   (store.state.auth?.user?.email ? store.state.auth.user.email.split('@')[0] : '') ||
   'Teacher'
 )
-const toggleProfileMenu = () => { isProfileMenuOpen.value = !isProfileMenuOpen.value }
+
+const toggleProfileMenu = () => {
+  isProfileMenuOpen.value = !isProfileMenuOpen.value
+}
 
 const onDocClick = (e) => {
-  const menu = document.querySelector('[role="menu"]')
-  const btn = e.target.closest('button')
-  if (!menu) return
-  if (!menu.contains(e.target) && !btn) isProfileMenuOpen.value = false
-}
-onMounted(async () => {
-  document.addEventListener('click', onDocClick)
-  // Fetch profile if name missing
-  if (!store.getters['auth/user']?.full_name && token.value) {
-    try {
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-      const { data } = await axios.get(`${API_BASE}/users/me`, {
-        headers: { Authorization: `Bearer ${token.value}` }
-      })
-      displayNameManual.value = data?.full_name || (data?.email ? data.email.split('@')[0] : '') || ''
-    } catch (e) {
-      // no-op
-    }
+  if (profileMenuContainer.value && !profileMenuContainer.value.contains(e.target)) {
+    isProfileMenuOpen.value = false
   }
-})
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+}
 
 const logout = async () => {
-  try { await store.dispatch('auth/logout') } catch { }
+  try {
+    await store.dispatch('auth/logout')
+  } catch {}
   isProfileMenuOpen.value = false
   mobileOpen.value = false
   router.push('/login/teacher')
 }
-</script>
 
-<style scoped>
-.router-link-exact-active {
-  @apply bg-blue-50 text-blue-600 font-semibold;
-}
-</style>
+onMounted(async () => {
+  document.addEventListener('click', onDocClick)
+
+  if (!store.getters['auth/user']?.full_name && token.value) {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      const { data } = await axios.get(`${API_BASE}/users/me`, {
+        headers: { Authorization: `Bearer ${token.value}` },
+      })
+      displayNameManual.value = data?.full_name || data?.email?.split('@')[0] || ''
+    } catch {}
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+})
+</script>

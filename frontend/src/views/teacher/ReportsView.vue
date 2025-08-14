@@ -1,22 +1,22 @@
 <template>
   <div class="p-6 md:p-8 bg-gray-100 min-h-screen">
-    <!-- Header -->
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Student Reports</h1>
       <AppButton v-if="selectedStudent" label="Select Another Student" icon="🔄" @click="selectedStudent = null"
         variant="secondary" />
     </div>
 
-    <!-- Student Selection -->
     <div v-if="!selectedStudent" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <h2 class="col-span-full text-xl font-semibold text-gray-700 mb-2">Please select a student to view their report:
+      <h2 class="col-span-full text-xl font-semibold text-gray-700 mb-2">Select a student to view their report:
       </h2>
       <div v-if="loading" class="col-span-full text-gray-500">Loading students…</div>
       <div v-else-if="error" class="col-span-full text-red-600">{{ error }}</div>
       <div v-else-if="students.length === 0" class="col-span-full text-gray-500">No students found.</div>
       <div v-else v-for="student in students" :key="student.student_id" @click="selectStudent(student)"
         class="p-4 bg-white rounded-lg shadow-md flex items-center space-x-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all">
-        <!-- <img class="h-16 w-16 rounded-full object-cover" :src="placeholder" :alt="student.full_name"> -->
+        <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+          {{ student.full_name ? student.full_name.charAt(0) : '?' }}
+        </div>
         <div>
           <p class="font-bold text-gray-800">{{ student.full_name || 'Unnamed' }}</p>
           <p class="text-sm text-gray-500">ID: {{ student.student_number || '—' }} • Grade {{ student.grade_level ?? '—'
@@ -25,32 +25,30 @@
       </div>
     </div>
 
-    <!-- Student Report -->
     <div v-else>
-      <!-- Student Header -->
       <AppCard class="mb-8">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
-          <div class="flex items-center mb-4 md:mb-0">
-            <!-- <img class="h-20 w-20 rounded-full object-cover mr-6" :src="placeholder" :alt="selectedStudent.full_name"> -->
+          <div class="flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
+            <div
+              class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl mr-4 flex-shrink-0">
+              {{ selectedStudent.full_name ? selectedStudent.full_name.charAt(0) : '?' }}
+            </div>
             <div>
               <h2 class="text-2xl font-bold text-gray-800">{{ selectedStudent.full_name }}</h2>
-              <p class="text-sm text-gray-500">Student ID: {{ report?.student_number || selectedStudent.student_number
-                || '—' }} • Grade {{ report?.grade_level || selectedStudent.grade_level || '—' }}</p>
+              <p class="text-sm text-gray-500">
+                Student ID: {{ report?.student_number || selectedStudent.student_number || '—' }}
+                • Grade {{ report?.grade_level || selectedStudent.grade_level || '—' }}
+              </p>
               <AppBadge v-if="report?.healthSummary?.latestNutrition" variant="warning" class="mt-2">
-                {{ latestRiskLabel() || 'Nutrition suggestions' }} • {{
-                  formatDateTime(report.healthSummary.latestNutrition.generated_at) }}
+                {{ latestRiskLabel() || 'Nutrition suggestions' }}
               </AppBadge>
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-4 text-center w-full md:w-auto">
-            <!-- <div>
-                  <p class="text-3xl font-bold text-indigo-600">{{ overallGrade }}</p>
-                  <p class="text-xs text-gray-500">Overall Grade</p>
-                </div> -->
-            <div>
+          <div class="grid grid-cols-2 md:grid-cols-2 gap-4 text-center w-full md:w-auto">
+            <div class="border-l border-gray-200 pl-4">
               <p class="text-3xl font-bold text-indigo-600">{{ report?.academicPerformance?.completionRate || 'N/A' }}
               </p>
-              <p class="text-xs text-gray-500">Completion</p>
+              <p class="text-xs text-gray-500">Task Completion</p>
             </div>
             <div>
               <p class="text-3xl font-bold text-indigo-600">{{ report?.academicPerformance?.completedTasks }}/{{
@@ -62,73 +60,79 @@
       </AppCard>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Left Column -->
         <div class="lg:col-span-2 space-y-8">
-          <AppCard title="Health Summary" icon="🏥">
-            <template #action>
-              <AppButton label="Details" size="sm" variant="secondary" @click="openLatestSuggestion" />
-            </template>
-            <p class="font-semibold">Active Conditions:</p>
-            <ul class="list-disc list-inside text-gray-700 mb-4">
-              <li v-for="(c, idx) in (report?.healthSummary?.conditions || [])" :key="idx">
-                {{ c.condition_name }} ({{ c.severity }})
-              </li>
-              <li v-if="!(report?.healthSummary?.conditions || []).length" class="text-gray-500">None</li>
-            </ul>
-            <p class="font-semibold">Latest Nutrition Suggestions:</p>
-            <div v-if="report?.healthSummary?.latestNutrition" class="text-gray-700">
-              <div class="flex items-center gap-2">
-                <AppBadge>{{ formatDateTime(report.healthSummary.latestNutrition.generated_at)
-                  }}</AppBadge>
-                <!-- <span>{{ report.healthSummary.latestNutrition.count ?? '1' }} item(s)</span> -->
-                <ul v-if="(nutritionLabel() || []).length" class="text-gray-500 text-xs list-disc list-inside">
-                  <li v-for="(r, i) in nutritionLabel()" :key="i">{{ r }}</li>
-                </ul>
-              </div>
-            </div>
-            <div v-else class="text-gray-500">No recent nutrition suggestions.</div>
-          </AppCard>
+<AppCard title="Health Summary" icon="🏥">
+  <template #action>
+    <AppButton v-if="report?.healthSummary?.latestNutrition" label="View Details" size="sm" variant="secondary"
+      @click="openLatestSuggestion" />
+  </template>
+
+  <!-- Add padding inside the card -->
+  <div class="p-4 space-y-4">
+    <div>
+      <p class="font-semibold text-gray-700">Active Conditions:</p>
+      <ul class="list-disc list-inside text-gray-700 ml-4 mt-2">
+        <li v-for="(c, idx) in (report?.healthSummary?.conditions || [])" :key="idx">
+          {{ c.condition_name }} ({{ c.severity }})
+        </li>
+        <li v-if="!(report?.healthSummary?.conditions || []).length" class="text-gray-500">None</li>
+      </ul>
+    </div>
+    <hr class="border-gray-200">
+    <div v-if="report?.healthSummary?.latestNutrition">
+      <p class="font-semibold text-gray-700">Latest Nutrition Suggestions:</p>
+      <div class="mt-2 text-gray-700">
+        <AppBadge class="mb-2">{{ latestRiskLabel() || 'Nutrition Suggestions' }}</AppBadge>
+        <p class="text-sm text-gray-500">
+          Generated on: {{ formatDateTime(report.healthSummary.latestNutrition.generated_at) }}
+        </p>
+      </div>
+    </div>
+    <div v-else class="text-gray-500">No recent nutrition suggestions.</div>
+  </div>
+</AppCard>
+
+
           <AppCard title="Academic Performance" icon="📈">
-            <template #action>
-              <!-- <AppButton label="Full Report" size="sm" variant="secondary" /> -->
-            </template>
-            <ul class="grid grid-cols-2 gap-4">
-              <li><span class="font-semibold">Task completion:</span> {{ report?.academicPerformance?.completionRate ||
-                'N/A' }}
-                ({{ report?.academicPerformance?.completedTasks }}/{{ report?.academicPerformance?.totalTasks }})</li>
-              <li><span class="font-semibold">Improvement trend:</span> {{ report?.academicPerformance?.improvement ||
-                '—' }}</li>
+            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <li class="p-4 bg-gray-50 rounded-lg">
+                <span class="font-bold text-gray-800 text-lg">Task Completion Rate</span>
+                <p class="text-2xl font-bold text-indigo-600 mt-1">{{ report?.academicPerformance?.completionRate || 'N/A'
+                  }}</p>
+                <p class="text-sm text-gray-500">({{ report?.academicPerformance?.completedTasks }}/{{
+                  report?.academicPerformance?.totalTasks }}) tasks completed</p>
+              </li>
+              <li class="p-4 bg-gray-50 rounded-lg">
+                <span class="font-bold text-gray-800 text-lg">Improvement Trend</span>
+                <p class="text-2xl font-bold text-indigo-600 mt-1">{{ report?.academicPerformance?.improvement || '—' }}
+                </p>
+                <p class="text-sm text-gray-500">Performance over recent tasks</p>
+              </li>
             </ul>
           </AppCard>
         </div>
-        <!-- Right Column -->
         <div class="space-y-8">
           <AppCard title="Recent Activity" icon="📋">
-            <template #action>
-              <!-- <AppButton label="View All" size="sm" variant="secondary" /> -->
-            </template>
-            <ul class="space-y-3 text-sm" v-if="taskTaskEvents().length">
-              <li v-for="(e, i) in taskTaskEvents()" :key="i" class="flex items-start">
-                <span class="text-gray-500 w-40">{{ formatDateTime(e.when) }}:</span>
-                <span class="flex-1">{{ e.what }}</span>
+            <ul class="space-y-4" v-if="taskTaskEvents().length">
+              <li v-for="(e, i) in taskTaskEvents()" :key="i" class="flex items-start text-sm p-2 bg-gray-50 rounded-lg">
+                <span class="text-gray-500 w-28 flex-shrink-0">{{ formatDateTime(e.when) }}:</span>
+                <span class="flex-1 font-medium">{{ e.what }}</span>
               </li>
             </ul>
             <div v-else class="text-gray-500 text-sm">No recent activity.</div>
           </AppCard>
-          <AppCard title="Actions">
+          <AppCard title="Actions" icon="⚡️">
             <div class="grid grid-cols-1 gap-3">
               <a :href="telLink || undefined" target="_self" class="block w-full">
                 <AppButton class="w-full" label="Call Parent" icon="📞" variant="primary" :disabled="!telLink" />
               </a>
               <AppButton class="w-full" label="Assign Task" icon="📝" variant="secondary" @click="showNewTask = true" />
-              <!-- <AppButton class="w-full" label="Full Report" icon="📊" variant="secondary" /> -->
             </div>
           </AppCard>
         </div>
       </div>
     </div>
 
-    <!-- Suggestion Detail Modal -->
     <div v-if="showSuggestionModal" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black bg-opacity-40" @click="showSuggestionModal = false"></div>
       <div class="relative bg-white rounded-xl shadow-2xl w-11/12 max-w-3xl max-h-[85vh] overflow-y-auto p-6">
@@ -187,14 +191,11 @@
             <p class="text-gray-700">{{ selectedSuggestion.suggestions.notes }}</p>
           </section>
           <div class="mt-4">
-            <!-- <button class="text-sm text-indigo-600 hover:underline" @click="showRaw=!showRaw">{{ showRaw ? 'Hide' : 'Show' }} raw JSON</button>
-            <pre v-if="showRaw" class="mt-2 text-xs bg-gray-100 p-3 rounded overflow-x-auto">{{ JSON.stringify(selectedSuggestion, null, 2) }}</pre> -->
-          </div>
+            </div>
         </div>
       </div>
     </div>
 
-    <!-- Task creation modal (always mounted) -->
     <NewTaskModal :is-open="showNewTask" @close="showNewTask = false" @created="onTaskCreated" />
   </div>
 </template>
