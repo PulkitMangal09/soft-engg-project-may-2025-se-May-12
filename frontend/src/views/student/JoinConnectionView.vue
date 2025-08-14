@@ -21,11 +21,11 @@
           <div class="font-bold text-lg text-gray-800">{{ parentConnections.length }}</div>
           <div class="text-sm text-gray-500">Parents</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-6 text-center">
+        <!-- <div class="bg-white rounded-xl shadow p-6 text-center">
           <span class="text-3xl mb-2">👥</span>
           <div class="font-bold text-lg text-gray-800">{{ familyConnections.length }}</div>
           <div class="text-sm text-gray-500">Families</div>
-        </div>
+        </div> -->
       </div>
 
       <!-- Main Grid -->
@@ -37,22 +37,15 @@
           <form @submit.prevent="joinConnection" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Invitation Code</label>
-              <input
-                v-model.trim="invitationCode"
-                type="text"
-                placeholder="e.g., MATH-ABC123-XYZ789"
+              <input v-model.trim="invitationCode" type="text" placeholder="e.g., MATH-ABC123-XYZ789"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                required
-                autocomplete="off"
-              >
+                required autocomplete="off">
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
-              <select
-                v-model="relationship"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              >
+              <select v-model="relationship"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 <option value="student">Student (to join a classroom)</option>
                 <option value="child">Child (to join a family)</option>
                 <option value="parent">Parent (rare for students, but supported)</option>
@@ -61,22 +54,12 @@
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
-              <textarea
-                v-model="message"
-                rows="3"
-                placeholder="Add a short note for the approver…"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+              <textarea v-model="message" rows="3" placeholder="Add a short note for the approver…"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
 
-            <AppButton
-              type="submit"
-              label="Join Connection"
-              icon="🔗"
-              variant="primary"
-              :loading="isSubmitting"
-              class="w-full"
-            />
+            <AppButton type="submit" label="Join Connection" icon="🔗" variant="primary" :loading="isSubmitting"
+              class="w-full" />
           </form>
 
           <div class="mt-6 p-4 bg-blue-50 rounded-lg">
@@ -110,13 +93,10 @@
                   Teachers
                 </h3>
                 <div class="space-y-3">
-                  <div
-                    v-for="t in teacherConnections"
-                    :key="t.connection_id || t.user_id_1 + '_' + t.user_id_2"
-                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
+                  <div v-for="t in teacherConnections" :key="t.connection_id || t.user_id_1 + '_' + t.user_id_2"
+                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div class="flex items-center space-x-3">
-                      <img :src="avatarFor(t)" class="h-10 w-10 rounded-full object-cover">
+                      <!-- <img :src="avatarFor(t)" class="h-10 w-10 rounded-full object-cover"> -->
                       <div>
                         <p class="font-semibold text-gray-800">{{ nameFor(t, 'Teacher') }}</p>
                         <p class="text-sm text-gray-500">teacher_student</p>
@@ -134,13 +114,10 @@
                   Parents
                 </h3>
                 <div class="space-y-3">
-                  <div
-                    v-for="p in parentConnections"
-                    :key="p.connection_id || p.user_id_1 + '_' + p.user_id_2"
-                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
+                  <div v-for="p in parentConnections" :key="p.connection_id || p.user_id_1 + '_' + p.user_id_2"
+                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div class="flex items-center space-x-3">
-                      <img :src="avatarFor(p)" class="h-10 w-10 rounded-full object-cover">
+                      <!-- <img :src="avatarFor(p)" class="h-10 w-10 rounded-full object-cover"> -->
                       <div>
                         <p class="font-semibold text-gray-800">{{ nameFor(p, 'Parent') }}</p>
                         <p class="text-sm text-gray-500">{{ p.connection_type }}</p>
@@ -158,13 +135,10 @@
                   Families
                 </h3>
                 <div class="space-y-3">
-                  <div
-                    v-for="f in familyConnections"
-                    :key="f.connection_id || f.user_id_1 + '_' + f.user_id_2"
-                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
+                  <div v-for="f in familyConnections" :key="f.connection_id || f.user_id_1 + '_' + f.user_id_2"
+                    class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div class="flex items-center space-x-3">
-                      <img :src="avatarFor(f)" class="h-10 w-10 rounded-full object-cover">
+                      <!-- <img :src="avatarFor(f)" class="h-10 w-10 rounded-full object-cover"> -->
                       <div>
                         <p class="font-semibold text-gray-800">{{ nameFor(f, 'Family') }}</p>
                         <p class="text-sm text-gray-500">family</p>
@@ -190,11 +164,8 @@
         <div v-if="activityLoading" class="text-center py-8 text-gray-500">Loading…</div>
 
         <div v-else class="space-y-3">
-          <div
-            v-for="a in recentActivity"
-            :key="a.activity_id || a.timestamp"
-            class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
-          >
+          <div v-for="a in recentActivity" :key="a.activity_id || a.timestamp"
+            class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
             <span class="text-lg">🔔</span>
             <div class="flex-1">
               <p class="text-sm text-gray-800">{{ a.message }}</p>
@@ -223,7 +194,7 @@ import StudentNavBar from '@/components/layout/StudentNavBar.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export default {
   name: 'JoinConnectionView',
@@ -256,14 +227,17 @@ export default {
 
     const avatarFor = () =>
       `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 90) + 5}.jpg`
-    const nameFor = (row, fallback) => row.display_name || row.name || fallback
+    const nameFor = (row, fallback) => row.partner_name || row.display_name || row.full_name || row.name || row.email || fallback
 
     async function fetchConnectionsByType(type) {
       const { data } = await axios.get(`${API_BASE_URL}/connections`, {
         ...authHeader(),
         params: { type }
       })
-      return Array.isArray(data) ? data : []
+      if (Array.isArray(data)) return data
+      if (Array.isArray(data?.connections)) return data.connections
+      if (Array.isArray(data?.items)) return data.items
+      return []
     }
 
     async function loadConnections() {

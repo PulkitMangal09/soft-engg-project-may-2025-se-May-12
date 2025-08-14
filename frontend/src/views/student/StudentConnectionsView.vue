@@ -20,11 +20,11 @@
           <div class="font-bold text-lg text-gray-800">{{ parentConnections.length }}</div>
           <div class="text-sm text-gray-500">Parents</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-6 text-center">
+        <!-- <div class="bg-white rounded-xl shadow p-6 text-center">
           <span class="text-3xl mb-2">👥</span>
           <div class="font-bold text-lg text-gray-800">{{ familyConnections.length }}</div>
           <div class="text-sm text-gray-500">Families</div>
-        </div>
+        </div> -->
         <div class="bg-white rounded-xl shadow p-6 text-center">
           <span class="text-3xl mb-2">⏳</span>
           <div class="font-bold text-lg text-gray-800">{{ pendingRequests.length }}</div>
@@ -36,9 +36,12 @@
       <div class="bg-white rounded-xl shadow p-6 mb-8">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <AppButton label="Join New Connection" icon="🔗" variant="primary" @click="$router.push('/student/connections')" class="w-full" />
-          <AppButton label="View All Tasks" icon="📝" variant="secondary" @click="$router.push('/student/tasks')" class="w-full" />
-          <AppButton label="Chat Support" icon="💬" variant="secondary" @click="$router.push('/student/chat-support')" class="w-full" />
+          <AppButton label="Join New Connection" icon="🔗" variant="primary"
+            @click="$router.push('/student/connections')" class="w-full" />
+          <AppButton label="View All Tasks" icon="📝" variant="secondary" @click="$router.push('/student/tasks')"
+            class="w-full" />
+          <!-- <AppButton label="Chat Support" icon="💬" variant="secondary" @click="$router.push('/student/chat-support')"
+            class="w-full" /> -->
         </div>
       </div>
 
@@ -64,7 +67,7 @@
             <div v-for="teacher in teacherConnections" :key="teacher.id" class="p-4 bg-gray-50 rounded-lg">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center space-x-3">
-                  <img :src="teacher.avatar" class="h-12 w-12 rounded-full object-cover">
+                  <!-- <img :src="teacher.avatar" class="h-12 w-12 rounded-full object-cover"> -->
                   <div>
                     <h3 class="font-semibold text-gray-800">{{ teacher.name }}</h3>
                     <p class="text-sm text-gray-500">{{ teacher.subject }}</p>
@@ -77,11 +80,11 @@
                 <p><strong>Connected:</strong> {{ teacher.connectedAt }}</p>
                 <p><strong>Active Tasks:</strong> {{ teacher.activeTasks }}</p>
               </div>
-              <div class="flex space-x-2">
+              <!-- <div class="flex space-x-2">
                 <AppButton label="View Tasks" size="sm" variant="secondary" @click="viewTeacherTasks(teacher.id)" />
                 <AppButton label="Chat" size="sm" variant="secondary" @click="chatWithTeacher(teacher.id)" />
                 <AppButton label="Profile" size="sm" variant="secondary" @click="viewTeacherProfile(teacher.id)" />
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
@@ -106,7 +109,7 @@
             <div v-for="parent in parentConnections" :key="parent.id" class="p-4 bg-gray-50 rounded-lg">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center space-x-3">
-                  <img :src="parent.avatar" class="h-12 w-12 rounded-full object-cover">
+                  <!-- <img :src="parent.avatar" class="h-12 w-12 rounded-full object-cover"> -->
                   <div>
                     <h3 class="font-semibold text-gray-800">{{ parent.name }}</h3>
                     <p class="text-sm text-gray-500">{{ parent.relationship }}</p>
@@ -119,18 +122,18 @@
                 <p><strong>Connected:</strong> {{ parent.connectedAt }}</p>
                 <p><strong>Data Access:</strong> {{ parent.dataAccess || '—' }}</p>
               </div>
-              <div class="flex space-x-2">
+              <!-- <div class="flex space-x-2">
                 <AppButton label="Share Data" size="sm" variant="secondary" @click="manageDataSharing(parent.id)" />
                 <AppButton label="Chat" size="sm" variant="secondary" @click="chatWithParent(parent.id)" />
                 <AppButton label="Settings" size="sm" variant="secondary" @click="parentSettings(parent.id)" />
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
       </div>
 
       <!-- Family Connections -->
-      <div class="mt-8 bg-white rounded-xl shadow p-6">
+      <!-- <div class="mt-8 bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold text-gray-800 flex items-center">
             <span class="text-2xl mr-2">👥</span>
@@ -157,7 +160,8 @@
             <div class="text-sm text-gray-600 mb-3">
               <p><strong>Head:</strong> {{ family.head || '—' }}</p>
               <p><strong>Joined:</strong> {{ family.joinedAt }}</p>
-              <p><strong>Family Code:</strong> <code class="bg-gray-200 px-1 rounded">{{ family.code || '—' }}</code></p>
+              <p><strong>Family Code:</strong> <code class="bg-gray-200 px-1 rounded">{{ family.code || '—' }}</code>
+              </p>
             </div>
             <div class="flex space-x-2">
               <AppButton label="View Family" size="sm" variant="secondary" @click="viewFamily(family.id)" />
@@ -165,7 +169,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Pending Requests -->
       <div v-if="pendingRequests.length > 0" class="mt-8 bg-white rounded-xl shadow p-6">
@@ -177,7 +181,7 @@
           <div v-for="request in pendingRequests" :key="request.id" class="p-4 bg-amber-50 rounded-lg">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-3">
-                <img :src="request.avatar" class="h-10 w-10 rounded-full object-cover">
+                <!-- <img :src="request.avatar" class="h-10 w-10 rounded-full object-cover"> -->
                 <div>
                   <p class="font-semibold text-amber-800">{{ request.name }}</p>
                   <p class="text-sm text-amber-600">{{ request.type }} • {{ request.requestedAt }}</p>
@@ -190,10 +194,11 @@
       </div>
 
       <!-- Recent Activity -->
-      <div class="mt-8 bg-white rounded-xl shadow p-6">
+      <!-- <div class="mt-8 bg-white rounded-xl shadow p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Connection Activity</h2>
         <div class="space-y-3">
-          <div v-for="activity in recentActivity" :key="activity.id" class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+          <div v-for="activity in recentActivity" :key="activity.id"
+            class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
             <span class="text-lg">{{ activity.icon }}</span>
             <div class="flex-1">
               <p class="text-sm text-gray-800">{{ activity.message }}</p>
@@ -202,7 +207,7 @@
             <AppBadge :variant="activity.status === 'success' ? 'success' : 'warning'">{{ activity.status }}</AppBadge>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Privacy Settings -->
       <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -216,7 +221,9 @@
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" v-model="privacySettings.healthData" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div
+                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                </div>
               </label>
             </div>
             <div class="flex items-center justify-between">
@@ -226,7 +233,9 @@
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" v-model="privacySettings.academicData" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div
+                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                </div>
               </label>
             </div>
             <div class="flex items-center justify-between">
@@ -236,7 +245,9 @@
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" v-model="privacySettings.financialData" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div
+                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                </div>
               </label>
             </div>
           </div>
@@ -295,48 +306,48 @@ export default {
     const store = useStore()
 
     const teacherConnections = ref([])
-    const parentConnections  = ref([])
-    const familyConnections  = ref([])
-    const pendingRequests    = ref([])
-    const recentActivity     = ref([])
-    const privacySettings    = ref({ healthData: true, academicData: true, financialData: false })
+    const parentConnections = ref([])
+    const familyConnections = ref([])
+    const pendingRequests = ref([])
+    const recentActivity = ref([])
+    const privacySettings = ref({ healthData: true, academicData: true, financialData: true })
 
-    const makeAvatar = () => `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random()*90)+5}.jpg`
+    const makeAvatar = () => `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 90) + 5}.jpg`
     const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString() : '—'
 
     async function loadConnections() {
       const teachers = await connectionsService.listConnections('teacher_student')
-      const parents  = await connectionsService.listConnections('parent_student')
+      const parents = await connectionsService.listConnections('parent_student')
       const families = await connectionsService.listConnections('family')
 
       teacherConnections.value = (teachers || []).map((c) => ({
-        id: c.connection_id || c.user_id_2 || c.user_id_1,
-        name: c.partner_name || 'Teacher',
-        subject: c.subject || '—',
-        school: c.school || '—',
+        id: c.connection_id || c.user_id_2 || c.user_id_1 || c.id,
+        name: c.partner_name || c.display_name || c.full_name || c.name || c.email || 'Teacher',
+        subject: c.subject_grade || '—',
+        school: c.school_name || c.organization || '—',
         avatar: makeAvatar(),
-        connectedAt: fmtDate(c.established_at),
-        activeTasks: c.active_tasks ?? 0,
+        connectedAt: fmtDate(c.established_at || c.created_at || c.joined_at),
+        activeTasks: c.active_tasks ?? c.tasks_count ?? 0,
       }))
 
       parentConnections.value = (parents || []).map((c) => ({
-        id: c.connection_id || c.user_id_2 || c.user_id_1,
-        name: c.partner_name || 'Parent',
-        relationship: c.relationship || 'Parent',
-        family: c.family_name || '—',
-        dataAccess: c.data_access || '—',
+        id: c.connection_id || c.user_id_2 || c.user_id_1 || c.id,
+        name: c.partner_name || c.display_name || c.full_name || c.name || c.email || 'Parent',
+        relationship: c.relationship || c.display_role || c.role || c.connection_type || 'Parent',
+        family: c.family_name || c.group_name || '—',
+        dataAccess: c.data_access || c.access || '—',
         avatar: makeAvatar(),
-        connectedAt: fmtDate(c.established_at),
+        connectedAt: fmtDate(c.established_at || c.created_at || c.joined_at),
       }))
 
       familyConnections.value = (families || []).map((c) => ({
-        id: c.connection_id || c.family_id || c.user_id_2 || c.user_id_1,
-        name: c.family_name || 'Family Group',
-        role: c.role || 'Member',
-        memberCount: c.member_count ?? 0,
-        head: c.family_head || '—',
-        joinedAt: fmtDate(c.established_at),
-        code: c.family_code || null,
+        id: c.connection_id || c.family_id || c.user_id_2 || c.user_id_1 || c.id,
+        name: c.family_name || c.group_name || 'Family Group',
+        role: c.role || c.display_role || 'Member',
+        memberCount: c.member_count ?? c.members_count ?? 0,
+        head: c.family_head || c.head_name || '—',
+        joinedAt: fmtDate(c.established_at || c.created_at || c.joined_at),
+        code: c.family_code || c.code || null,
       }))
     }
 
@@ -363,14 +374,14 @@ export default {
     }
 
     // UI actions (stubs)
-    const viewTeacherTasks   = (id) => store.dispatch('ui/showToast', { title: 'Viewing Tasks', message: 'Redirecting...', type: 'info' })
-    const chatWithTeacher    = (id) => store.dispatch('ui/showToast', { title: 'Opening Chat', message: 'Starting chat...', type: 'info' })
+    const viewTeacherTasks = (id) => store.dispatch('ui/showToast', { title: 'Viewing Tasks', message: 'Redirecting...', type: 'info' })
+    const chatWithTeacher = (id) => store.dispatch('ui/showToast', { title: 'Opening Chat', message: 'Starting chat...', type: 'info' })
     const viewTeacherProfile = (id) => store.dispatch('ui/showToast', { title: 'Teacher Profile', message: 'Opening profile...', type: 'info' })
-    const manageDataSharing  = (id) => store.dispatch('ui/showToast', { title: 'Data Sharing', message: 'Opening settings...', type: 'info' })
-    const chatWithParent     = (id) => store.dispatch('ui/showToast', { title: 'Opening Chat', message: 'Starting chat...', type: 'info' })
-    const parentSettings     = (id) => store.dispatch('ui/showToast', { title: 'Parent Settings', message: 'Opening settings...', type: 'info' })
-    const viewFamily         = (id) => store.dispatch('ui/showToast', { title: 'Family View', message: 'Opening family...', type: 'info' })
-    const leaveFamily        = (id) => store.dispatch('ui/showToast', { title: 'Leave Family', message: 'Not implemented yet', type: 'warning' })
+    const manageDataSharing = (id) => store.dispatch('ui/showToast', { title: 'Data Sharing', message: 'Opening settings...', type: 'info' })
+    const chatWithParent = (id) => store.dispatch('ui/showToast', { title: 'Opening Chat', message: 'Starting chat...', type: 'info' })
+    const parentSettings = (id) => store.dispatch('ui/showToast', { title: 'Parent Settings', message: 'Opening settings...', type: 'info' })
+    const viewFamily = (id) => store.dispatch('ui/showToast', { title: 'Family View', message: 'Opening family...', type: 'info' })
+    const leaveFamily = (id) => store.dispatch('ui/showToast', { title: 'Leave Family', message: 'Not implemented yet', type: 'warning' })
 
     onMounted(async () => {
       await Promise.all([loadConnections(), loadPending(), loadActivity()])

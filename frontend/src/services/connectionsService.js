@@ -9,7 +9,10 @@ export const connectionsService = {
 
   // My outbound pending requests
   getMyPendingRequests() {
-    return api.get('/requests/pending-requests').then(r => r.data);
+    return api.get('/requests/pending-requests').then(r => {
+      const d = r.data
+      return Array.isArray(d?.requests) ? d.requests : (Array.isArray(d) ? d : [])
+    });
   },
 
   // Approver/owner pending (family head / teacher)
@@ -30,6 +33,12 @@ export const connectionsService = {
     return api.get('/connections/stats').then(r => r.data);
   },
   listConnections(type) { // type?: teacher_student | parent_student | family
-    return api.get('/connections/', { params: { type } }).then(r => r.data);
+    return api.get('/connections/', { params: { type } }).then(r => {
+      const d = r.data
+      if (Array.isArray(d)) return d
+      if (Array.isArray(d?.connections)) return d.connections
+      if (Array.isArray(d?.items)) return d.items
+      return []
+    });
   },
 };

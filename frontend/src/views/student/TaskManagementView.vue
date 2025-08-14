@@ -10,7 +10,7 @@
       </div>
 
       <!-- Connection Status -->
-      <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+      <!-- <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
             <span class="text-lg">👨‍🏫</span>
@@ -23,7 +23,7 @@
             Manage Connections →
           </router-link>
         </div>
-      </div>
+      </div> -->
 
       <!-- Task Filters -->
       <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
@@ -36,7 +36,8 @@
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
           </select>
-          <select v-if="selectedFilter === 'teacher'" v-model="selectedTeacher" class="border-gray-300 rounded-lg text-sm">
+          <select v-if="selectedFilter === 'teacher'" v-model="selectedTeacher"
+            class="border-gray-300 rounded-lg text-sm">
             <option value="all">All Teachers</option>
             <option v-for="teacher in connectedTeachers" :key="teacher.id" :value="teacher.id">
               {{ teacher.name }}
@@ -129,7 +130,8 @@
       <!-- Task List -->
       <div class="space-y-4">
         <template v-if="filteredTasks.length">
-          <div v-for="task in filteredTasks" :key="task.__uuid" class="bg-white rounded-xl shadow-sm p-4 flex items-start">
+          <div v-for="task in filteredTasks" :key="task.__uuid"
+            class="bg-white rounded-xl shadow-sm p-4 flex items-start">
             <div :class="task.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'"
               class="h-3 w-3 rounded-full mt-1 mr-3"></div>
 
@@ -155,7 +157,8 @@
                 </span>
               </div>
               <div v-if="task.teacher" class="mt-2 flex items-center space-x-2">
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   Teacher Task
                 </span>
                 <span class="text-xs text-gray-500">Assigned by {{ task.teacher }}</span>

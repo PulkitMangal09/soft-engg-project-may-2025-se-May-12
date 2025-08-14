@@ -9,15 +9,12 @@
         </router-link>
         <!-- Center: Navigation Links (desktop) -->
         <div class="hidden md:flex space-x-6">
-          <router-link v-for="item in navItems" :key="item.to" :to="item.to"
-:class="{
-  'text-blue-700 font-semibold border-b-2 border-blue-500':
-    item.to === '/student' 
-      ? $route.path.replace(/\/+$/, '') === '/student'
-      : $route.path.startsWith(item.to)
-}"
-
-          >
+          <router-link v-for="item in navItems" :key="item.to" :to="item.to" :class="{
+            'text-blue-700 font-semibold border-b-2 border-blue-500':
+              item.to === '/student'
+                ? $route.path.replace(/\/+$/, '') === '/student'
+                : $route.path.startsWith(item.to)
+          }">
             <span class="text-xl mr-1">{{ item.icon }}</span>
             <span class="text-sm">{{ item.label }}</span>
           </router-link>
@@ -51,18 +48,16 @@
     <div
       class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-40">
       <router-link v-for="item in navItems" :key="item.to" :to="item.to"
-        class="flex flex-col items-center py-1 px-2 rounded-lg transition-colors"
-        :class="{
-  'text-blue-600 bg-blue-50': 
-    item.to === '/student' 
-      ? $route.path === '/student' 
-      : $route.path.startsWith(item.to),
-  'text-gray-500 hover:text-blue-500': 
-    !(item.to === '/student' 
-      ? $route.path === '/student' 
-      : $route.path.startsWith(item.to))
-}"
->
+        class="flex flex-col items-center py-1 px-2 rounded-lg transition-colors" :class="{
+          'text-blue-600 bg-blue-50':
+            item.to === '/student'
+              ? $route.path === '/student'
+              : $route.path.startsWith(item.to),
+          'text-gray-500 hover:text-blue-500':
+            !(item.to === '/student'
+              ? $route.path === '/student'
+              : $route.path.startsWith(item.to))
+        }">
         <span class="text-2xl">{{ item.icon }}</span>
         <span class="text-xs mt-0.5">{{ item.label }}</span>
       </router-link>
@@ -83,6 +78,7 @@ export default {
         { label: 'Finance', icon: '💰', to: '/student/finance' },
         { label: 'Emotions', icon: '😊', to: '/student/emotion' },
         { label: 'Health', icon: '🥗', to: '/student/health' },
+        { label: 'Connections', icon: '🔗', to: '/student/my-connections' },
       ]
     }
   },

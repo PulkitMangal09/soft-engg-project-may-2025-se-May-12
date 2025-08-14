@@ -38,7 +38,7 @@ axios.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid, redirect to login
       store.dispatch('auth/logout')
-      router.push('/login')
+      router.push('/')
     }
     return Promise.reject(error)
   }
