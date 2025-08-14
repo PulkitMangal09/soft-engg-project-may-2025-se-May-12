@@ -8,7 +8,7 @@ const withAuth = (t) => ({ headers: { Authorization: `Bearer ${asBearer(t)}` } }
 
 export const parentService = {
   // Dashboard (keep if you have these routes)
-  async getDashboard() {
+  async getDashboard(token) {
     const { data } = await axios.get(`${API}/parent/dashboard/`, withAuth(token))
     return data
   },
@@ -22,8 +22,9 @@ export const parentService = {
   },
 
   // Children
-  async getChildren() {
-    const { data } = await axios.get(`${API}/parent/children`, withAuth(token))
+  async getChildren(token) {
+    // Use reports endpoint that lists only student-children
+    const { data } = await axios.get(`${API}/parent/reports/students`, withAuth(token))
     return data
   },
   async getChildrenMetrics() {
@@ -36,7 +37,8 @@ export const parentService = {
     const { data } = await api.get('/parent/family/overview')
     return data
   },
-  async getFamilyGroups() {
+  async getFamilyGroups(token) {
+    // If api client auto-injects auth, this is fine; otherwise switch to axios with withAuth(token)
     const { data } = await api.get('/parent/family/groups')
     return data
   },
@@ -46,13 +48,14 @@ export const parentService = {
   },
 
   // *** Requests (now use /requests router) ***
-  async getFamilyJoinRequests() {
+  async getFamilyJoinRequests(token) {
     const { data } = await axios.get(`${API}/parent/requests/`, withAuth(token))
     return data
   },
-  async respondToFamilyJoinRequest(requestId, action /* 'approve'|'reject' */) {
-    // unified handler expects 'accept'|'reject'
-    const { data } = await axios.post(`${API}/parent/requests/${id}/${action}`, {}, withAuth(token))
+  async respondToFamilyJoinRequest(requestId, action, token) {
+    // Map legacy 'approve' to 'accept'
+    const mapped = action === 'approve' ? 'accept' : action
+    const { data } = await axios.post(`${API}/parent/requests/${requestId}/${mapped}`, {}, withAuth(token))
     return data
   },
 }
