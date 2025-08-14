@@ -9,7 +9,7 @@
         </div>
         <div class="mt-4 md:mt-0 flex space-x-3">
           <AppButton label="Generate Family Code" icon="🔑" variant="secondary" @click="isInvitationModalOpen = true" />
-          <AppButton label="Manage Family" icon="👥" variant="primary" />
+          <AppButton label="Manage Family" icon="👥" variant="primary" @click="$router.push('/parent/family')" />
         </div>
       </div>
 

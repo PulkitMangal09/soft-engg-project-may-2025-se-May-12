@@ -16,16 +16,16 @@
           <div class="font-bold text-lg text-gray-800">{{ teacherConnections.length }}</div>
           <div class="text-sm text-gray-500">Teachers</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-6 text-center">
+        <!-- <div class="bg-white rounded-xl shadow p-6 text-center">
           <span class="text-3xl mb-2">👨‍👩‍👧‍👦</span>
           <div class="font-bold text-lg text-gray-800">{{ parentConnections.length }}</div>
           <div class="text-sm text-gray-500">Parents</div>
-        </div>
-        <!-- <div class="bg-white rounded-xl shadow p-6 text-center">
-          <span class="text-3xl mb-2">👥</span>
-          <div class="font-bold text-lg text-gray-800">{{ familyConnections.length }}</div>
-          <div class="text-sm text-gray-500">Families</div>
         </div> -->
+        <div class="bg-white rounded-xl shadow p-6 text-center">
+          <span class="text-3xl mb-2">👨‍👩‍👧‍👦</span>
+          <div class="font-bold text-lg text-gray-800">{{ familyConnections.length }}</div>
+          <div class="text-sm text-gray-500">Parents</div>
+        </div>
       </div>
 
       <!-- Main Grid -->
@@ -131,8 +131,8 @@
               <!-- Families -->
               <div v-if="familyConnections.length">
                 <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
-                  <span class="text-xl mr-2">👥</span>
-                  Families
+                  <span class="text-xl mr-2">👨‍👩‍👧‍👦</span>
+                  Parents
                 </h3>
                 <div class="space-y-3">
                   <div v-for="f in familyConnections" :key="f.connection_id || f.user_id_1 + '_' + f.user_id_2"

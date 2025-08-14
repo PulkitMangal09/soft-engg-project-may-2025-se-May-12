@@ -10,7 +10,11 @@ oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 @router.get("/")
-def list_connections(token: str = Depends(oauth2), type: Optional[str] = Query(default=None)) -> List[Dict[str, Any]]:
+def list_connections(
+    token: str = Depends(oauth2),
+    type: Optional[str] = Query(default=None),
+    debug: Optional[int] = Query(default=None),
+) -> List[Dict[str, Any]]:
     """List connections for the caller built from classroom/family sources, enriched with partner fields.
 
     Supports type filter: teacher_student | parent_student | family
@@ -49,6 +53,11 @@ def list_connections(token: str = Depends(oauth2), type: Optional[str] = Query(d
     teacher_items: List[Dict[str, Any]] = []
     parent_items: List[Dict[str, Any]] = []
     family_items: List[Dict[str, Any]] = []
+    # debug vars
+    dbg_my_memberships: List[Dict[str, Any]] = []
+    dbg_family_ids: List[str] = []
+    dbg_student_families: List[str] = []
+    dbg_parent_members_count: int = 0
 
     # Build teacher_student connections when caller is a student
     try:
@@ -125,80 +134,132 @@ def list_connections(token: str = Depends(oauth2), type: Optional[str] = Query(d
 
     # Build parent_student connections from family memberships (caller as child)
     try:
+        # Find families where the current user is a member
         fam_rows = (
             supabase.table("family_members")
-            .select("family_id, role, joined_at")
-            .eq("user_id", user_id)
-            .eq("is_active", True)
+            .select("family_id, role, relationship_type, joined_at, is_active")
+            .eq("user_id", user_id)  # user_id from token matches family_members.user_id
             .execute()
         )
         my_memberships = getattr(fam_rows, "data", []) or []
+        # treat null is_active as True
+        my_memberships = [m for m in my_memberships if m.get("is_active", True)]
         family_ids = [m.get("family_id") for m in my_memberships if m.get("family_id")]
-        child_family_ids = [m.get("family_id") for m in my_memberships if m.get("role") == "child"]
+        
+        # capture debug
+        dbg_my_memberships = my_memberships[:]
+        dbg_family_ids = family_ids[:]
 
-        # Parents in the same families where I'm a child
-        parent_members = []
-        if child_family_ids:
-            parent_members = (
+        if family_ids:
+            # Get ALL family members from the user's families (excluding self)
+            all_family_members = (
                 supabase.table("family_members")
-                .select("family_id, user_id, role, joined_at")
-                .in_("family_id", child_family_ids)
-                .in_("role", ["parent", "head"])
+                .select("family_id, user_id, role, relationship_type, joined_at, is_active")
+                .in_("family_id", family_ids)
+                .neq("user_id", user_id)  # exclude self
+                .execute()
+                .data
+                or []
+            )
+            
+            # Filter active members
+            active_family_members = [
+                fm for fm in all_family_members 
+                if fm.get("is_active", True) and fm.get("user_id")
+            ]
+            
+            dbg_parent_members_count = len(active_family_members)
+            
+            # Get user profiles for all family members
+            member_ids = [fm.get("user_id") for fm in active_family_members if fm.get("user_id")]
+            member_profiles = fetch_users(member_ids)
+            
+            # Create parent_student connections
+            for fm in active_family_members:
+                prof = member_profiles.get(fm.get("user_id") or "", {})
+                
+                # Determine display role - prefer family role, fallback to user_type
+                display_role = fm.get("role") or prof.get("user_type") or "Family Member"
+                
+                parent_items.append({
+                    "connection_type": "parent_student",
+                    "partner_id": fm.get("user_id"),
+                    "partner_name": prof.get("full_name"),
+                    "email": prof.get("email"),
+                    "user_type": prof.get("user_type"),
+                    "display_role": display_role,
+                    "family_id": fm.get("family_id"),
+                    "family_name": None,  # Could be populated from family_groups if needed
+                    "relationship_type": fm.get("relationship_type"),
+                    "established_at": fm.get("joined_at"),
+                })
+
+    except Exception as e:
+        print(f"Error building parent connections: {e}")
+        parent_items = []
+
+    # FIXED: Build family connections (family heads and group info)
+    try:
+        if family_ids:
+            # Get family group details including family head
+            family_groups = (
+                supabase.table("family_groups")
+                .select("family_id, family_name, family_head_id, created_at, is_active")
+                .in_("family_id", family_ids)
                 .eq("is_active", True)
                 .execute()
                 .data
                 or []
             )
-        parent_ids = [pm.get("user_id") for pm in parent_members if pm.get("user_id")]
-        pmap = fetch_users(parent_ids)
-        for pm in parent_members:
-            prof = pmap.get(pm.get("user_id") or "", {})
-            parent_items.append({
-                "connection_type": "parent_student",
-                "partner_id": pm.get("user_id"),
-                "partner_name": prof.get("full_name"),
-                "email": prof.get("email"),
-                "user_type": prof.get("user_type"),
-                "display_role": prof.get("user_type"),
-                "family_id": pm.get("family_id"),
-                "established_at": pm.get("joined_at"),
-            })
+            
+            # Get family head profiles
+            head_ids = [fg.get("family_head_id") for fg in family_groups if fg.get("family_head_id")]
+            head_profiles = fetch_users(head_ids)
+            
+            for fg in family_groups:
+                head_id = fg.get("family_head_id")
+                # Only show family head if it's not the current user
+                if head_id and head_id != user_id:
+                    head_prof = head_profiles.get(head_id, {})
+                    family_items.append({
+                        "connection_type": "family",
+                        "partner_id": head_id,
+                        "partner_name": head_prof.get("full_name"),
+                        "email": head_prof.get("email"),
+                        "user_type": head_prof.get("user_type"),
+                        "display_role": "Family Head",
+                        "family_id": fg.get("family_id"),
+                        "family_name": fg.get("family_name"),
+                        "relationship_type": "head",
+                        "established_at": fg.get("created_at"),
+                    })
 
-        # Family group entries for all families I'm part of
-        fam_groups = []
-        if family_ids:
-            fam_groups = (
-                supabase.table("family_groups")
-                .select("family_id, name, family_name, family_head_id, created_at")
-                .in_("family_id", family_ids)
-                .execute()
-                .data
-                or []
-            )
-        # Map my role in each family
-        role_map: Dict[str, str] = {}
-        for m in my_memberships:
-            fid = m.get("family_id")
-            if fid and fid not in role_map:
-                role_map[fid] = m.get("role")
-        for fg in fam_groups:
-            family_items.append({
-                "connection_type": "family",
-                "family_id": fg.get("family_id"),
-                "family_name": fg.get("family_name") or fg.get("name"),
-                "role": role_map.get(fg.get("family_id"), None),
-                "established_at": fg.get("created_at"),
-            })
-    except Exception:
-        parent_items = []
+    except Exception as e:
+        print(f"Error building family connections: {e}")
         family_items = []
 
     # Apply type filter
     if type == "teacher_student":
-        return teacher_items
-    if type == "parent_student":
-        return parent_items
-    if type == "family":
-        return family_items
+        items = teacher_items
+    elif type == "parent_student":
+        items = parent_items
+    elif type == "family":
+        items = family_items
+    else:
+        items = teacher_items + parent_items + family_items
 
-    return teacher_items + parent_items + family_items
+    if debug:
+        return {
+            "items": items,
+            "debug": {
+                "my_memberships_count": len(dbg_my_memberships),
+                "my_memberships_sample": dbg_my_memberships[:3],
+                "family_ids": dbg_family_ids,
+                "parent_members_count": dbg_parent_members_count,
+                "teacher_items_count": len(teacher_items),
+                "parent_items_count": len(parent_items),
+                "family_items_count": len(family_items),
+            },
+        }
+
+    return items

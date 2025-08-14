@@ -120,7 +120,7 @@
               <div class="text-sm text-gray-600 mb-3">
                 <p><strong>Family:</strong> {{ parent.family || '—' }}</p>
                 <p><strong>Connected:</strong> {{ parent.connectedAt }}</p>
-                <p><strong>Data Access:</strong> {{ parent.dataAccess || '—' }}</p>
+                <!-- <p><strong>Data Access:</strong> {{ parent.dataAccess || '—' }}</p> -->
               </div>
               <!-- <div class="flex space-x-2">
                 <AppButton label="Share Data" size="sm" variant="secondary" @click="manageDataSharing(parent.id)" />
@@ -330,10 +330,12 @@ export default {
         activeTasks: c.active_tasks ?? c.tasks_count ?? 0,
       }))
 
-      parentConnections.value = (parents || []).map((c) => ({
-        id: c.connection_id || c.user_id_2 || c.user_id_1 || c.id,
+      // Prefer family connections API for parent-like display (family heads/guardians)
+      const parentLike = (families || [])
+      parentConnections.value = parentLike.map((c) => ({
+        id: c.connection_id || c.partner_id || c.family_id || c.id,
         name: c.partner_name || c.display_name || c.full_name || c.name || c.email || 'Parent',
-        relationship: c.relationship || c.display_role || c.role || c.connection_type || 'Parent',
+        relationship: c.relationship || c.relationship_type || c.display_role || c.role || 'Parent',
         family: c.family_name || c.group_name || '—',
         dataAccess: c.data_access || c.access || '—',
         avatar: makeAvatar(),
