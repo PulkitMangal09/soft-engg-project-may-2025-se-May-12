@@ -61,10 +61,10 @@ import ParentAnalyticsView from '@/views/parent/AnalyticsView.vue'
 import ParentChildAnalyticsView from '@/views/parent/ChildAnalyticsView.vue'
 import ParentTasksView from '@/views/parent/TasksView.vue'
 import ParentAssignTaskView from '@/views/parent/AssignTaskView.vue'
-import ParentSettingsView from '@/views/parent/SettingsView.vue'
+import ParentReportsView from '@/views/parent/ParentReportsView.vue'
 import JoinFamilyView from '@/views/parent/JoinFamilyView.vue'
 
-// Teacher Views
+// Teacher Views  
 import TeacherLayout from '@/components/layout/TeacherLayout.vue'
 import TeacherDashboard from '@/views/teacher/DashboardView.vue'
 import MyStudentsView from '@/views/teacher/MyStudentsView.vue'
@@ -131,23 +131,25 @@ const routes = [
         component: DietView,
         meta: { title: 'Diet & Nutrition' }
       },
-      {path: "Addtransaction",
-       name: "addtransaction",
-       component: AddTransactions
-      },
-      {path: "EditTransaction/:id",
-       name: "edittransaction",
-       component: EditTransaction
+      {
+        path: "Addtransaction",
+        name: "addtransaction",
+        component: AddTransactions
       },
       {
-  path: 'add-goal',
-  name: 'AddGoal',
-  component: AddSavingGoal // lazy-load
+        path: "EditTransaction/:id",
+        name: "edittransaction",
+        component: EditTransaction
       },
       {
-  path: 'add-goal/:id',
-  name: 'EditGoal',
-  component: EditGoal// lazy-load
+        path: 'add-goal',
+        name: 'AddGoal',
+        component: AddSavingGoal // lazy-load
+      },
+      {
+        path: 'add-goal/:id',
+        name: 'EditGoal',
+        component: EditGoal// lazy-load
       },
       { path: 'my-connections', name: 'StudentConnections', component: StudentConnectionsView },
       { path: 'connections', name: 'JoinConnection', component: JoinConnectionView },
@@ -203,7 +205,7 @@ const routes = [
       { path: 'analytics/:childId', name: 'ParentChildAnalytics', component: ParentChildAnalyticsView, props: true },
       { path: 'tasks', name: 'ParentTasks', component: ParentTasksView },
       { path: 'tasks/assign', name: 'ParentAssignTask', component: ParentAssignTaskView },
-      { path: 'settings', name: 'ParentSettings', component: ParentSettingsView },
+      { path: 'reports', name: 'ParentReports', component: ParentReportsView },
       { path: 'join-family', name: 'JoinFamily', component: JoinFamilyView },
     ]
   },

@@ -26,6 +26,7 @@ from app.routers.parent_children import router as parent_children_router
 from app.routers.parent_requests import router as parent_requests_router
 from app.routers.parent_tasks import router as parent_tasks_router
 from app.routers.parent_family import router as parent_family_router
+from app.routers.parent_reports import router as parent_reports_router
 from app.routers.invitation_codes import router as invitation_codes_router
 from app.routers.connection_requests import router as connection_requests_router
 from app.routers.connections import router as connections_router
@@ -102,6 +103,7 @@ app.include_router(parent_children_router)
 app.include_router(parent_requests_router)
 app.include_router(parent_tasks_router)
 app.include_router(parent_family_router)
+app.include_router(parent_reports_router)
 app.include_router(invitation_codes_router)
 app.include_router(connection_requests_router)
 app.include_router(connections_router)
