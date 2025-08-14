@@ -85,7 +85,7 @@
           <AppButton variant="secondary" size="sm" @click="editGoal(goal)">
             Edit
           </AppButton>
-          <AppButton variant="error" size="sm" @click="confirmDelete(goal)">
+          <AppButton variant="error" size="sm" @click="requestGoalDelete(goal)">
             Delete
           </AppButton>
         </div>
@@ -94,19 +94,41 @@
       <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
         <h2 class="text-lg font-bold mb-4">Add to {{ selectedGoal?.title }}</h2>
 
-        <input
-          type="number"
-          v-model="contributionAmount"
-          placeholder="Enter amount"
-          class="w-full border border-gray-300 rounded-md p-2 mb-4"
-        />
+        <input type="number" v-model="contributionAmount"placeholder="Enter amount" class="w-full border border-gray-300 rounded-md p-2 mb-4" required/>
 
         <div class="flex justify-end gap-2">
-          <AppButton variant="secondary" @click="cancelContribution = false">Cancel</AppButton>
+          <AppButton variant="secondary" @click="cancelContribution">Cancel</AppButton>
           <AppButton variant="primary" @click="confirmContribution">Confirm</AppButton>
         </div>
       </div>
     </div>
+      <!-- Delete Confirmation Modal -->
+  <div
+    v-if="showGoalDeleteConfirm"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  >
+    <div class="bg-white p-6 rounded-lg w-96 shadow-lg">
+      <h3 class="text-lg font-bold mb-4">Confirm Delete</h3>
+      <p class="mb-6">
+        Are you sure you want to delete the goal
+        <strong>{{ goalToDelete }}</strong>?
+      </p>
+      <div class="flex justify-end space-x-3">
+        <button
+          @click="cancelGoalDelete"
+          class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          @click="confirmGoalDelete"
+          class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
 
           </div>
         </div>
@@ -256,6 +278,8 @@
   import AppButton from '@/components/ui/AppButton.vue'
   import { fetchDashboardData } from '@/services/finservice'
   import { deleteTransaction } from '@/services/finservice'
+  import { contributeToGoal } from '@/services/finservice'
+  import { deleteGoal } from '@/services/finservice'
 
 export default {
   name: 'StudentFinanceView',
@@ -277,7 +301,7 @@ export default {
     const transactionToDelete = ref(null)
     const goalToDelete = ref(null)
     const goalToContribute = ref(null)
-    const contributionAmount = ref('')
+    const contributionAmount = ref(0)
     const showDeleteConfirm = ref(false)
     const showGoalDeleteConfirm = ref(false)
     const showContributionModal = ref(false)
@@ -347,7 +371,7 @@ export default {
 
     // Goal delete
     function requestGoalDelete(goal) {
-      
+
       goalToDelete.value = goal
       showGoalDeleteConfirm.value = true
     }
@@ -358,10 +382,11 @@ export default {
     async function confirmGoalDelete() {
       if (!goalToDelete.value) return
       try {
-        await deleteGoal(goalToDelete.value.id)
+        await deleteGoal(goalToDelete.value.goal_id)
         savingsGoals.value = savingsGoals.value.filter(g => g.id !== goalToDelete.value.id)
         showGoalDeleteConfirm.value = false
         goalToDelete.value = null
+        await loadDashboard()
       } catch (err) {
         console.error('Failed to delete goal:', err)
       }
@@ -369,20 +394,18 @@ export default {
 
     // Contribution flow
     function requestContribution(goal) {
-    
       goalToContribute.value = goal
       contributionAmount.value = ''
       showContributionModal.value = true
     }
     function cancelContribution() {
-      console.log("cancel")
       goalToContribute.value = null
       showContributionModal.value = false
     }
     async function confirmContribution() {
-      if (!goalToContribute.value || !contributionAmount.value) return
+      //if (!goalToContribute.value || !contributionAmount.value) return
       try {
-        await contributeToGoal(goalToContribute.value.id, contributionAmount.value)
+        await contributeToGoal(goalToContribute.value.goal_id, contributionAmount.value)
         // Refresh or update local goal progress
         await loadDashboard()
         showContributionModal.value = false
@@ -424,7 +447,8 @@ export default {
       router.push('/student/add-goal')
     }
     function editGoal(goal) {
-      router.push({ name: 'editgoal', params: { id: goal.id } })
+
+      router.push({ name: 'EditGoal', params: { id: goal.goal_id } })
     }
 
     onMounted(async () => {

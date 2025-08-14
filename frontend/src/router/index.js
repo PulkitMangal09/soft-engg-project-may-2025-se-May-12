@@ -37,6 +37,7 @@ import StudentConnectionsView from '@/views/student/StudentConnectionsView.vue'
 import JoinConnectionView from '@/views/student/JoinConnectionView.vue'
 import EditTransaction from '@/views/student/EditTransaction.vue'
 import AddSavingGoal from '@/views/student/AddSavingGoal.vue'
+import EditGoal from '@/views/student/EditGoal.vue'
 
 // Insights Views
 import MoodInsights from '@/views/student/insights/MoodInsights.vue'
@@ -142,7 +143,12 @@ const routes = [
   path: 'add-goal',
   name: 'AddGoal',
   component: AddSavingGoal // lazy-load
-},
+      },
+      {
+  path: 'add-goal/:id',
+  name: 'EditGoal',
+  component: EditGoal// lazy-load
+      },
       { path: 'my-connections', name: 'StudentConnections', component: StudentConnectionsView },
       { path: 'connections', name: 'JoinConnection', component: JoinConnectionView },
       { path: 'emotion', name: 'StudentEmotion', component: EmotionView },

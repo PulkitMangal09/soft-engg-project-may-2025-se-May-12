@@ -6,6 +6,7 @@ from ..models import TransactionCreate,TransactionOut,SavingsGoalCreate, Savings
 from uuid import uuid4
 from fastapi import HTTPException
 from datetime import date,datetime
+from fastapi import Body
 
 router = APIRouter(prefix="/student/finance", tags=["student-finance"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -290,3 +291,103 @@ def delete_savings_goal(goal_id: str, token: str = Depends(oauth2)):
     user_id = get_user_id(token)
     supabase.table("savings_goals").delete().eq("goal_id", goal_id).eq("student_id", user_id).execute()
     return {"deleted": True}
+
+@router.post("/savings-goals/contribute/{goal_id}", response_model=SavingsGoalOut)
+def contribute_to_savings_goal(goal_id: str, amount: float, token: str = Depends(oauth2)):
+    """Add a contribution to a savings goal's saved_amount."""
+    user_id = get_user_id(token)
+    print(goal_id,amount)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Contribution amount must be positive")
+
+    # Fetch goal to ensure it exists and belongs to the user
+    goal_resp = supabase.table("savings_goals") \
+        .select("saved_amount") \
+        .eq("goal_id", goal_id) \
+        .eq("student_id", user_id) \
+        .single() \
+        .execute()
+    
+    goal_data = getattr(goal_resp, "data", None)
+    if not goal_data:
+        raise HTTPException(status_code=404, detail="Savings goal not found")
+
+    new_saved_amount = float(goal_data["saved_amount"] or 0) + amount
+
+    # Update saved_amount
+    update_resp = supabase.table("savings_goals") \
+        .update({"saved_amount": new_saved_amount}) \
+        .eq("goal_id", goal_id) \
+        .eq("student_id", user_id) \
+        .execute()
+    
+    updated_data = getattr(update_resp, "data", None)
+    if not updated_data:
+        raise HTTPException(status_code=400, detail="Failed to update savings goal")
+
+    return updated_data[0]
+
+
+@router.delete("/deletegoal/{goal_id}")
+def delete_goal(goal_id: str, token: str = Depends(oauth2)):
+    user_id = get_user_id(token)
+
+    # Ensure the goal belongs to the logged-in student
+    goal = supabase.table("savings_goals").select("*").eq("goal_id", goal_id).eq("student_id", user_id).execute()
+
+    if not goal.data:
+        raise HTTPException(status_code=404, detail="Goal not found or you don't have permission to delete it.")
+
+    # Delete the goal
+    supabase.table("savings_goals").delete().eq("goal_id", goal_id).execute()
+
+    return {"message": "Goal deleted successfully"}
+
+
+@router.get("/goal/{goal_id}")
+def get_goal(goal_id: str):
+    try:
+        response = supabase.table("savings_goals").select(
+            "goal_id, title, target_amount, saved_amount"
+        ).eq("goal_id", goal_id).execute()
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+        return response.data[0]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.put("/editgoal/{goal_id}")
+def update_goal(goal_id: str, payload: dict = Body(...)):
+    try:
+        # Only include provided fields
+        update_data = {}
+        if payload.get("title") is not None:
+            update_data["title"] = payload["title"]
+        if payload.get("target_amount") is not None:
+            update_data["target_amount"] = payload["target_amount"]
+        if payload.get("saved_amount") is not None:
+            update_data["saved_amount"] = payload["saved_amount"]
+
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+
+        # Supabase update
+        response = supabase.table("savings_goals").update(update_data).eq("goal_id", goal_id).execute()
+
+        # Debug logging for Supabase errors
+        if hasattr(response, "error") and response.error:
+            raise HTTPException(status_code=500, detail=response.error.message)
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+        return {"message": "Goal updated successfully", "goal": response.data[0]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

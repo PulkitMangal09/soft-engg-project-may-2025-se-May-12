@@ -78,3 +78,49 @@ export async function createSavingsGoal(goalData) {
   });
   return res.data;
 }
+
+// Contribute to goal
+export async function contributeToGoal(goal, amount) {
+  const token = localStorage.getItem('token') // or however you store it
+  try {
+    const res = await API.post(`/student/finance/savings-goals/contribute/${goal}?amount=${amount}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    return res.data
+  } catch (err) {
+    console.error('Error updating transaction:', err)
+    throw err
+  }
+}
+
+// Delete goal
+export async function deleteGoal(goalId) {
+  const token = localStorage.getItem('token') // or however you store it
+  try {
+    const res = await API.delete(`/student/finance/deletegoal/${goalId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    return res.data
+  } catch (err) {
+    console.error('Error deleting goal:', err)
+    throw err
+  }
+}
+
+
+export async function updateGoal(goalId, updatedData) {
+  try {
+    const { data } = await API.put(
+      `/student/finance/editgoal/${goalId}`,
+      updatedData // Must be a plain object { title: "", target_amount: 100, saved_amount: 50 }
+    );
+    return data;
+  } catch (error) {
+    console.error("Failed to update goal:", error.response?.data || error);
+    throw error;
+  }
+}
