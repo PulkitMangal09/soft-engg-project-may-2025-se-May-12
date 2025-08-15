@@ -34,8 +34,7 @@
             <div class="py-1">
               <router-link to="/student/profile"
                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</router-link>
-              <router-link to="/student/settings"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</router-link>
+              
               <hr class="my-1">
               <button @click="logout"
                 class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</button>

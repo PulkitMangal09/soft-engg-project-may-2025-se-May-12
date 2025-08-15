@@ -36,10 +36,7 @@
                 @click="isProfileMenuOpen = false">
                 Profile
               </RouterLink>
-              <RouterLink to="/parent/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
-                @click="isProfileMenuOpen = false">
-                Settings
-              </RouterLink>
+                
               <button class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
                 @click="logout">
                 Logout

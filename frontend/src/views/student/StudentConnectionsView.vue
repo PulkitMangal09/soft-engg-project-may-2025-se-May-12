@@ -210,83 +210,52 @@
       </div> -->
 
       <!-- Privacy Settings -->
-      <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="bg-white rounded-xl shadow p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-4">Privacy & Settings</h2>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-semibold text-gray-800">Share Health Data</p>
-                <p class="text-sm text-gray-500">Allow parents to view health metrics</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" v-model="privacySettings.healthData" class="sr-only peer">
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-                </div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-semibold text-gray-800">Share Academic Progress</p>
-                <p class="text-sm text-gray-500">Allow teachers to view grades</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" v-model="privacySettings.academicData" class="sr-only peer">
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-                </div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-semibold text-gray-800">Share Financial Data</p>
-                <p class="text-sm text-gray-500">Allow parents to view finances</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" v-model="privacySettings.financialData" class="sr-only peer">
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-                </div>
-              </label>
-            </div>
+<div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Privacy & Data Sharing</h2>
+    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
+      <p class="text-sm text-yellow-800">
+        ⚠️ By joining a connection, you agree that your health, academic, and financial information may be shared 
+        with relevant parents, teachers, or administrators, as required for providing services. Please ensure you 
+        trust the connections you join.
+      </p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Connection Health</h2>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+        <div class="flex items-center space-x-3">
+          <span class="text-2xl">✅</span>
+          <div>
+            <p class="font-semibold text-green-800">All Connections Active</p>
+            <p class="text-sm text-green-600">Your connections are working properly</p>
           </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-4">Connection Health</h2>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <div class="flex items-center space-x-3">
-                <span class="text-2xl">✅</span>
-                <div>
-                  <p class="font-semibold text-green-800">All Connections Active</p>
-                  <p class="text-sm text-green-600">Your connections are working properly</p>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <div class="flex items-center space-x-3">
-                <span class="text-2xl">📊</span>
-                <div>
-                  <p class="font-semibold text-blue-800">Data Sharing Active</p>
-                  <p class="text-sm text-blue-600">Parents can view your progress</p>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-              <div class="flex items-center space-x-3">
-                <span class="text-2xl">🔔</span>
-                <div>
-                  <p class="font-semibold text-purple-800">Notifications Enabled</p>
-                  <p class="text-sm text-purple-600">You'll be notified of updates</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
+      <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+        <div class="flex items-center space-x-3">
+          <span class="text-2xl">📊</span>
+          <div>
+            <p class="font-semibold text-blue-800">Data Sharing Active</p>
+            <p class="text-sm text-blue-600">Connected parties can view shared progress and metrics</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+        <div class="flex items-center space-x-3">
+          <span class="text-2xl">🔔</span>
+          <div>
+            <p class="font-semibold text-purple-800">Notifications Enabled</p>
+            <p class="text-sm text-purple-600">You'll be notified of updates</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
     </div>
   </div>
 </template>

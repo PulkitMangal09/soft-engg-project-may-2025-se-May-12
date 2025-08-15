@@ -32,9 +32,7 @@
               <RouterLink to="/teacher" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="isProfileMenuOpen = false">
                 Profile
               </RouterLink>
-              <RouterLink to="/teacher/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="isProfileMenuOpen = false">
-                Settings
-              </RouterLink>
+              
               <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" @click="logout">
                 Logout
               </button>
