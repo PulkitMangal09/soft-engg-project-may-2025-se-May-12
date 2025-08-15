@@ -118,7 +118,7 @@ const logout = async () => {
   } catch {}
   isProfileMenuOpen.value = false
   mobileOpen.value = false
-  router.push('/login/teacher')
+  router.push('/')
 }
 
 onMounted(async () => {

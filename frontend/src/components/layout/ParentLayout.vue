@@ -125,7 +125,7 @@ const logout = async () => {
   try { await store.dispatch('auth/logout') } catch { }
   isProfileMenuOpen.value = false
   mobileOpen.value = false
-  router.push('/login')
+  router.push('/')
 }
 </script>
 
