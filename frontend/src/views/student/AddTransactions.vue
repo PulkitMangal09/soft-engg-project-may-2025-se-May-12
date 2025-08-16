@@ -92,7 +92,8 @@ const handleSubmit = async () => {
   console.log('Form before API call:', form.value)
   try {
     await createTransaction(form.value)
-    router.push('/student/finance ') // redirect after success
+    router.push('/student/finance')
+     // redirect after success
   } catch (err) {
     console.error('Error adding transaction:', err)
   }
