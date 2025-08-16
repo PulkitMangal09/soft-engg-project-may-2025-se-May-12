@@ -416,14 +416,18 @@ export default {
     }
 
     // Dashboard loading
-    async function loadDashboard(range = 'last30', fromDate = '', toDate = '') {
+    async function loadDashboard(range = 'custom', fromDate = '', toDate = '') {
       let params = {}
-      if (range === 'custom' && fromDate && toDate) {
-        params = { from_date: fromDate, to_date: toDate }
-      } else {
-        params = { range }
-      }
+      // console.log(range)
+      // if (range === 'custom' && fromDate && toDate) {
+      //   params = { from_date: fromDate, to_date: toDate }
+      // } else {
+      //   params = { range }
+      //   console.log("at else")
+      // }
+      params = { from_date: fromDate, to_date: toDate }
       const data = await fetchDashboardData(params)
+      console.log(data)
       dashboard.value = data
       transactions.value = data.transactions || []
       savingsGoals.value = data.savings || []
