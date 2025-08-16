@@ -90,7 +90,7 @@ const routes = [
   { path: '/', name: 'Welcome', component: WelcomeView },
   { path: '/login/:role?', name: 'Login', component: LoginView, props: true },
   { path: '/signup/:role?', name: 'Signup', component: SignupView, props: true },
-  { path: '/profile-completion/:role?', name: 'ProfileCompletion', component: ProfileCompletionView, props: true },
+  { path: '/:role?/profile', name: 'ProfileCompletion', component: ProfileCompletionView, props: true },
 
   // // Student Routes
   // {

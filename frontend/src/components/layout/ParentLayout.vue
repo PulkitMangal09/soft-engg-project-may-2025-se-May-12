@@ -25,18 +25,19 @@
             <button @click="toggleProfileMenu" class="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-gray-100"
               aria-haspopup="menu" :aria-expanded="isProfileMenuOpen">
               <span class="hidden md:inline text-sm text-gray-700">{{ displayName }}</span>
-              <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
             <div v-if="isProfileMenuOpen"
               class="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5" role="menu">
-              <RouterLink to="/parent/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
-                @click="isProfileMenuOpen = false">
+              <RouterLink to="/parent/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem" @click="isProfileMenuOpen = false">
                 Profile
               </RouterLink>
-                
+
               <button class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100" role="menuitem"
                 @click="logout">
                 Logout
@@ -76,7 +77,7 @@
       </div>
     </main>
   </div>
-  
+
 </template>
 
 <script setup>

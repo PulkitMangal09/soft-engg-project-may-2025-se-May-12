@@ -18,9 +18,8 @@
 
         <div class="flex items-center gap-3">
           <div class="relative" ref="profileMenuContainer">
-            <button @click="toggleProfileMenu"
-              class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100" aria-haspopup="true"
-              :aria-expanded="isProfileMenuOpen">
+            <button @click="toggleProfileMenu" class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100"
+              aria-haspopup="true" :aria-expanded="isProfileMenuOpen">
               <span class="hidden md:inline text-sm text-gray-700">{{ displayName }}</span>
               <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -29,10 +28,11 @@
 
             <div v-if="isProfileMenuOpen"
               class="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black/10">
-              <RouterLink to="/teacher" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="isProfileMenuOpen = false">
+              <RouterLink to="/teacher/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                @click="isProfileMenuOpen = false">
                 Profile
               </RouterLink>
-              
+
               <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" @click="logout">
                 Logout
               </button>
@@ -113,7 +113,7 @@ const onDocClick = (e) => {
 const logout = async () => {
   try {
     await store.dispatch('auth/logout')
-  } catch {}
+  } catch { }
   isProfileMenuOpen.value = false
   mobileOpen.value = false
   router.push('/')
@@ -129,7 +129,7 @@ onMounted(async () => {
         headers: { Authorization: `Bearer ${token.value}` },
       })
       displayNameManual.value = data?.full_name || data?.email?.split('@')[0] || ''
-    } catch {}
+    } catch { }
   }
 })
 

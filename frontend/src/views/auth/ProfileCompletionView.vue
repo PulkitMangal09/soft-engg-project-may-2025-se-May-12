@@ -2,12 +2,12 @@
     <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8">
             <div class="text-center">
-                <h2 class="text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h2>
-                <p class="text-gray-600">Please provide some additional information to get started.</p>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Profile</h2>
+                <!-- <p class="text-gray-600">Please provide some additional information to get started.</p> -->
             </div>
 
             <!-- Student Profile Form -->
-            <form v-if="userType === 'student'" @submit.prevent="submitStudentProfile" class="space-y-6">
+            <form v-if="userType === 'student'" @submit.prevent="submitProfile" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Student Number</label>
                     <input v-model="studentForm.student_number" type="text"
@@ -20,6 +20,14 @@
                     <select v-model="studentForm.grade_level"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select grade level</option>
+                        <option value="1">Grade 1</option>
+                        <option value="2">Grade 2</option>
+                        <option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option>
+                        <option value="5">Grade 5</option>
+                        <option value="6">Grade 6</option>
+                        <option value="7">Grade 7</option>
+                        <option value="8">Grade 8</option>
                         <option value="9">Grade 9</option>
                         <option value="10">Grade 10</option>
                         <option value="11">Grade 11</option>
@@ -42,7 +50,7 @@
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" @click="logout"
+                    <button type="button" @click="dashboard"
                         class="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                         Cancel
                     </button>
@@ -54,7 +62,7 @@
             </form>
 
             <!-- Teacher Profile Form -->
-            <form v-else-if="userType === 'teacher'" @submit.prevent="submitTeacherProfile" class="space-y-6">
+            <form v-else-if="userType === 'teacher'" @submit.prevent="submitProfile" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">School Name *</label>
                     <input v-model="teacherForm.school_name" type="text" required
@@ -77,7 +85,7 @@
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" @click="logout"
+                    <button type="button" @click="dashboard"
                         class="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                         Cancel
                     </button>
@@ -89,7 +97,7 @@
             </form>
 
             <!-- Parent Profile Form -->
-            <form v-else-if="userType === 'parent'" @submit.prevent="submitParentProfile" class="space-y-6">
+            <form v-else-if="userType === 'parent'" @submit.prevent="submitProfile" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                     <input v-model="parentForm.name" type="text" required
@@ -120,7 +128,7 @@
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" @click="logout"
+                    <button type="button" @click="dashboard"
                         class="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                         Cancel
                     </button>
@@ -135,9 +143,10 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
+import { profileService } from '@/services/profileService'
 
 export default {
     name: 'ProfileCompletionView',
@@ -145,6 +154,7 @@ export default {
         const store = useStore()
         const router = useRouter()
         const loading = ref(false)
+        const hasProfile = ref(false)
 
         const userType = computed(() => store.getters['auth/userRole'])
 
@@ -181,7 +191,8 @@ export default {
                     profileData = parentForm.value
                 }
 
-                const result = await store.dispatch('auth/createProfile', profileData)
+                const action = hasProfile.value ? 'auth/updateProfile' : 'auth/createProfile'
+                const result = await store.dispatch(action, profileData)
 
                 if (result.success) {
                     // Profile completed, redirect to appropriate dashboard
@@ -198,19 +209,54 @@ export default {
             }
         }
 
-        const logout = () => {
-            store.dispatch('auth/logout')
-            router.push('/')
+        const dashboard = () => {
+            router.push(`/${userType.value}`)
         }
+
+        onMounted(async () => {
+            try {
+                const token = store.getters['auth/token']
+                if (!token) return
+                const status = await profileService.checkProfileStatus(token)
+                hasProfile.value = !!status?.has_profile
+                const data = status?.profile_data || {}
+                if (status?.user_type === 'student' && data) {
+                    studentForm.value = {
+                        student_number: data.student_number || '',
+                        grade_level: data.grade_level || '',
+                        school_name: data.school_name || '',
+                        emergency_contact_phone: data.emergency_contact_phone || '',
+                        can_exist_independently: typeof data.can_exist_independently === 'boolean' ? data.can_exist_independently : true
+                    }
+                } else if (status?.user_type === 'teacher' && data) {
+                    teacherForm.value = {
+                        school_name: data.school_name || '',
+                        school_district: data.school_district || '',
+                        subject_grade: data.subject_grade || ''
+                    }
+                } else if (status?.user_type === 'parent' && data) {
+                    parentForm.value = {
+                        name: data.name || '',
+                        group: data.group || '',
+                        is_head: !!data.is_head,
+                        description: data.description || ''
+                    }
+                }
+            } catch (e) {
+                // Non-blocking: allow user to fill fresh profile
+                console.error('Failed to prefill profile:', e)
+            }
+        })
 
         return {
             userType,
             loading,
+            hasProfile,
             studentForm,
             teacherForm,
             parentForm,
             submitProfile,
-            logout
+            dashboard,
         }
     }
 }

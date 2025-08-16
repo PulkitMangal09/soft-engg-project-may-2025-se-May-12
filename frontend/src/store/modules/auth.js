@@ -176,6 +176,27 @@ export default {
             }
         },
 
+        async updateProfile({ commit, state }, profileData) {
+            try {
+                const token = state.token
+                const role = state.role
+
+                let response
+                if (role === 'student') {
+                    response = await profileService.updateStudentProfile(profileData, token)
+                } else if (role === 'teacher') {
+                    response = await profileService.updateTeacherProfile(profileData, token)
+                } else if (role === 'parent') {
+                    response = await profileService.updateParentProfile(profileData, token)
+                }
+
+                commit('SET_PROFILE_STATUS', { hasProfile: true, profileCompleted: true })
+                return { success: true, data: response }
+            } catch (error) {
+                return { success: false, error: error.message }
+            }
+        },
+
         async validateToken({ commit, state }) {
             try {
                 const token = state.token

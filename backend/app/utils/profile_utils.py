@@ -112,3 +112,39 @@ def create_profile(user_id: str, user_type: str, profile_data: Dict[str, Any]) -
     if not data:
         raise HTTPException(status_code=400, detail="Profile creation failed")
     return data[0]
+
+
+def update_profile(user_id: str, user_type: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Update an existing profile row for the given user and type.
+
+    Only fields provided in profile_data will be updated.
+    """
+    table = _TABLE_MAP.get(user_type)
+    key = _ID_FIELD.get(user_type)
+    if not table or not key:
+        raise HTTPException(status_code=400, detail="Invalid user type")
+
+    # Ensure profile exists before updating
+    if not check_profile_exists(user_id, user_type):
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    # Never allow changing the owner id key through update payload
+    safe_payload = {k: v for k, v in profile_data.items() if k != key}
+    if not safe_payload:
+        # No-op update should still return the existing row
+        existing = get_profile_data(user_id, user_type)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return existing
+
+    resp = (
+        supabase
+        .table(table)
+        .update(safe_payload)
+        .eq(key, user_id)
+        .execute()
+    )
+    data = getattr(resp, "data", None)
+    if not data:
+        raise HTTPException(status_code=400, detail="Profile update failed")
+    return data[0]

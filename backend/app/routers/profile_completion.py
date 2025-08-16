@@ -7,8 +7,9 @@ from ..models import (
 )
 from ..utils.profile_utils import (
     get_user_id_from_token, get_user_type, check_profile_exists,
-    get_profile_data, create_profile
+    get_profile_data, create_profile, update_profile
 )
+from typing import Dict, Any
 
 router = APIRouter(prefix="/profile", tags=["profile-completion"])
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -78,6 +79,57 @@ def create_teacher_profile(profile: TeacherProfileCreate, token: str = Depends(o
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Profile creation failed: {e}")
+
+
+@router.patch("/student", response_model=dict)
+def update_student_profile(profile: Dict[str, Any], token: str = Depends(oauth2)):
+    """Update existing student profile (partial)."""
+    user_id = get_user_id_from_token(token)
+    user_type = get_user_type(user_id)
+
+    if user_type != 'student':
+        raise HTTPException(status_code=403, detail="Only students can update student profiles")
+
+    try:
+        return update_profile(user_id, user_type, profile)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Profile update failed: {e}")
+
+
+@router.patch("/teacher", response_model=dict)
+def update_teacher_profile(profile: Dict[str, Any], token: str = Depends(oauth2)):
+    """Update existing teacher profile (partial)."""
+    user_id = get_user_id_from_token(token)
+    user_type = get_user_type(user_id)
+
+    if user_type != 'teacher':
+        raise HTTPException(status_code=403, detail="Only teachers can update teacher profiles")
+
+    try:
+        return update_profile(user_id, user_type, profile)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Profile update failed: {e}")
+
+
+@router.patch("/parent", response_model=dict)
+def update_parent_profile(profile: Dict[str, Any], token: str = Depends(oauth2)):
+    """Update existing parent profile (partial)."""
+    user_id = get_user_id_from_token(token)
+    user_type = get_user_type(user_id)
+
+    if user_type != 'parent':
+        raise HTTPException(status_code=403, detail="Only parents can update parent profiles")
+
+    try:
+        return update_profile(user_id, user_type, profile)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Profile update failed: {e}")
 
 
 @router.post("/parent", response_model=dict)

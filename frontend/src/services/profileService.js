@@ -99,5 +99,47 @@ export const profileService = {
       console.error('Error getting parent profile status:', error)
       throw error
     }
+  },
+
+  async updateStudentProfile(profileData, token) {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/profile/student`, profileData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error updating student profile:', error)
+      throw error
+    }
+  },
+
+  async updateTeacherProfile(profileData, token) {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/profile/teacher`, profileData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error updating teacher profile:', error)
+      throw error
+    }
+  },
+
+  async updateParentProfile(profileData, token) {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/profile/parent`, profileData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error updating parent profile:', error)
+      throw error
+    }
   }
-} 
+}
